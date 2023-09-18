@@ -5,6 +5,10 @@
 #include <stddef.h>
 
 // here line denotes the serial channel
+enum LINE {
+    CONSOLE = 1,
+    LINE
+};
 
 #define NCH -1
 
