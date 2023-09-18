@@ -135,7 +135,7 @@ short uart_getc_nb(size_t line) {
   unsigned char ch;
 
   if (UART_REG(line, UART_FR) & UART_FR_RXFE) // no data?
-    return NCH;
+	return NCH;
 
   ch = UART_REG(line, UART_DR);
   return(ch);
@@ -150,14 +150,14 @@ void uart_putc(size_t line, unsigned char c) {
 void uart_putl(size_t line, const char* buf, size_t blen) {
   uint32_t i;
   for(i=0; i < blen; i++) {
-    uart_putc(line, *(buf+i));
+	uart_putc(line, *(buf+i));
   }
 }
 
 void uart_puts(size_t line, const char* buf) {
   while (*buf) {
-    uart_putc(line, *buf);
-    buf++;
+	uart_putc(line, *buf);
+	buf++;
   }
 }
 
@@ -186,15 +186,15 @@ static void uart_format_print (size_t line, char *fmt, va_list va ) {
 				break;
 			case 's':
 				uart_puts( line, va_arg( va, char* ) );
-        break;
-      case 'c':
-        uart_putc(line, va_arg(va, int));
-        break;
-      case '%':
+		break;
+	  case 'c':
+		uart_putc(line, va_arg(va, int));
+		break;
+	  case '%':
 				uart_putc( line, ch );
 				break;
-      case '\0':
-        return;
+	  case '\0':
+		return;
 			}
 		}
 	}
