@@ -10,12 +10,23 @@
 #define STACK_SIZE 400000 // 400 kB
 
 enum READY_STATE {
+    STATE_READY,
+    STATE_BLOCKED,
+    STATE_KILLED
     N_READY_STATE
 };
 
 enum PRIORITY {
+    P_VHIGH,
+    P_HIGH,
+    P_MED,
+    P_LOW,
+    P_VLOW,
     N_PRIORITY
 };
+
+// Forward definition. Otherwise you cannot refer in task_t to itself -> compiler error
+typedef struct task_t task_t;
 
 typedef struct task_t {
     // hardcoded assembly -- do not reorder or add before
@@ -53,8 +64,8 @@ typedef struct task_t {
     int64_t x29;
     int64_t x30;
 
-    int64_t pc;
-    int64_t sp;
+    uint64_t pc;
+    uint64_t sp;
 
     int64_t pstate;
 
@@ -69,6 +80,9 @@ typedef struct task_t {
     char stack[STACK_SIZE];
 
     task_t *next; // intrusive linked list
+    uint8_t slab_index;
 } task_t;
+
+void task_init(task_t *t, void (*function)(), task_t *parent);
 
 #endif
