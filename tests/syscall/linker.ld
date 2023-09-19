@@ -1,8 +1,7 @@
-ENTRY(main)
+ENTRY(_start)
 SECTIONS {
-  . = 0x200000;          /* start text at this location */
-  .text : {              /* force main to start of text section, with all other functions following */
-    *(.text.kernel_main);
-    *(.text*)
+  . = 0x80000;           /* start text at this location */
+  .text.boot : {
+    KEEP(*(.text.boot))  /* boot code must come first */
   }
 }
