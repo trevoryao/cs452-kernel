@@ -17,16 +17,16 @@ enum READY_STATE {
 };
 
 enum PRIORITY {
-    P_VHIGH,
-    P_HIGH,
-    P_MED,
-    P_LOW,
     P_VLOW,
+    P_LOW,
+    P_MED,
+    P_HIGH,
+    P_VHIGH,
     N_PRIORITY
 };
 
 // Forward definition. Otherwise you cannot refer in task_t to itself -> compiler error
-typedef struct task_t task_t;
+typedef struct task_t task_t; 
 
 typedef struct task_t {
     // hardcoded assembly -- do not reorder or add before
@@ -84,6 +84,7 @@ typedef struct task_t {
 } task_t;
 
 void task_init(task_t *t, void (*function)(), task_t *parent);
+void task_clear(task_t * t);
 
 typedef struct kernel_state {
     // hardcoded assembly -- do not reorder or add before

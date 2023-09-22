@@ -6,10 +6,10 @@
 
 // asserts and panics (user tasks)
 
-#define assert(expr) \
+#define uassert(expr) \
     ((__builtin_expect(!(expr), 0)) ? Exit() : (void)0)
 
-#define panic(...) \
+#define upanic(...) \
     uart_printf(CONSOLE, __VA_ARGS__); \
     Exit()
 
