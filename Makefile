@@ -9,7 +9,7 @@ SRC:=src
 INCLUDES:=include
 KDIR:=kernel
 UDIR:=user
-EXEC:=a0
+EXEC:=kernel
 
 # COMPILE OPTIONS
 # -ffunction-sections causes each function to be in a separate section (linker script relies on this)

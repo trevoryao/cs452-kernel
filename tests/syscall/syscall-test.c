@@ -1,5 +1,8 @@
 #include <context-switch.h>
+#include <kassert.h>
+#include <stack-alloc.h>
 #include <task-state.h>
+
 #include <rpi.h>
 #include <syscall.h>
 #include <util.h>
@@ -9,57 +12,45 @@ void dummy_user(void);
 kernel_state *kernel_task;
 task_t *curr_user_task;
 
-void kernel_init(void) {
-    set_context_switch_handler();
+void kernel_init(stack_alloc *salloc) {
+    init_exception_handlers();
 
-    memset(kernel_task, 0, sizeof(kernel_state));
+    uart_init();
+    uart_config_and_enable(CONSOLE, 115200, 1);
 
-    task_init(curr_user_task, dummy_user, NULL);
+    uart_puts(CONSOLE, "\033[2J\033[H"); // clear screen
+    uart_printf(CONSOLE, "Niclas Heun & Trevor Yao: syscall-test (%s)\r\n", __TIME__);
+
+    task_init(curr_user_task, dummy_user, NULL, P_MED, salloc);
 }
 
-int kernel_main(void) {
-    kernel_init();
+int kernel_main(void *kernel_end) {
+    kernel_state k;
+    kernel_task = &k;
 
-    // context_switch_out();
+    task_t t;
+    curr_user_task = &t;
 
+    stack_alloc salloc;
+    stack_alloc_init(&salloc, kernel_end);
+
+    kernel_init(&salloc);
+
+    uart_printf(CONSOLE, "addr of user_task f'n: %x\r\n", dummy_user);
+
+    uart_printf(CONSOLE, "activating user task\r\n");
+    print_el();
+
+    task_activate(curr_user_task);
+    uart_printf(CONSOLE, "request number %d\r\n", curr_user_task->x0);
+    print_el();
+
+    while (!uart_out_empty(CONSOLE)); // spin until output finishes
     return 0;
 }
 
 void dummy_user(void) {
-    // curr_user_task->x0 = 0;
-    // curr_user_task->x1 = 0;
-    // curr_user_task->x2 = 0;
-    // curr_user_task->x3 = 0;
-    // curr_user_task->x4 = 0;
-    // curr_user_task->x5 = 0;
-    // curr_user_task->x6 = 0;
-    // curr_user_task->x7 = 0;
-    // curr_user_task->x8 = 0;
-    // curr_user_task->x9 = 0;
-    // curr_user_task->x10 = 0;
-    // curr_user_task->x11 = 0;
-    // curr_user_task->x12 = 0;
-    // curr_user_task->x13 = 0;
-    // curr_user_task->x14 = 0;
-    // curr_user_task->x15 = 0;
-    // curr_user_task->x16 = 0;
-    // curr_user_task->x17 = 0;
-    // curr_user_task->x18 = 0;
-    // curr_user_task->x19 = 0;
-    // curr_user_task->x20 = 0;
-    // curr_user_task->x21 = 0;
-    // curr_user_task->x22 = 0;
-    // curr_user_task->x23 = 0;
-    // curr_user_task->x24 = 0;
-    // curr_user_task->x25 = 0;
-    // curr_user_task->x26 = 0;
-    // curr_user_task->x27 = 0;
-    // curr_user_task->x28 = 0;
-    // curr_user_task->x29 = 0;
-    curr_user_task->x30 = 0;
-    // curr_user_task->pc = 0;
-    // curr_user_task->sp = 0;
-    // curr_user_task->pstate = 0;
-
-    //syscall(100, 10, 20, 0, 0, 0, 0, 0);
+    uart_printf(CONSOLE, "hello world\r\n");
+    // print_el();
+    syscall(10, 20, 30, 0, 0, 0, 0, 0);
 }

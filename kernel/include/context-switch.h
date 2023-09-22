@@ -8,7 +8,21 @@
  * wrapper for context-switch.S
  */
 
-// saves current context into `cur` and loads context of `next` into program registers
-extern void context_switch(task_t *cur, task_t *next);
+// must be called in init
+extern void init_exception_handlers(void);
+
+// saves kernel context and loads context of "curr_task"
+extern void context_switch_out(void);
+
+// saves user context to "curr_task" and loads kernel context in
+// returns syscall number when switched back
+extern void context_switch_in(void);
+
+// called if incorrect exception/interrupt thrown
+// kills task
+void unimplemented_handler(void *addr, uint64_t esr);
+
+// displays the current exception level. Mostly used for testing.
+void print_el(void);
 
 #endif

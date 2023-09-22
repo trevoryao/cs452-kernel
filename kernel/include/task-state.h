@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
+typedef struct stack_alloc stack_alloc;
+
 /*
  * data structure for representing task state
  */
-
-#define STACK_SIZE 400000 // 400 kB
 
 enum READY_STATE {
     STATE_READY,
@@ -25,8 +25,7 @@ enum PRIORITY {
     N_PRIORITY
 };
 
-// Forward definition. Otherwise you cannot refer in task_t to itself -> compiler error
-typedef struct task_t task_t; 
+typedef struct task_t task_t;
 
 typedef struct task_t {
     // hardcoded assembly -- do not reorder or add before
@@ -67,7 +66,7 @@ typedef struct task_t {
     uint64_t pc;
     uint64_t sp;
 
-    int64_t pstate;
+    int32_t pstate;
 
     // state ends
 
@@ -77,13 +76,18 @@ typedef struct task_t {
     enum READY_STATE ready_state;
     enum PRIORITY priority;
 
-    char stack[STACK_SIZE];
-
     task_t *next; // intrusive linked list
     uint8_t slab_index;
 } task_t;
 
-void task_init(task_t *t, void (*function)(), task_t *parent);
+void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY priority, stack_alloc *salloc);
+
+// context switches to given task
+int task_activate(task_t *t);
+
+// called after context return
+void task_handle(task_t *t);
+
 void task_clear(task_t * t);
 
 typedef struct kernel_state {
@@ -120,11 +124,8 @@ typedef struct kernel_state {
     int64_t x28;
     int64_t x29;
     int64_t x30;
-
-    uint64_t pc;
-    uint64_t sp;
-
-    int64_t pstate;
 } kernel_state;
+
+void kernel_state_init(kernel_state *k);
 
 #endif
