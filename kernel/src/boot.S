@@ -58,7 +58,7 @@ el1_entry:
     msr DAIFSet, #0b1111
     // initialize SP
     msr SPSel, #1
-    ldr     x0, =stackend
+    ldr     x0, =kstackend
     mov     sp, x0
     // Jump to our main() routine in C/C++
     bl      kernel_main
@@ -81,8 +81,8 @@ exit:
 
 .section ".bss"
 .balign 16
-stack:
+kstack:
     .rept 0x10000
     .byte 0
     .endr
-stackend:
+kstackend:

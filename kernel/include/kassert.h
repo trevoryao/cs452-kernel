@@ -8,7 +8,7 @@
 #define kassert(expr) \
     ((__builtin_expect(!(expr), 0)) ? __builtin_trap() : (void)0)
 
-#define panic(...) \
+#define kpanic(...) \
     uart_printf(CONSOLE, __VA_ARGS__); \
     __builtin_trap()
 

@@ -96,6 +96,8 @@ void uart_init() {
   setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
   setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
   setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
+  setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
+  setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
 }
 
 static const uint32_t UARTCLK = 48000000;
@@ -145,6 +147,10 @@ void uart_putc(size_t line, unsigned char c) {
   // make sure there is room to write more data
   while(UART_REG(line, UART_FR) & UART_FR_TXFF);
   UART_REG(line, UART_DR) = c;
+}
+
+bool uart_out_empty(size_t line) {
+  return UART_REG(line, UART_FR) & UART_FR_TXFE;
 }
 
 void uart_putl(size_t line, const char* buf, size_t blen) {
