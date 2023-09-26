@@ -6,6 +6,15 @@
  * All functions cause rescheduling
  */
 
+enum PRIORITY {
+    P_VLOW,
+    P_LOW,
+    P_MED,
+    P_HIGH,
+    P_VHIGH,
+    N_PRIORITY
+};
+
  /*
  * allocates and initializes a task descriptor, using the given priority, and the
  * given function pointer as a pointer to the entry point of executable code,

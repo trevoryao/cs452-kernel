@@ -1,15 +1,20 @@
-#include <task-state.h>
+#include "task-state.h"
 
-#include <context-switch.h>
-#include <kassert.h>
-#include <stack-alloc.h>
+// kernel
+#include "context-switch.h"
+#include "kassert.h"
+#include "task-alloc.h"
+#include "task-queue.h"
+#include "stack-alloc.h"
 
-#include <task.h>
-#include <syscall.h>
-#include <util.h>
+// lib
+#include "task.h"
+#include "syscall.h"
+#include "util.h"
 
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
+    KLOG("user_start called\r\n");
     function();
     Exit();
 }
@@ -47,10 +52,10 @@ void task_init(task_t *t, void (*function)(), task_t *parent, enum PRIORITY prio
     t->x29 = 0;
     t->x30 = 0;
 
-    t->pstate = (1 << 7); // mask interrupt
-
     t->pc = (uint64_t)user_start;
     t->sp = (uint64_t)stack_alloc_new(salloc);
+
+    t->pstate = (1 << 7); // mask interrupt
 
     t->priority = priority;
     t->ready_state = STATE_READY;
@@ -60,19 +65,39 @@ void task_init(task_t *t, void (*function)(), task_t *parent, enum PRIORITY prio
     // tid assigned at scheduler
 }
 
-int task_activate(task_t *t) {
-    context_switch_out();
+int task_activate(task_t *t, kernel_state *k) {
+    context_switch_out(t, k);
     return t->x0;
 }
 
-void task_handle(task_t *t) {
+void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq) {
     // assume syscall (for now)
+
+    KLOG("SYSCALL %x %x %x\r\n", t->x0, t->x1, t->x2);
 
     switch (t->x0) {
         case SYS_CREAT:
-            // cast x2 as func ptr
-            break;
+            if (0 <= t->x1 && t->x1 < N_PRIORITY) { // valid priority?
+                task_t *new_task;
+                if (!(new_task = task_alloc_new(talloc))) {
+                    t->x0 = -2; // out of mem
+                    break;
+                }
 
+                task_init(new_task, (void (*)(void))t->x2, t, t->x1, salloc);
+
+                int32_t tid;
+                if ((tid = task_queue_add(tq, new_task)) < 0) {
+                    t->x0 = -2; // out of tids
+                    break;
+                }
+
+                t->x0 = tid; // return new tid
+            } else {
+                t->x0 = -1; // invalid priority
+            }
+
+            break;
         case SYS_TID:
             t->x0 = t->tid;
             break;
@@ -85,13 +110,13 @@ void task_handle(task_t *t) {
             }
             break;
         case SYS_YIELD:
-            t->x0 = 0;
             break; // let scheduler handle, already moved to back of queue
         case SYS_EXIT:
-            t->ready_state = STATE_KILLED; // let scheduler handle
+            task_queue_free_tid(tq, t->tid);
+            task_alloc_free(talloc, t);
             break;
 
-        default: kpanic("Unknown syscall number: %d", t->x0);
+        default: kpanic("Unknown syscall number: %d\r\n", t->x0);
     }
 }
 
