@@ -7,12 +7,11 @@
 
 kernel_state *kernel_task = NULL; // needed to satisfy linker
 task_t *curr_user_task = NULL;
-task_t *user_task0 = NULL;
 task_t *user_task1 = NULL;
 task_t *user_task2 = NULL;
-task_t *user_task3 = NULL;
-task_t *user_task4 = NULL;
-task_t *user_task5 = NULL;
+
+// when running, need to comment out Exit and context_switch
+// references
 
 // Some function to nicely print the test success/failure
 void print_test_result(int test_number, bool successfull) {
@@ -34,7 +33,6 @@ int main(void) {
     /*
         Testing the task_alloc
     */
-
     // Test 1: Getting a new task
     user_task1 = task_alloc_new(&t_allocator);
     print_test_result(1, user_task1 != NULL);
@@ -42,7 +40,6 @@ int main(void) {
     // Test 2: Freeing the memory should add it to the free list (->next pointer should not be null)
     task_alloc_free(&t_allocator, user_task1);
     print_test_result(2, user_task1->next != NULL);
-
 
     /*
         Testing the task_queue
@@ -78,6 +75,24 @@ int main(void) {
     task_queue_add(&t_queue, user_task1);
     curr_user_task = task_queue_schedule(&t_queue);
     print_test_result(6, (curr_user_task == user_task1));
+
+    // Test 7: TID allocation
+    task_queue_init(&t_queue);
+
+    user_task1 = task_alloc_new(&t_allocator);
+    user_task2 = task_alloc_new(&t_allocator);
+
+    user_task1->priority = P_MED;
+    user_task2->priority = P_MED;
+    user_task1->ready_state = STATE_READY;
+    user_task2->ready_state = STATE_READY;
+
+    user_task1->tid = 1;
+
+    task_queue_add(&t_queue, user_task1);
+    task_queue_add(&t_queue, user_task2);
+
+    print_test_result(7, (user_task2->tid == 2));
 
     // for (;;);
     return 0;

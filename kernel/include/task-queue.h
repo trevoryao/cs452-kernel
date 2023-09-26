@@ -22,7 +22,7 @@ typedef struct task_queue {
     task_t *back[N_PRIORITY];
 
     // assigning Ids missing here
-    uint16_t highest_tid;
+    uint16_t global_tid;
 
 } task_queue;
 
