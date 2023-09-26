@@ -34,21 +34,35 @@ task_t *task_queue_schedule(task_queue *tq) {
         // otherwise when the task is eventually unblocked we want it to
         // resume running immediately
 
-        task_t *current = NULL;
-        task_t *old_back = tq->back[p];
+        task_t *current = tq->front[p];
+        task_t *last = NULL;
 
         // go through the entire loop
-        while(current != old_back) {
+        while(current != NULL) {
             // get next element in queue
-            current = task_queue_pop(tq, p);
-
             KLOG("schedule: checking tid %d (state=%d)\r\n", current->tid, current->ready_state);
 
             if (current->ready_state == STATE_READY) {
+                // Case 1: current is the front of the queue
+                if (current == tq->front[p]) {
+                    tq->front[p] = current->next;
+                } else {
+                    // Case 2: current is not the front of the queue
+                    last->next = current->next;
+                }
+
+                //  set the back of the queue if necessary
+                if (current == tq->back[p]) {
+                    tq->back[p] = NULL;
+                }
+
+                // NULL the next pointer of the current
+                current->next = NULL;
                 current->ready_state = STATE_RUNNING;
                 return current;
             } else {
-                task_queue_push(tq, current);
+                last = current;
+                current = current->next;
             }
         }
     }
@@ -91,7 +105,6 @@ void task_queue_free_tid(task_queue *tq, uint16_t tid) {
             if (current_element->parent->tid == tid) {
                 current_element->parent = NULL;
             }
-
             current_element = current_element->next;
         }
     }
