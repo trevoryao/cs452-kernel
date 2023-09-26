@@ -36,7 +36,7 @@ ${EXEC}.out : ${OBJECTS}				# link step
 all: a0.img
 
 clean:
-	rm -f $(OBJECTS) $(DEPENDS) $(EXEC).out`
+	rm -f $(OBJECTS) $(DEPENDS) $(EXEC).out
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@

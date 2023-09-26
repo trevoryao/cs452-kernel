@@ -3,6 +3,11 @@
 // kernel
 #include "kassert.h"
 
+// lib
+#include "util.h"
+
+#define WRAP_AROUND_TID 300 // unlikely to have long running processes this high
+
 // local definition of methods
 static task_t *task_queue_pop(task_queue *tq, enum PRIORITY p); // pops highest priority present
 static void task_queue_push(task_queue *tq, task_t *task);
@@ -19,7 +24,7 @@ void task_queue_init(task_queue *tq) {
     memset(tq->back, 0, N_PRIORITY * sizeof(task_t *));
 
     // on init only kernel running
-    tq->highest_tid = 0;
+    tq->global_tid = 0;
 }
 
 task_t *task_queue_schedule(task_queue *tq) {
@@ -40,6 +45,8 @@ task_t *task_queue_schedule(task_queue *tq) {
         // go through the entire loop
         while(current != NULL) {
             // get next element in queue
+            KLOG("schedule: checking tid %d (state=%d)\r\n", current->tid, current->ready_state);
+
             KLOG("schedule: checking tid %d (state=%d)\r\n", current->tid, current->ready_state);
 
             if (current->ready_state == STATE_READY) {
@@ -157,8 +164,32 @@ static void task_queue_push(task_queue *tq, task_t *task) {
 }
 
 static int32_t task_queue_get_tid(task_queue *tq) {
-    if (tq->highest_tid == UINT16_MAX) return -1; // out of tids
+    // follows UNIX algorithm for assigning TIDs
+    // wrap around to WRAP_AROUND_TID and check if its free
+    // if not, continue checking
+    // higher WRAP_AROUND_TID decreases odds of a lot of iterations
 
-    tq->highest_tid += 1;
-    return tq->highest_tid;
+    int32_t tid = (tq->global_tid == UINT16_MAX) ? WRAP_AROUND_TID : (tq->global_tid + 1);
+
+    while (tid <= UINT16_MAX) {
+        for (int p = N_PRIORITY - 1; p >= 0; --p) {
+            task_t *cur = tq->front[p];
+
+            while (cur) {
+                if (cur->tid == tid) goto ContinueCheck;
+                cur = cur->next; // otherwise keep checking
+            }
+        }
+
+        // finished iteration without finding duplicate tid
+        tq->global_tid = (uint16_t)tid;
+        return tq->global_tid;
+
+ContinueCheck:
+        ++tid;
+    }
+
+    // somehow iterated all tasks without finding a free priority
+    KLOG("no TID\r\n");
+    return -1; // out of TIDs
 }
