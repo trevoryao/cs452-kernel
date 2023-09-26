@@ -3,13 +3,14 @@
 
 #include <stdint.h>
 
-#include <task-memory.h>
+// kernel
+#include "task-alloc.h"
 
 /*
  * Allocator for task stacks.
  */
 
-#define STACK_SIZE 0x40000 // ~260 kB
+#define STACK_SIZE 0x80000 // ~500 kB
 
 typedef struct stack_alloc {
     int8_t is_allocd[N_TASK_T]; // tracker of alloc'd tasks

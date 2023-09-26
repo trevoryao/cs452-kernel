@@ -3,29 +3,27 @@
 
 #include <stdint.h>
 
+// lib
+#include "task.h"
+
 typedef struct stack_alloc stack_alloc;
+typedef struct task_alloc task_alloc;
+typedef struct task_queue task_queue;
 
 /*
  * data structure for representing task state
  */
 
 enum READY_STATE {
+    STATE_RUNNING,
     STATE_READY,
     STATE_BLOCKED,
     STATE_KILLED,
     N_READY_STATE
 };
 
-enum PRIORITY {
-    P_VLOW,
-    P_LOW,
-    P_MED,
-    P_HIGH,
-    P_VHIGH,
-    N_PRIORITY
-};
-
 typedef struct task_t task_t;
+typedef struct kernel_state kernel_state;
 
 typedef struct task_t {
     // hardcoded assembly -- do not reorder or add before
@@ -83,10 +81,10 @@ typedef struct task_t {
 void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY priority, stack_alloc *salloc);
 
 // context switches to given task
-int task_activate(task_t *t);
+int task_activate(task_t *t, kernel_state *k);
 
 // called after context return
-void task_handle(task_t *t);
+void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq);
 
 void task_clear(task_t * t);
 

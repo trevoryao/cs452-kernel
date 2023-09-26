@@ -1,8 +1,10 @@
-#include <stack-alloc.h>
+#include "stack-alloc.h"
 
-#include <kassert.h>
+// kernel
+#include "kassert.h"
 
-#include <util.h>
+// lib
+#include "util.h"
 
 void stack_alloc_init(stack_alloc *salloc, void *kernel_stack_ptr) {
     salloc->base = (char *)kernel_stack_ptr + STACK_SIZE;
@@ -26,6 +28,6 @@ void *stack_alloc_new(stack_alloc *salloc) {
 
 void stack_alloc_free(stack_alloc *salloc, void *stack_base) {
     uint16_t offset = ((char *)stack_base - (char *)salloc->base) / STACK_SIZE;
-    kassert(0 <= offset && offset < N_TASK_T);
+    kassert(offset < N_TASK_T);
     salloc->is_allocd[offset] = 0;
 }

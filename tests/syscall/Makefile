@@ -21,7 +21,7 @@ CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
 
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces
 # doing this rather than calling the linker ourselves simplifies the compilation procedure
-LDFLAGS:=-Wl,-nmagic -Wl,-Tlinker.ld
+LDFLAGS:=-Wl,-nmagic -Wl,-T$(ROOT)/linker.ld
 
 # Source files and include dirs
 SOURCES := $(EXEC).c $(shell find $(ROOT)/$(SRC) $(ROOT)/$(KDIR)/$(SRC) $(ROOT)/$(UDIR)/$(SRC) -type f ! -name main.c ! -name kernel.c -name '*.c' -o -name '*.S')
@@ -39,7 +39,7 @@ clean:
 $(EXEC).img: $(EXEC).elf
 	$(OBJCOPY) $< -O binary $@
 
-$(EXEC).elf: $(OBJECTS) linker.ld
+$(EXEC).elf: $(OBJECTS) $(ROOT)/linker.ld
 	$(CC) $(CFLAGS) $(filter-out %.ld, $^) -o $@ $(LDFLAGS)
 	@$(OBJDUMP) -d $(EXEC).elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
 

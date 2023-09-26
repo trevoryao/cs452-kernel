@@ -1,6 +1,9 @@
 #include "rpi.h"
-#include "util.h"
+
 #include <stdarg.h>
+
+// lib
+#include "util.h"
 
 static char* const  MMIO_BASE = (char*)           0xFE000000;
 

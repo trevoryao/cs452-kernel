@@ -1,8 +1,10 @@
-#ifndef __TASK_MEMORY_H__
-#define __TASK_MEMORY_H__
+#ifndef __TASK_ALLOC_H__
+#define __TASK_ALLOC_H__
 
-#include <task-state.h>
 #include <stddef.h>
+
+// kernel
+#include "task-state.h"
 
 /*
  * provides functions for managing the memory of tasks
@@ -13,12 +15,7 @@
 #define N_TASK_T 8
 #define N_SLABS 128
 
-
 typedef struct task_alloc {
-    // fill me
-    // array of slabs
-    
-    // TODO: Q: Is that how you wanted to use the constant? -> N of tasks would then be 8*N_TASK_T
     task_t slabs[N_SLABS][N_TASK_T];
 
     // free list
@@ -28,7 +25,7 @@ typedef struct task_alloc {
     uint8_t active_slab;
 
     // array representing how many elements are in each slab
-    uint8_t task_count_in_slab[8];
+    uint8_t task_count_in_slab[N_TASK_T];
 } task_alloc;
 
 void task_alloc_init(task_alloc *alloc);

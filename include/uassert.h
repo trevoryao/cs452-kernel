@@ -1,8 +1,9 @@
 #ifndef __ASSERT_H__
 #define __ASSERT_H__
 
-#include <task.h>
-#include <rpi.h>
+// lib
+#include "task.h"
+#include "rpi.h"
 
 // asserts and panics (user tasks)
 
