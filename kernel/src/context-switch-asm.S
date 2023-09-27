@@ -17,10 +17,14 @@
     .global context_switch_out
     .type   context_switch_out, %function
 
+    .global branch_if_assert
+    .type   branch_if_assert, %function
+
     .global get_el
     .type   get_el, %function
 
     .globl unimplemented_handler
+    .globl reboot
 
 
 // Aarch64 exception table (see Arm Programmer's Guide 10.4
@@ -29,99 +33,118 @@
 exception_vector:
     /* Current EL with SP0 */
     curr_sp0_sync:
-        adr x0, curr_sp0_sync     // pass current PC as arg
+        adr x0, curr_sp0_sync       // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     curr_sp0_irq:
-        adr x0, curr_sp0_irq      // pass current PC as arg
+        adr x0, curr_sp0_irq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     curr_sp0_fiq:
-        adr x0, curr_sp0_fiq      // pass current PC as arg
+        adr x0, curr_sp0_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     curr_sp0_serror:
-        adr x0, curr_sp0_serror    // pass current PC as arg
-        b   unimplemented_handler  // exits
+        adr x0, curr_sp0_serror     // pass current PC as arg
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     /* Current EL with SPn */
     .balign 0x80
     curr_spx_sync:
-        adr x0, curr_spx_sync     // pass current PC as arg
-        mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl      branch_if_assert    // if BRK instruction (assert failed), restarts
+
+        adr     x0, curr_spx_sync   // pass current PC as arg
+        mrs     x1, ESR_EL1
+        bl      unimplemented_handler // exits
+        b       reboot
+
 
     .balign 0x80
     curr_spx_irq:
-        adr x0, curr_spx_irq      // pass current PC as arg
+        adr x0, curr_spx_irq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     curr_spx_fiq:
-        adr x0, curr_spx_fiq      // pass current PC as arg
+        adr x0, curr_spx_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     curr_spx_serror:
-        adr x0, curr_spx_serror   // pass current PC as arg
+        adr x0, curr_spx_serror     // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     /* Lower EL using AArch64 */
     .balign 0x80
     lower_64_sync:
-        b   context_switch_in    /* SVC from EL0 */
+        bl  branch_if_assert        // if user-level break, will branch (failed assert)
+        b   context_switch_in       // otherwise attempt to handle as syscall
 
     .balign 0x80
     lower_64_irq:
-        adr x0, lower_64_irq      // pass current PC as arg
+        adr x0, lower_64_irq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     lower_64_fiq:
-        adr x0, lower_64_fiq      // pass current PC as arg
+        adr x0, lower_64_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     lower_64_serror:
-        adr x0, lower_64_serror   // pass current PC as arg
+        adr x0, lower_64_serror     // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     /* Lower EL using AArch32 */
     .balign 0x80
     lower_32_sync:
-        adr x0, lower_32_sync     // pass current PC as arg
+        adr x0, lower_32_sync       // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     lower_32_irq:
-        adr x0, lower_32_irq      // pass current PC as arg
+        adr x0, lower_32_irq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     lower_32_fiq:
-        adr x0, lower_32_fiq      // pass current PC as arg
+        adr x0, lower_32_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
     .balign 0x80
     lower_32_serror:
-        adr x0, lower_32_serror   // pass current PC as arg
+        adr x0, lower_32_serror     // pass current PC as arg
         mrs x1, ESR_EL1
-        b   unimplemented_handler // exits
+        bl  unimplemented_handler   // exits
+        b   reboot
 
 .balign 4
 init_exception_handlers:
@@ -325,3 +348,13 @@ get_el:
     lsr     x0, x0, #2          // bits 2 & 3
     and     x0, x0, #0x3        // mask
     ret
+
+
+branch_if_assert:
+    // check for failed assert
+    mrs     x0, ESR_EL1
+    lsr     x0, x0, #26
+    and     x0, x0, #0x3F       // extract EC
+    sub     x0, x0, #0x3C       // EC is break?
+    cbz     x0, reboot          // if breakpoint, restart
+    ret                         // otherwise return

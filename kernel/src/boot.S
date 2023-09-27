@@ -26,6 +26,7 @@
 // ensure the linker puts this at the start of the kernel image
 .section ".text.boot"
 .global _start
+.global reboot
 _start:
     // check processor ID is zero (executing on main core), else loop
 //    mrs  x0, mpidr_el1
@@ -63,6 +64,7 @@ el1_entry:
     // Jump to our main() routine in C/C++
     bl      kernel_main
 
+reboot:
     // use watchdog to reboot
     mov x2, 36
     mov x0, 28

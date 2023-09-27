@@ -13,7 +13,7 @@
 #define STACK_SIZE 0x80000 // ~500 kB
 
 typedef struct stack_alloc {
-    int8_t is_allocd[N_TASK_T]; // tracker of alloc'd tasks
+    int8_t is_allocd[N_TASK_T * N_SLABS]; // tracker of alloc'd tasks
     void *base;
 } stack_alloc;
 
