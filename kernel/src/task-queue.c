@@ -106,7 +106,6 @@ bool task_queue_empty(task_queue *tq) {
 void task_queue_free_tid(task_queue *tq, uint16_t tid) {
     for (int priority = N_PRIORITY - 1; priority >= 0; --priority) {
         task_t *current_element = tq->front[priority];
-
         while (current_element) {
             // clear child nodes of parent
             if (current_element->parent->tid == tid) {

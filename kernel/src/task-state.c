@@ -12,6 +12,8 @@
 #include "syscall.h"
 #include "util.h"
 
+#include <rpi.h>
+
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
     KLOG("user_start called\r\n");
