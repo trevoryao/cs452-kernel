@@ -5,8 +5,6 @@
 #include "task-queue.h"
 #include "task-state.h"
 
-#include "kassert.h"
-
 // lib
 #include "rpi.h"
 #include "syscall.h"
@@ -48,8 +46,6 @@ int kernel_main(void *kernel_end) {
     task_queue tqueue;
 
     kernel_init(&kernel_task, curr_user_task, &talloc, &salloc, kernel_end, &tqueue);
-
-    kassert(false);
 
     for (;;) {
         curr_user_task = task_queue_schedule(&tqueue);
