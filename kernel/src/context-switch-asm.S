@@ -93,7 +93,14 @@ exception_vector:
     /* Lower EL using AArch64 */
     .balign 0x80
     lower_64_sync:
-        bl  branch_if_assert        // if user-level break, will branch (failed assert)
+        str     x0, [sp, #-8]!      // store on stack
+        mrs     x0, ESR_EL1
+        lsr     x0, x0, #26
+        and     x0, x0, #0x3F       // extract EC
+        sub     x0, x0, #0x3C       // EC is break?
+        cbz     x0, reboot          // if breakpoint, restart
+        ldr     x0, [sp], #8        // pop from stack
+
         b   context_switch_in       // otherwise attempt to handle as syscall
 
     .balign 0x80
@@ -352,9 +359,11 @@ get_el:
 
 branch_if_assert:
     // check for failed assert
+    str     x0, [sp, #-8]!      // store on stack
     mrs     x0, ESR_EL1
     lsr     x0, x0, #26
     and     x0, x0, #0x3F       // extract EC
     sub     x0, x0, #0x3C       // EC is break?
     cbz     x0, reboot          // if breakpoint, restart
+    ldr     x0, [sp], #8        // pop from stack
     ret                         // otherwise return
