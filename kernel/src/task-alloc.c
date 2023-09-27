@@ -19,8 +19,9 @@ task_t *task_alloc_new(task_alloc *alloc) {
                 for (int j = 0; j < N_TASK_T; j++) {
                     task_t *new_task = &alloc->slabs[i][j];
                     // set the slab index
-                    new_task->slab_index = i;
                     task_clear(new_task);
+                    new_task->slab_index = i;
+                    
 
                     // add it to the free list
                     task_alloc_add_to_free_list(alloc, new_task);

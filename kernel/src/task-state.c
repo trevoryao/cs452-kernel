@@ -121,7 +121,8 @@ void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue 
 }
 
 void task_clear(task_t * t) {
-    memset(t, 0, sizeof(task_t));
+    t->next = NULL;
+    t->tid = 0;
 }
 
 void kernel_state_init(kernel_state *k) {
