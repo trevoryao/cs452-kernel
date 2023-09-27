@@ -1,6 +1,7 @@
 #ifndef _rpi_h_
 #define _rpi_h_ 1
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -19,6 +20,14 @@ void uart_putc(size_t line, unsigned char c);
 void uart_putl(size_t line, const char *buf, size_t blen);
 void uart_puts(size_t line, const char *buf);
 void uart_printf(size_t line, char *fmt, ...);
+
+#ifdef LOG
+#define KLOG(fmt, ...) uart_printf(CONSOLE, "[KLOG] " fmt __VA_OPT__(,) __VA_ARGS__)
+#else
+#define KLOG(...)
+#endif
+
+bool uart_out_empty(size_t line);
 
 void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t stopbit);
 void uart_init();
