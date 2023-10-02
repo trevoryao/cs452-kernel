@@ -13,5 +13,10 @@ void i2a( int num, char *bf );
 void *memset(void *s, int c, size_t n);
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
+// strings
+size_t strlen(const char *str);
+char *strncpy(char *dest, const char *src, size_t n);
+int strncmp(const char *s1, const char *s2, size_t n);
+
 
 #endif /* util.h */

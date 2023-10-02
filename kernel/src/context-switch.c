@@ -5,8 +5,9 @@
 
 extern int get_el(void);
 
-void unimplemented_handler(void *addr, uint64_t esr) {
-    uart_printf(CONSOLE, "Received Exception/Interrupt at %x [%x]\r\n", addr, esr);
+void unimplemented_handler(void *addr, uint64_t esr, uint64_t pc) {
+    uart_printf(CONSOLE, "Received Exception/Interrupt at %x [%x] -- PC: %x\r\n", addr, esr, pc);
+    for (;;);
 }
 
 void print_el() {

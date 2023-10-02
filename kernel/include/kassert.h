@@ -3,6 +3,7 @@
 
 // lib
 #include "rpi.h"
+#include "term-control.h"
 
 // asserts and panics (kernel)
 
@@ -18,8 +19,8 @@
     while (!uart_out_empty(CONSOLE)); \
     __builtin_trap()
 
-#ifdef LOG
-#define KLOG(fmt, ...) uart_printf(CONSOLE, "[KLOG] " fmt __VA_OPT__(,) __VA_ARGS__)
+#if defined(LOG) || defined(KERNELLOG)
+#define KLOG(fmt, ...) uart_printf(CONSOLE, COL_RED "[KLOG] " fmt COL_RST __VA_OPT__(,) __VA_ARGS__)
 #else
 #define KLOG(...)
 #endif

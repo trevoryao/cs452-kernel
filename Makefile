@@ -18,6 +18,9 @@ CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
 	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only -I$(INCLUDES) \
 	-I$(KDIR)/$(INCLUDES) -I$(UDIR)/$(INCLUDES)
 
+DEFINES := -DNO_LOG
+# FDEFINES := $(addprefix -D, $(DEFINES))
+
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces
 # doing this rather than calling the linker ourselves simplifies the compilation procedure
 LDFLAGS:=-Wl,-nmagic -Wl,-Tlinker.ld
@@ -32,6 +35,15 @@ DEPENDS := $(patsubst %.c, %.d, $(patsubst %.S, %.d, $(SOURCES)))
 # The first rule is the default, ie. "make", "make all" and "make kernel8.img" mean the same
 all: $(EXEC).img
 
+k1: DEFINES += -DK1
+k1: all
+
+k2: DEFINES += -DK2 -DK2_TEST_GAME
+k2: all
+
+k2-timings: DEFINES += -DK2 -DK2_TEST_TIMINGS
+k2-timings: all
+
 clean:
 	rm -f $(OBJECTS) $(DEPENDS) $(EXEC).elf $(EXEC).img
 
@@ -39,13 +51,13 @@ $(EXEC).img: $(EXEC).elf
 	$(OBJCOPY) $< -O binary $@
 
 $(EXEC).elf: $(OBJECTS) linker.ld
-	$(CC) $(CFLAGS) $(filter-out %.ld, $^) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(DEFINES) $(filter-out %.ld, $^) -o $@ $(LDFLAGS)
 	@$(OBJDUMP) -d $(EXEC).elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
 
 %.o: %.c Makefile
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) $(DEFINES) -MMD -MP -c $< -o $@
 
 %.o: %.S Makefile
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) $(DEFINES) -MMD -MP -c $< -o $@
 
 -include $(DEPENDS)

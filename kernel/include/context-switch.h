@@ -23,7 +23,7 @@ extern void context_switch_in(void);
 
 // called if incorrect exception/interrupt thrown
 // kills task
-void unimplemented_handler(void *addr, uint64_t esr);
+void unimplemented_handler(void *addr, uint64_t esr, uint64_t pc);
 
 // displays the current exception level. Mostly used for testing.
 void print_el(void);
