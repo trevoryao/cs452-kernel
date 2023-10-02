@@ -8,3 +8,16 @@
 # ignore test binaries
 **/tests/**/*.elf
 **/tests/**/*.img
+
+# latex
+*.log
+*.synctex.gz
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.out
+*.run
+*.toc
+*.xml
+.textpadtmp/**
