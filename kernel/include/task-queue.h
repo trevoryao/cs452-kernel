@@ -31,6 +31,7 @@ void task_queue_init(task_queue *tq);
 task_t *task_queue_schedule(task_queue *tq);
 int32_t task_queue_add(task_queue *tq, task_t *task);
 
+// returns true if there are no more USER tasks running (at non-server level)
 bool task_queue_empty(task_queue *tq);
 
 void task_queue_free_tid(task_queue *tq, uint16_t tid);

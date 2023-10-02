@@ -2,10 +2,12 @@
 #define __TASK_ALLOC_H__
 
 #include <stddef.h>
-#include <string.h>
 
 // kernel
 #include "task-state.h"
+
+// lib
+#include "util.h"
 
 /*
  * provides functions for managing the memory of tasks

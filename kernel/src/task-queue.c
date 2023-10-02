@@ -85,7 +85,7 @@ void task_queue_init(task_queue *tq) {
     memset(tq->back, 0, N_PRIORITY * sizeof(task_t *));
 
     // on init only kernel running
-    tq->global_tid = 0;
+    tq->global_tid = 50; // account for long running kernel tasks which start
 }
 
 task_t *task_queue_schedule(task_queue *tq) {
@@ -162,7 +162,7 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
 }
 
 bool task_queue_empty(task_queue *tq) {
-    for (int p = 0; p < N_PRIORITY; ++p) {
+    for (int p = 0; p < N_PRIORITY - 1; ++p) {
         if (!task_queue_priority_is_empty(tq, p)) return false;
     }
 
