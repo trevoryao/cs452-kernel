@@ -7,6 +7,7 @@
 #include "task-state.h"
 
 // lib
+#include "nameserver.h"
 #include "rpi.h"
 #include "syscall.h"
 #include "task.h"
@@ -33,6 +34,12 @@ void kernel_init(kernel_state *kernel_task, task_t *curr_user_task, task_alloc *
     // some initialisation display
     uart_puts(CONSOLE, CLEAR CURS_START);
     uart_printf(CONSOLE, "Niclas Heun & Trevor Yao: CS 452 Kernel (%s)\r\n", __TIME__);
+
+    // initialise nameserver
+    task_t *ns = task_alloc_new(talloc);
+    task_init(ns, nameserver_main, NULL, P_SERVER, salloc);
+    ns->tid = NAMESERVER_TID; // explicitly set TID
+    task_queue_add(tqueue, ns);
 
     // initialise first user task
     task_init(curr_user_task, user_main, NULL, P_MED, salloc);
