@@ -3,6 +3,7 @@
 
 // lib
 #include "task.h"
+#include "term-control.h"
 #include "rpi.h"
 
 // asserts and panics (user tasks)
@@ -18,5 +19,11 @@
     uart_printf(CONSOLE, "PANIC: " fmt "\r\n" __VA_OPT__(,) __VA_ARGS__); \
     while (!uart_out_empty(CONSOLE)); \
     __builtin_trap()
+
+#if defined(LOG) || defined(USERLOG)
+#define ULOG(fmt, ...) uart_printf(CONSOLE, COL_YEL "[ULOG] " fmt COL_RST __VA_OPT__(,) __VA_ARGS__)
+#else
+#define ULOG(...)
+#endif
 
 #endif

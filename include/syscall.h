@@ -9,7 +9,10 @@ enum SYSCALL_N {
     SYS_TID,
     SYS_PTID,
     SYS_YIELD,
-    SYS_EXIT
+    SYS_EXIT,
+    SYS_MSG_SEND,
+    SYS_MSG_RCV,
+    SYS_MSG_RPLY
 };
 
 // stub f'n for syscalls

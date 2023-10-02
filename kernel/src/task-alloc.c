@@ -21,7 +21,7 @@ task_t *task_alloc_new(task_alloc *alloc) {
                     // set the slab index
                     task_clear(new_task);
                     new_task->slab_index = i;
-                    
+
 
                     // add it to the free list
                     task_alloc_add_to_free_list(alloc, new_task);
@@ -56,11 +56,11 @@ task_t *task_alloc_new(task_alloc *alloc) {
 void task_alloc_add_to_free_list(task_alloc *alloc, task_t *task) {
     // make sure the next pointer of the task is zero
     task->next = NULL;
-    
+
     // Case 1: Free list is empty
     if (alloc->free_list == NULL) {
         alloc->free_list = task;
-    } else {  
+    } else {
         // Case 2: Iterate over the list and add it according to pointer
         task_t *last = NULL;
         task_t *current = alloc->free_list;
@@ -68,7 +68,7 @@ void task_alloc_add_to_free_list(task_alloc *alloc, task_t *task) {
             last = current;
             current = current->next;
         }
-        
+
         if (current == alloc->free_list) {
             // Case 2.1: Task is new head of free list
             alloc->free_list = task;
@@ -90,7 +90,7 @@ void task_alloc_free(task_alloc *alloc, task_t *task) {
 
         // decrease slab counter
         alloc->task_count_in_slab[task->slab_index]--;
-        
+
         // Check if the slab can be freed
         if (alloc->task_count_in_slab[task->slab_index] == 0) {
             // going through the entire free list and delete all which belong to the deactivted slab
@@ -114,9 +114,9 @@ void task_alloc_free(task_alloc *alloc, task_t *task) {
                     current = current->next;
                 }
             }
-        
+
             // set slab to inactive
             alloc->active_slabs[task->slab_index] = 0;
-        } 
+        }
     }
 }

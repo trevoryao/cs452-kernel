@@ -1,5 +1,6 @@
 // kernel
 #include "context-switch.h"
+#include "kassert.h"
 #include "stack-alloc.h"
 #include "task-alloc.h"
 #include "task-queue.h"
@@ -40,7 +41,7 @@ void kernel_init(kernel_state *kernel_task, task_t *curr_user_task, task_alloc *
 
 int kernel_main(void *kernel_end) {
     kernel_state kernel_task;     // kernel state for context switching
-    task_t *curr_user_task;
+    task_t *curr_user_task = NULL;
     task_alloc talloc;
     stack_alloc salloc;
     task_queue tqueue;
@@ -50,13 +51,18 @@ int kernel_main(void *kernel_end) {
     for (;;) {
         curr_user_task = task_queue_schedule(&tqueue);
 
+        KLOG("scheduling task-%d (%x)\r\n", curr_user_task->tid, curr_user_task);
+
         task_activate(curr_user_task, &kernel_task);
-        task_handle(curr_user_task, &talloc, &salloc, &tqueue);
-        task_queue_add(&tqueue, curr_user_task); // if task exited, queue will drop it
+        int exited = task_handle(curr_user_task, &talloc, &salloc, &tqueue);
+        if (!exited) task_queue_add(&tqueue, curr_user_task);
 
         curr_user_task = NULL; // drop ownership
 
-        if (task_queue_empty(&tqueue)) break; // EXIT: no more running tasks
+        if (task_queue_empty(&tqueue)) {
+            KLOG("All Tasks Exited\r\n");
+            break; // EXIT: no more running tasks
+        }
     }
 
     uart_puts(CONSOLE, "\r\n");
