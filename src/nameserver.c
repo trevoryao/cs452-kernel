@@ -57,6 +57,8 @@ static void nameserver_add_entry(nameserver *ns, char *name, uint16_t tid) {
         }
     }
 
+    uassert(ns->current_storage_id != MAX_ENTRIES);
+
     // save new entry in the storage
     strncpy(ns->storage[ns->current_storage_id].name, name, MAX_NAME_LENGTH);
     ns->storage[ns->current_storage_id].tid = tid;

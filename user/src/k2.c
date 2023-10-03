@@ -215,20 +215,20 @@ void generic_client(void) {
 
     msg_gameserver request;
     msg_gameserver reply;
-    
+
     request.playerTid = myTid;
     request.type = MSG_GAMESERVER_SIGNUP;
 
 
     CLIENT_LOG("%s tries to register with gameserver", data.player_name);
     Send(gameserverTid, (char *)&request, sizeof(msg_gameserver), (char *)&reply, sizeof(msg_gameserver));
-    
+
     if (reply.type == MSG_GAMESERVER_MOVE_REQUIRED) {
         CLIENT_LOG("%s successfully registered", data.player_name);
     } else {
         CLIENT_LOG("%s got unexpected message", data.player_name);
     }
-    
+
     int i = 0;
     for (i = 0; i < data.n_of_moves; i++) {
         CLIENT_LOG("%s plays %s", data.player_name, GAME_TURN_NAMES[data.move[i]]);
@@ -246,7 +246,7 @@ void generic_client(void) {
             return;
         }
     }
-    
+
 
     // quit if no other command
     CLIENT_LOG("%s quits", data.player_name);
@@ -279,7 +279,7 @@ void run_game(void) {
     Create(P_SERVER, gameserver_main);
     int tid_1, tid_2, tid_3, tid_4;
     int waiting_tid;
-    struct game_msg player1, player2, player3, player4;   
+    struct game_msg player1, player2, player3, player4;
 
     strncpy(player1.player_name, "Player 1", 9);
     strncpy(player2.player_name, "Player 2", 9);
@@ -397,7 +397,7 @@ void run_game(void) {
 
     wait_for_next_test();
 
-    
+
     // Test 6: early quitting
     TEST_LOG("-------Starting Test 6: Expected Player 1 wins first round and quits early-------");
     player1.move[0] = GAME_SCISSORS;
@@ -457,8 +457,8 @@ void run_game(void) {
     Send(tid_3, (char *)&player3, sizeof(struct game_msg), NULL, 0);
     tid_4 = Create(P_MED, generic_client);
     Send(tid_4, (char *)&player4, sizeof(struct game_msg), NULL, 0);
-    
-    
+
+
     Receive(&waiting_tid, NULL, 0); // waiting for processes to finish
     Reply(waiting_tid, NULL, 0);
     Receive(&waiting_tid, NULL, 0);
@@ -469,6 +469,6 @@ void run_game(void) {
     Reply(waiting_tid, NULL, 0);
 
 
-    TEST_LOG("----This was the last test!!! - Press any key to reboot----");
+    TEST_LOG("----This was the last test!!! - Press any key to finish----");
     uart_getc(CONSOLE);
 }
