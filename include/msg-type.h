@@ -21,12 +21,11 @@ typedef struct msg_base {
     enum MSG_TYPE type;
 } msg_base;
 
-
-// Messages for nameserver 
+// Messages for nameserver
 typedef struct msg_nameserver {
     enum MSG_TYPE type;
     char name[MAX_NAME_LENGTH];
     uint16_t tid;
 } msg_nameserver;
- 
+
 #endif
