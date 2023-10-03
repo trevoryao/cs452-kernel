@@ -190,6 +190,7 @@ static void uart_format_print (size_t line, char *fmt, va_list va ) {
 				uart_puts( line, bf );
 				break;
 			case 'x':
+        uart_puts( line, "0x" );
 				ui2a( va_arg( va, unsigned int ), 16, bf );
 				uart_puts( line, bf );
 				break;

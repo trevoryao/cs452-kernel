@@ -17,7 +17,9 @@ typedef struct task_queue task_queue;
 enum READY_STATE {
     STATE_RUNNING,
     STATE_READY,
-    STATE_BLOCKED,
+    STATE_SEND_WAIT,    // blocking state
+    STATE_RPLY_WAIT,    // blocking state
+    STATE_RCV_WAIT,     // blocking state
     STATE_KILLED,
     N_READY_STATE
 };
@@ -75,7 +77,10 @@ typedef struct task_t {
     enum PRIORITY priority;
 
     task_t *next; // intrusive linked list
+    task_t *waiting_senders_next; // intrusive linked list
+
     uint8_t slab_index;
+    void *stack_base;
 } task_t;
 
 void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY priority, stack_alloc *salloc);
@@ -84,7 +89,8 @@ void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY 
 int task_activate(task_t *t, kernel_state *k);
 
 // called after context return
-void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq);
+// returns 1 if task has exited, 0 otherwise
+int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq);
 
 void task_clear(task_t * t);
 

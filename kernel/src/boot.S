@@ -65,6 +65,8 @@ el1_entry:
     bl      kernel_main
 
 reboot:
+
+/*
     // use watchdog to reboot
     mov x2, 36
     mov x0, 28
@@ -76,6 +78,7 @@ reboot:
     str w3, [x2]
     movk  w1, 0x5a00, lsl 16
     str w1, [x0]
+*/
 
 exit:
     wfi

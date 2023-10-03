@@ -16,7 +16,7 @@
 
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
-    KLOG("user_start called\r\n");
+    KLOG("user_start (%x) called\r\n", function);
     function();
     Exit();
 }
@@ -59,12 +59,13 @@ void task_init(task_t *t, void (*function)(), task_t *parent, enum PRIORITY prio
 
     t->pstate = (1 << 7); // mask interrupt
 
+    // tid assigned at scheduler
+    t->parent = parent;
+
     t->priority = priority;
     t->ready_state = STATE_READY;
 
-    t->parent = parent;
-
-    // tid assigned at scheduler
+    t->stack_base = (void *)t->sp;
 }
 
 int task_activate(task_t *t, kernel_state *k) {
@@ -72,10 +73,12 @@ int task_activate(task_t *t, kernel_state *k) {
     return t->x0;
 }
 
-void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq) {
+int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq) {
     // assume syscall (for now)
 
-    KLOG("SYSCALL %x %x %x\r\n", t->x0, t->x1, t->x2);
+    KLOG("task-%d: SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
+
+    int retval = 0;
 
     switch (t->x0) {
         case SYS_CREAT:
@@ -115,15 +118,111 @@ void task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue 
             break; // let scheduler handle, already moved to back of queue
         case SYS_EXIT:
             task_queue_free_tid(tq, t->tid);
+            stack_alloc_free(salloc, t->stack_base);
             task_alloc_free(talloc, t);
+            retval = 1; // do not reschedule
             break;
+        case SYS_MSG_SEND: {
+            task_t *rcv_t;
+            if (!(rcv_t = task_queue_get(tq, t->x1))) { // no such receiver task?
+                t->x0 = -1; // return no such TID
+                break;
+            }
+
+            if (rcv_t->ready_state == STATE_RCV_WAIT) { // receive called first?
+                KLOG("MSG_SEND -- waiting rcver\r\n");
+                t->ready_state = STATE_RPLY_WAIT; // block waiting for receiver task to reply
+
+                // copy data from sender (t) to receiver
+
+                // calculate number of chars to copy (take min of Send msglen
+                // & receive msglen)
+                size_t len = (t->x3 < rcv_t->x3) ? t->x3 : rcv_t->x3;
+                memcpy((void *)rcv_t->x2, (void *)t->x2, len);
+
+                *(int *)rcv_t->x1 = t->tid; // set tid of sending task to receiver
+                rcv_t->x0 = len; // return msg size stored in dest
+
+                rcv_t->ready_state = STATE_READY; // unblock receiver task
+            } else { // send called first
+                KLOG("MSG_SEND -- no waiting rcver\r\n");
+                t->ready_state = STATE_SEND_WAIT; // block, wait for receive
+
+                // add to back of receiver task's queue
+                task_t *cur = rcv_t->waiting_senders_next,
+                    *prev = NULL;
+                while (cur) {
+                    prev = cur;
+                    cur = rcv_t->waiting_senders_next;
+                }
+
+                if (!prev) { // empty queue?
+                    rcv_t->waiting_senders_next = t;
+                } else {
+                    prev->waiting_senders_next = t;
+                }
+            }
+
+            break;
+        }
+        case SYS_MSG_RCV: {
+            if (t->waiting_senders_next) { // waiting senders => send called first?
+                KLOG("MSG_RCV -- waiting senders\r\n");
+                // pop first off the queue
+                task_t *send_t = t->waiting_senders_next;
+                t->waiting_senders_next = send_t->waiting_senders_next;
+                send_t->waiting_senders_next = NULL;
+
+                send_t->ready_state = STATE_RPLY_WAIT;
+
+                // calculate number of chars to copy (take min of Send msglen
+                // & receive msglen)
+                size_t len = (t->x3 < send_t->x3) ? t->x3 : send_t->x3;
+                memcpy((void *)t->x2, (void *)send_t->x2, len);
+
+                *(int *)t->x1 = send_t->tid; // set tid of sending task to receiver
+
+                t->x0 = len; // return msg size stored in dest
+            } else { // rcv called first
+                KLOG("MSG_RCV -- no waiting senders\r\n");
+                t->ready_state = STATE_RCV_WAIT; // block until send is called
+            }
+
+            break;
+        }
+        case SYS_MSG_RPLY: {
+            task_t *send_t;
+            if (!(send_t = task_queue_get(tq, t->x1))) { // no such sender task?
+                t->x0 = -1; // return no such TID
+                break;
+            } else if (send_t->ready_state != STATE_RPLY_WAIT) { // task not reply-blocked?
+                t->x0 = -2;
+                break;
+            }
+
+            // calculate number of chars to copy (take min of Send rplen
+            // & reply rplen)
+            size_t len = (send_t->x5 < t->x3) ? send_t->x5 : t->x3;
+            memcpy((void *)send_t->x4, (void *)t->x2, len);
+
+            t->x0 = len; // return msg size copied into sender mem
+
+            send_t->x0 = len; // return msg size copied into sender mem
+            send_t->ready_state = STATE_READY; // unblock sender
+
+            break;
+        }
 
         default: kpanic("Unknown syscall number: %d\r\n", t->x0);
     }
+
+    KLOG("SYSCALL done\r\n");
+    return retval;
 }
 
-void task_clear(task_t * t) {
+void task_clear(task_t *t) {
     t->next = NULL;
+    t->waiting_senders_next = NULL;
     t->tid = 0;
 }
 
