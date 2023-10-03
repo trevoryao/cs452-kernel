@@ -35,6 +35,7 @@ exception_vector:
     curr_sp0_sync:
         adr x0, curr_sp0_sync       // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -42,6 +43,7 @@ exception_vector:
     curr_sp0_irq:
         adr x0, curr_sp0_irq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -49,30 +51,34 @@ exception_vector:
     curr_sp0_fiq:
         adr x0, curr_sp0_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
     .balign 0x80
     curr_sp0_serror:
         adr x0, curr_sp0_serror     // pass current PC as arg
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
     /* Current EL with SPn */
     .balign 0x80
     curr_spx_sync:
-        bl      branch_if_assert    // if BRK instruction (assert failed), restarts
+        bl  branch_if_assert    // if BRK instruction (assert failed), restarts
 
-        adr     x0, curr_spx_sync   // pass current PC as arg
-        mrs     x1, ESR_EL1
-        bl      unimplemented_handler // exits
-        b       reboot
+        adr x0, curr_spx_sync   // pass current PC as arg
+        mrs x1, ESR_EL1
+        mrs x2, SP_EL0
+        bl  unimplemented_handler // exits
+        b   reboot
 
 
     .balign 0x80
     curr_spx_irq:
         adr x0, curr_spx_irq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -80,6 +86,7 @@ exception_vector:
     curr_spx_fiq:
         adr x0, curr_spx_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -87,6 +94,7 @@ exception_vector:
     curr_spx_serror:
         adr x0, curr_spx_serror     // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -107,6 +115,7 @@ exception_vector:
     lower_64_irq:
         adr x0, lower_64_irq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -114,6 +123,7 @@ exception_vector:
     lower_64_fiq:
         adr x0, lower_64_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -121,6 +131,7 @@ exception_vector:
     lower_64_serror:
         adr x0, lower_64_serror     // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -129,6 +140,7 @@ exception_vector:
     lower_32_sync:
         adr x0, lower_32_sync       // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -136,6 +148,7 @@ exception_vector:
     lower_32_irq:
         adr x0, lower_32_irq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -143,6 +156,7 @@ exception_vector:
     lower_32_fiq:
         adr x0, lower_32_fiq        // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 
@@ -150,6 +164,7 @@ exception_vector:
     lower_32_serror:
         adr x0, lower_32_serror     // pass current PC as arg
         mrs x1, ESR_EL1
+        mrs x2, SP_EL0
         bl  unimplemented_handler   // exits
         b   reboot
 

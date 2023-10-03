@@ -27,9 +27,16 @@ typedef struct task_queue {
 } task_queue;
 
 void task_queue_init(task_queue *tq);
+
 task_t *task_queue_schedule(task_queue *tq);
 int32_t task_queue_add(task_queue *tq, task_t *task);
+
+// returns true if there are no more USER tasks running (at non-server level)
 bool task_queue_empty(task_queue *tq);
+
 void task_queue_free_tid(task_queue *tq, uint16_t tid);
+
+// returns a reference to the task w/ specified tid, or null if it did not exist
+task_t *task_queue_get(task_queue *tq, uint16_t tid);
 
 #endif

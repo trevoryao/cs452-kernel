@@ -44,8 +44,41 @@ void *memset(void *s, int c, size_t n) {
 
 // define our own memcpy to avoid SIMD instructions emitted from the compiler
 void* memcpy(void* restrict dest, const void* restrict src, size_t n) {
-    char* sit = (char*)src;
+	if (!dest || !src) return dest;
+
+	char *sit = (char *)src;
     char* cdest = (char*)dest;
     for (size_t i = 0; i < n; ++i) *(cdest++) = *(sit++);
     return dest;
+}
+
+size_t strlen(const char *str) {
+    size_t i = 0;
+	while (str[i++] != '\0');
+	return i;
+}
+
+char *strncpy(char *dest, const char *src, size_t n) {
+	if (!dest) return NULL;
+
+	char *it = dest;
+	while (*src && (n-- > 0)) { // at most n, or until null-terminated
+		*it = *src;
+		++it;
+		++src;
+	}
+
+	*it = '\0'; // append null terminator
+	return dest;
+}
+
+int strncmp(const char *s1, const char *s2, size_t n) {
+	while (n && *s1 && (*s1 == *s2)) {
+		++s1;
+		++s2;
+		--n;
+	}
+
+	if (n == 0) return 0;
+	return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
