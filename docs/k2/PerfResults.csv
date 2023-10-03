@@ -1,0 +1,12 @@
+﻿noopt,S,4,207
+noopt,R,4,208
+noopt,S,64,522
+noopt,R,64,592
+noopt,S,256,1528
+noopt,R,256,1824
+opt,S,4,78
+opt,R,4,78
+opt,S,64,111
+opt,R,64,112
+opt,S,256,215
+opt,R,256,237
