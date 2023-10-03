@@ -179,7 +179,7 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     Should the queue be empty or only comprise of non-ready tasks, the scheduler advances to the next lower priority queue in search of ready tasks.
     New tasks are always added to the end of their respective priority queue.
     
-    % TODO: priorities
+    Long running server tasks which are started in the kernel initialisation have their own highest priority, in order to enable timely service to user tasks. These tasks are excluded when checking for active user tasks, and are user tasks with special treatment.
 
     \subsubsection{System Calls}
     \label{sec:sys-calls}
@@ -228,9 +228,10 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     In order to simplify context switching, all of the registers are stored in the task descriptor, rather than on the stack. This allows the kernel to maintain ownership, and easily return system call return values to the user-level programs. All the other fields of the task descriptor facilitate the data structures and algorithms which operate on the task descriptors.
     
     \subsubsection{Messages}
-    % TODO
+    Messages are typically passed as a C struct in byte representation. All tasks expect the first field to contain an identifier which identifies the type of structure. Some more commonly used messages are constructed as substructures with different fields, but there is no overlap in identifiers. 
     
     \subsubsection{Name Server}
+    The Nameserver is located in \verb`include/nameserver.h`.
     On startup, the kernel creates the name server before any other process with TID 1.
     The main loop of the nameserver consists of a simple receive-process-reply loop. 
     The nameserver saves the entries in a storage array of length 256, but maintains a bucket-hash map on top 
@@ -244,6 +245,7 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     The \verb`WhoIs` method works similarly, by calculating the hash value of the given string and searching the list for a matching name.
 
     \subsubsection{Game Server}
+    The Game Server is located in \verb`user/include/gameserver.h`.
     The Game Server enables pairs of clients to play Rock, Paper, and Scissors against each other. 
     On initialisation, the game server registers its TID with the nameserver and transitions to its main loop, waiting for clients to send signup requests.
     Whenever the server receives a signup request, it adds the clients to a queue, implemented as a circular array.
