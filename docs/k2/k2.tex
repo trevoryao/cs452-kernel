@@ -41,28 +41,28 @@
             \vspace*{5em}
             \textbf{\LARGE Kernel Assignment 2}
             \vspace*{3em}
-            
+
             \begin{tabular}{c@{\hskip 8em}c}
                 \textbf{\large Niclas Heun} & \textbf{\large Trevor J. Yao} \\
                 {\small nheun@uwaterloo.ca} & {\small t27yao@uwaterloo.ca} \\
                 {\footnotesize 21111245} & {\footnotesize 20830290} \\
             \end{tabular}
-            
+
             \vfill
-            
+
             Professor Ken Salem \\
             CS 452/652: Real-Time Programming (Fall 2023) \\
             University of Waterloo \\
             6 October 2023
-            
+
             \vspace*{5em}
-            
+
         \end{center}
     \end{titlepage}
-    
-    
+
+
     \pagestyle{fancy}
-    
+
     \tableofcontents
     \pagebreak
 
@@ -72,9 +72,9 @@
     This assignment begins the implementation of the Train Control Kernel in order to enable a task-based parallelism model for task management. The end goal is to enable more complex train-control, which would not be possible with a single sequential thread of execution, as used in A0.
 
     For this assignment, there is no interactive interface. The Kernel starts up and executes the user-level entrypoint function \verb`void user_main(void)`. The User level programs required for each assignment are found in \verb`user/includes/kX.h`, where \verb`X` is the assignment number, and the entrypoint executes the specified user programs.
-    
+
     \subsection{Submission SHAs}
-    
+
     The repository for the kernel is \href{https://git.uwaterloo.ca/t27yao/cs452-kernel}{ist-git@git.uwaterloo.ca:t27yao/cs452-kernel.git}. The submission SHAs for their respective assignments are listed below:
     \begin{itemize}
         \item A1: 6a8841836fc9ce629b573e94b37c901b4d71f2ee;
@@ -87,7 +87,7 @@
     \begin{verbatim}
 make XDIR=/u/cs452/public/xdev
     \end{verbatim}
-    
+
     \subsection{K2 Test Programs}
     The RPS Game and Performance measurements programs required for K2 are built using the targets \verb`k2` and \verb`k2-timings` (i.e. the default \verb`k2` target will build the RPS Game).
 
@@ -123,7 +123,7 @@ make XDIR=/u/cs452/public/xdev
     The stack size is limited to \verb`0x80000` bytes, or 512 KiB per task. The maximum number of simultaneous running tasks is 1024. These numbers were chosen because they provide a modest stack size while allowing the possibility of a large number of simultaneously running smaller tasks, and both being powers of 2 ($2^{19}$ and $2^{10}$ respectively) to allow for faster calculations. In total, this gives the program 500 MiB to work with in total task stack size, which, taking into account that we have approximately 1 Gb of program memory to work with, and leaving room for the bootloader and the program load address of \verb`0x80000`, gives more than enough room.
 
     The TIDs are limited by the address space of \verb`uint16_t`, i.e.\ 65,535 TIDs. This is far more than the total number of tasks, while being reasonably space efficient. The TIDs are reassigned, and the algorithm for this is discussed in Section \ref{sec:tids}. The larger address space for TIDs compared to the number of simultaneous active tasks is to prevent more expensive reassignment searches from occurring frequently.
-    
+
     The nameserver names are limited in length to 256, since without heap allocation dynamic arrays are not really possible, nor necessary. It is incredibly unlikely that names will be longer than 256 characters, and if so, the user programmer should seriously reconsider a better naming scheme. The maximum number of names the nameserver can hold is also 256, since it is reasoned that most tasks do not need to be known, and thus being able to hold a quarter of tasks in the nameserver is more than enough.
 
     \subsection{Algorithms}
@@ -165,7 +165,7 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     The task ID (TID) allocation is inspired by the algorithm UNIX uses for allocating process IDs. TIDs are allocated sequentially to tasks until they reach the maximum TID value (65,535), in which allocation returns to 300 and increases again. This is used because it is less likely that long running tasks were allocated with higher TIDs, and can obviously be adjusted in the future as we see fit to increase performance.
 
     On each choice of TID, the kernel checks that the TID is not in use, and if so tries the next one. This is obviously worst-case expensive, but as mentioned previously, the large TID space in comparison to the number of tasks makes the search unlikely to be long. The slight increase in cost per task allocation is marginal, and if it works for UNIX, it works for us.
-    
+
     User tasks are allocated beginning with TID 50, since we know there will be longer running server tasks that are started by the kernel.
 
     The Task ID algorithm is implemented in the static \verb`task_queue_get_tid` method located in \verb`kernel/src/task-queue.c`.
@@ -178,7 +178,7 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     Tasks not in ready state are skipped and maintain their position within the queue.
     Should the queue be empty or only comprise of non-ready tasks, the scheduler advances to the next lower priority queue in search of ready tasks.
     New tasks are always added to the end of their respective priority queue.
-    
+
     Long running server tasks which are started in the kernel initialisation have their own highest priority, in order to enable timely service to user tasks. These tasks are excluded when checking for active user tasks, and are user tasks with special treatment.
 
     \subsubsection{System Calls}
@@ -187,16 +187,16 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     The individual System Calls implemented for this assignment (\verb`Create`, \verb`Exit`, etc) are implemented in \verb`includes/task.h`. These methods are simply a wrapper on the \verb`syscall` procedure implemented in \verb`includes/syscall.h`. This method takes advantage of the compiler moving call arguments into registers \verb`x0` to \verb`x7`, and simply calls \verb`svc #0`, with the syscall number being stored as the first argument, and then returns (when the kernel eventually switches us back as the active task).
 
     These arguments are preserved during the context switch, and saved in the task descriptor for processing. During this, the kernel executes code based on the syscall number in \verb`x0`, and returns the result (if any) in \verb`x0`, following aarch64 convention. This means that when the application is switched back, and returns to the location of the \verb`svc` instruction, it will return the value in \verb`x0`.
-    
+
     \subsubsection{Message Passing}
     \label{sec:msg-passing}
-    
+
     Message passing is implemented as part of three methods: \verb`Send`, \verb`Receive`, and \verb`Reply`. These are defined in the header \verb`include/msg.h`, and are implemented as system calls (Section \ref{sec:sys-calls}. All together, these form the message passing algorithm, which allows user tasks to communicate between each other. For our discussion we will denote $T_s$ and $T_r$ be the sending and receiving task respectively. For the sending and receiving sections, we will discuss the algorithm in two cases, depending on which task executes first.
-    
+
     First, suppose $T_s$ executes first. When $T_s$ executes \verb`Send`, it blocks until after $T_r$ has called \verb`Reply`, which is accomplished by the kernel moving $T_s$'s ready state from \verb`READY` to \verb`SEND_WAIT`. It then attaches $T_s$ to the back of $T_r$'s waiting queue, which is implemented as an intrusive linked list, and is separate from the task scheduler (i.e. tasks stay on the scheduler queue even if they are in a task's waiting queue). Note that the kernel can easily determine that $T_s$ was called first by checking the ready state of $T_r$ (i.e. in this case, $T_r$ will be \verb`READY`, rather than \verb`RCV_WAIT`). Next, when $T_r$ calls \verb`Receive`, the kernel knows $T_s$ went first since its waiting queue is not-empty, and pops $T_s$ of the waiting queue. It then moves $T_s$ to state \verb`RPLY_WAIT`, and copies the necessary bytes (i.e. the minimum) between the given buffers, and returns the necessary information as in any system call. Note that since $T_r$ needs to handle the receive, the kernel does not block it.
-    
+
     Secondly, we will consider the case for when $T_r$ executes first, which the kernel can recognise if there are no waiting senders. In this case $T_r$ is blocked by the kernel moving it to the \verb`RCV_WAIT` state. Then, when $T_s$ sends, the kernel blocks it and transitions it to state \verb`RPLY_WAIT`, and moves the data as before. However, in this case, the kernel has to unblock $T_r$ (i.e. ready state to \verb`READY`) before returning the necessary parameters as previous. As mentioned previously, the kernel is able to check that $T_r$ executed first by verifying that $T_r$ is in \verb`RCV_WAIT` state.
-    
+
     In either case, $T_r$ processes the sent message, and needs to \verb`Reply` to $T_s$. The kernel handles this by copying the appropriate number of bytes, and unblocks $T_s$ by returning it to the \verb`READY` state.
 
     \subsection{Data Structures}
@@ -226,41 +226,41 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     This task descriptor structure is defined in \verb`kernel/include/task-state.h`. This file also defines a kernel state structure, which holds the registers of the kernel for context switching.
 
     In order to simplify context switching, all of the registers are stored in the task descriptor, rather than on the stack. This allows the kernel to maintain ownership, and easily return system call return values to the user-level programs. All the other fields of the task descriptor facilitate the data structures and algorithms which operate on the task descriptors.
-    
+
     \subsubsection{Messages}
-    Messages are typically passed as a C struct in byte representation. All tasks expect the first field to contain an identifier which identifies the type of structure. Some more commonly used messages are constructed as substructures with different fields, but there is no overlap in identifiers. 
-    
+    Messages are typically passed as a C struct in byte representation. All tasks expect the first field to contain an identifier which identifies the type of structure. Some more commonly used messages are constructed as substructures with different fields, but there is no overlap in identifiers.
+
     \subsubsection{Name Server}
     The Nameserver is located in \verb`include/nameserver.h`.
     On startup, the kernel creates the name server before any other process with TID 1.
-    The main loop of the nameserver consists of a simple receive-process-reply loop. 
-    The nameserver saves the entries in a storage array of length 256, but maintains a bucket-hash map on top 
+    The main loop of the nameserver consists of a simple receive-process-reply loop.
+    The nameserver saves the entries in a storage array of length 256, but maintains a bucket-hash map on top
     of the storage array for efficient get and insert operations.
-    
+
     On each register request, the server computes a hash on the name and inserts it to the back of the linked pointer list in the given hash bucket. The hashing algorithm is a simple and efficient dbj2 algorithm, which provides good distribution of hash values.
 
-    Respectively, on each \verb`Register` request, the server hashes the requested name and maps the name to one of the 64 buckets. 
+    Respectively, on each \verb`Register` request, the server hashes the requested name and maps the name to one of the 64 buckets.
     Each bucket contains a linked list of pointers (to the corresponding storage location in the storage array) of the entries hashed to this bucket. In most cases the algorithm only iterates a small number of entries, and if it finds an entry of the same name, it overwrites it. Otherwise, it adds it to the linked list.
-    
+
     The \verb`WhoIs` method works similarly, by calculating the hash value of the given string and searching the list for a matching name.
 
     \subsubsection{Game Server}
     The Game Server is located in \verb`user/include/gameserver.h`.
-    The Game Server enables pairs of clients to play Rock, Paper, and Scissors against each other. 
+    The Game Server enables pairs of clients to play Rock, Paper, and Scissors against each other.
     On initialisation, the game server registers its TID with the nameserver and transitions to its main loop, waiting for clients to send signup requests.
     Whenever the server receives a signup request, it adds the clients to a queue, implemented as a circular array.
 
-    When two players are in the queue, and there is no active game, it dequeues two players from the buffer and sends a reply, asking for their move. 
-    The active players' status and current move are stored in a local struct to keep track of the ongoing game. 
-    After it has received their moves, the server evaluates the outcome and waits till they either send their next move or a quit message. 
+    When two players are in the queue, and there is no active game, it dequeues two players from the buffer and sends a reply, asking for their move.
+    The active players' status and current move are stored in a local struct to keep track of the ongoing game.
+    After it has received their moves, the server evaluates the outcome and waits till they either send their next move or a quit message.
 
     On receiving a quit message from one client, it will reply at the next opportunity with a corresponding quit message to the other client.
     Afterwards, if possible, it dequeues two players from the buffer or waits for additional signup messages.
-    
-    Furthermore, when receiving an invalid request, the server replies with an error message so the client is not trapped in a waiting state. 
+
+    Furthermore, when receiving an invalid request, the server replies with an error message so the client is not trapped in a waiting state.
 
     \section{User Tasks}
-    
+
     \subsection{Kernel Assignment 1}
     The Console output of the program is as follows:
     \begin{verbatim}
@@ -279,13 +279,13 @@ Task 2 parent: 0
 Task 3 parent: 0
     \end{verbatim}
     The first user task runs and created tasks 2 and 3 at a lower priority, and thus continues to run. When it creates task 4, since it is at a higher priority than it, it runs to completion first, even as it calls \verb`Yield` since it is moved to the back of its empty priority queue. When it finishes, it returns to the first user task since it is higher priority than 2 and 3, and we see the same pattern with task 5. After 5, it returns to the first user task, which exits. Subsequent tasks have parent as 0 (i.e.\ the kernel) after it exits, and task 2 runs first since it was created (and thus added to the queue) first. Tasks 2 and 3 then alternate execution since they are at equal priority.
-    
+
     \subsection{K2 - RPS Test}
-    
+
     \subsection{K2 - Performance Measurement}
-    
+
     In order to measure performance as accurately as possible, we borrowed the structures used to measure time in A0 and declared them globally in order to share them between sending and receiving tasks. That way, the whichever task (i.e. sender or receiver) that went first started the clock, and once the sender returned, the clock was stopped. This means that the timer overhead is incredibly small, since the number of instructions between accessing the clock registers and the execution is very small. The following description of the timing algorithm is adapted from Trevor's A0 documentation.
-    
+
     \begin{quote}
     In order to perform and report times for the documentation, the \verb`timer_stats` structure (\verb`user/includes/timer_stats.h`) is used to calculate the average and maximum length of time for multiple timers between start and stop. To avoid keeping a huge number of arbitrary number of times in memory, the average is calculated accumulatively, that is, the total average is calculated using the average of the previous values. This is because given values $a_1, \ldots, a_n$, we may calculate the average recursively as follows:
     \[
@@ -293,9 +293,9 @@ Task 3 parent: 0
     \]
     Thus, we only keep the total number of times added and the last average to calculate the total average recursively, and save space.
     \end{quote}
-    
+
     In order to reduce variability, for each test situation we execute it 1000 times and take the average, using the structure above.
-    
+
     \begin{figure}[h]
     \begin{center}
     \begin{tabular}{|c|c|c|c|}
@@ -303,26 +303,26 @@ Task 3 parent: 0
         Optimisation Enabled? & First Process & Message Size & Time per SRR Operation ($\mu$s) \\
         \hline
         \hline
-        N & Sender & 4 & 207 \\
-        N & Receiver & 4 & 208 \\
-        N & Sender & 64 & 522 \\
-        N & Receiver & 64 & 592 \\
-        N & Sender & 256 & 1528 \\
-        N & Receiver & 256 & 1824 \\
-        Y & Sender & 4 & 78 \\
-        Y & Receiver & 4 & 78 \\
-        Y & Sender & 64 & 111 \\
-        Y & Receiver & 64 & 112 \\
-        Y & Sender & 256 & 215 \\
-        Y & Receiver & 256 & 237 \\
+        N & Sender & 4 & 192 \\
+        N & Receiver & 4 & 194 \\
+        N & Sender & 64 & 377 \\
+        N & Receiver & 64 & 452 \\
+        N & Sender & 256 & 971 \\
+        N & Receiver & 256 & 1278 \\
+        Y & Sender & 4 & 81 \\
+        Y & Receiver & 4 & 82 \\
+        Y & Sender & 64 & 83 \\
+        Y & Receiver & 64 & 84 \\
+        Y & Sender & 256 & 100 \\
+        Y & Receiver & 256 & 106 \\
         \hline
     \end{tabular}
     \end{center}
     \caption{A2 Performance Testing Results}
     \label{fig:perf-tests}
     \end{figure}
-    
+
     The values in the \verb`PerfTesting.csv` file are reproduced in \autoref{fig:perf-tests}. From these test results, we can see first and foremost that as the message size increases, the average time per SRR operation increases approximately linearly. This makes sense because memory accesses are expensive. We can see also that enabling optimisation (i.e.\ compiling with the \verb`-O3` flag) significantly reduces the operation time, and more crucially, reduces the impact on operation time due to the increase in message size, as we saw without the optimisation. This is likely the compiler removing repeated reads/writes and using register caching to speed performance up.
-    
+
     Secondly, we can consistently see that when the receiver starts first, the execution time is slightly longer, and this appears to increase as the message size gets larger. Part of this is because there needs to be an extra context switch back to the receiver when the receiver sends first in order for the receiver to reply to the message.
 \end{document}
