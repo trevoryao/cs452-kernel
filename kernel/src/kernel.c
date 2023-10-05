@@ -29,7 +29,8 @@ void kernel_init(kernel_state *kernel_task, task_t *curr_user_task, task_alloc *
     init_exception_handlers();
 
     uart_init();
-    uart_config_and_enable(CONSOLE, 115200, 1);
+    uart_config_and_enable_console();
+    uart_config_and_enable_marklin();
 
     // some initialisation display
     uart_puts(CONSOLE, CLEAR CURS_START);
