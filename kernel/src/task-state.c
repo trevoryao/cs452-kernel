@@ -2,6 +2,8 @@
 
 // kernel
 #include "context-switch.h"
+#include "event-queue.h"
+#include "interrupts.h"
 #include "kassert.h"
 #include "task-alloc.h"
 #include "task-queue.h"
@@ -11,8 +13,6 @@
 #include "task.h"
 #include "syscall.h"
 #include "util.h"
-
-#include <rpi.h>
 
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
@@ -57,7 +57,7 @@ void task_init(task_t *t, void (*function)(), task_t *parent, enum PRIORITY prio
     t->pc = (uint64_t)user_start;
     t->sp = (uint64_t)stack_alloc_new(salloc);
 
-    t->pstate = (1 << 7); // mask interrupt
+    t->pstate = 0;
 
     // tid assigned at scheduler
     t->parent = parent;
@@ -68,14 +68,12 @@ void task_init(task_t *t, void (*function)(), task_t *parent, enum PRIORITY prio
     t->stack_base = (void *)t->sp;
 }
 
-int task_activate(task_t *t, kernel_state *k) {
-    context_switch_out(t, k);
-    return t->x0;
+uint8_t task_activate(task_t *t, kernel_state *k) {
+    return context_switch_out(t, k);
 }
 
-int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq) {
-    // assume syscall (for now)
-
+int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq,
+    event_queue *eq) {
     KLOG("task-%d: SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
 
     int retval = 0;
@@ -212,7 +210,16 @@ int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *
 
             break;
         }
+        case SYS_AWAIT: {
+            if (event_queue_block(eq, t, (int)t->x1)) { // valid event?
+                trigger_interrupt((enum EVENT)t->x1);
+                t->x0 = 0; // return may be changed later
+            } else {
+                t->x0 = -1; // return error
+            }
 
+            break;
+        }
         default: kpanic("Unknown syscall number: %d\r\n", t->x0);
     }
 
@@ -223,6 +230,7 @@ int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *
 void task_clear(task_t *t) {
     t->next = NULL;
     t->waiting_senders_next = NULL;
+    t->event_wait_next = NULL;
     t->tid = 0;
 }
 
