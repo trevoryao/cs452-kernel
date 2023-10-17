@@ -21,3 +21,9 @@
 *.toc
 *.xml
 .textpadtmp/**
+
+# binaries
+*.elf
+*.img
+!bin/*.elf
+!bin/*.img

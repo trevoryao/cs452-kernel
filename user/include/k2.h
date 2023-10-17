@@ -1,5 +1,5 @@
-#ifndef __K1_H__
-#define __K1_H__
+#ifndef __K2_H__
+#define __K2_H__
 
 /*
  * Test program for Kernel 2, as required.

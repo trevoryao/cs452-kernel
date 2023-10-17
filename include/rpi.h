@@ -23,7 +23,9 @@ void uart_printf(size_t line, char *fmt, ...);
 
 bool uart_out_empty(size_t line);
 
-void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t stopbit);
+void uart_config_and_enable_console();
+void uart_config_and_enable_marklin();
+
 void uart_init();
 
 #endif /* rpi.h */

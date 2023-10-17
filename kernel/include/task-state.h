@@ -6,6 +6,7 @@
 // lib
 #include "task.h"
 
+typedef struct event_queue event_queue;
 typedef struct stack_alloc stack_alloc;
 typedef struct task_alloc task_alloc;
 typedef struct task_queue task_queue;
@@ -20,6 +21,7 @@ enum READY_STATE {
     STATE_SEND_WAIT,    // blocking state
     STATE_RPLY_WAIT,    // blocking state
     STATE_RCV_WAIT,     // blocking state
+    STATE_EVENT_WAIT,   // blocking state
     STATE_KILLED,
     N_READY_STATE
 };
@@ -78,6 +80,7 @@ typedef struct task_t {
 
     task_t *next; // intrusive linked list
     task_t *waiting_senders_next; // intrusive linked list
+    task_t *event_wait_next; // intrusive linked list
 
     uint8_t slab_index;
     void *stack_base;
@@ -86,11 +89,12 @@ typedef struct task_t {
 void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY priority, stack_alloc *salloc);
 
 // context switches to given task
-int task_activate(task_t *t, kernel_state *k);
+// returns the ESR
+uint8_t task_activate(task_t *t, kernel_state *k);
 
 // called after context return
 // returns 1 if task has exited, 0 otherwise
-int task_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq);
+int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq, event_queue *eq);
 
 void task_clear(task_t * t);
 
