@@ -118,7 +118,7 @@ int kernel_main(void *kernel_end) {
     // print out timer stats
     time_t idle_time;
     stopwatch_get_total_time(&stopwatch, STPW_IDLE_TASK, &idle_time);
-    uart_printf(CONSOLE, "Total idle time: %u:%u.%u\r\n", idle_time.min, idle_time.sec, idle_time.tick);
+    uart_printf(CONSOLE, "Total idle time: %u:%u.%u\r\n", idle_time.min, idle_time.sec, idle_time.tsec);
 
     return 0;
 }

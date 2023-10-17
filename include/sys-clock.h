@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+// time units defined in terms of timer_ctr increments
+static const uint64_t TIMER_MSEC_UNIT = 1000; // 1mhz
+static const uint64_t TIMER_TICK_UNIT = TIMER_MSEC_UNIT * 10;
+static const uint64_t TIMER_TSEC_UNIT = TIMER_MSEC_UNIT * 100; // 10th of a second
+static const uint64_t TIMER_SEC_UNIT = TIMER_TSEC_UNIT * 10;
+static const uint64_t TIMER_MIN_UNIT = TIMER_SEC_UNIT * 60;
+
 #define TICK_MS 10 // 10ms for a single clock tick
 
 /*
@@ -11,7 +18,7 @@
 
 // formatting structure for raw time ticks
 typedef struct time_t {
-    uint64_t min, sec, tick; // for the system timer
+    uint64_t min, sec, tsec; // for the system timer
 } time_t;
 
 // raw ticks
