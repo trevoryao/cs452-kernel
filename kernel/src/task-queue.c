@@ -163,8 +163,8 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
 }
 
 bool task_queue_empty(task_queue *tq) {
-    // ignore P_IDLE & P_SERVER
-    for (int p = P_IDLE + 1; p < N_PRIORITY - 1; ++p) {
+    // ignore P_IDLE & P_NOTIF & P_SERVER
+    for (int p = P_IDLE + 1; p < N_PRIORITY - 2; ++p) {
         if (!task_queue_priority_is_empty(tq, p)) return false;
     }
 

@@ -11,7 +11,7 @@ static const uint32_t TIMER_CTR_OFFSETS[2] = {0x04, 0x08};
 #define TIMER_CTR_REG(reg) (*(volatile uint32_t*)(TIMER_BASE + TIMER_CTR_OFFSETS[reg]))
 
 // time units defined in terms of timer_ctr increments
-static const uint64_t TIMER_MSEC = 1000; // 1mhz
+static const uint64_t TIMER_MSEC_UNIT = 1000; // 1mhz
 
 static uint64_t get_curr_ticks(void) {
     volatile uint32_t hi = TIMER_CTR_REG(1); // read hi first, less likely to change

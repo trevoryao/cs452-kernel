@@ -11,6 +11,8 @@ enum PRIORITY {
     P_LOW,
     P_MED,
     P_HIGH,
+    P_VHIGH,
+    P_NOTIF,
     P_SERVER,
     N_PRIORITY
 };
