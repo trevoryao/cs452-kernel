@@ -1,8 +1,8 @@
 #include "rpi.h"
 
 #include <stdarg.h>
+#include <stdint.h>
 
-// lib
 #include "util.h"
 
 static char* const  MMIO_BASE = (char*)           0xFE000000;
@@ -31,10 +31,26 @@ static const uint32_t GPIO_NONE = 0x00;
 static const uint32_t GPIO_PUP  = 0x01;
 static const uint32_t GPIO_PDP  = 0x02;
 
-static void setup_gpio(uint32_t pin, uint32_t setting, uint32_t resistor) {
+uint32_t query_gpio_func(uint32_t pin) {
   uint32_t reg   =  pin / 10;
   uint32_t shift = (pin % 10) * 3;
   uint32_t status = GPFSEL_REG(reg);   // read status
+  status = (status >> shift) & 0x7;     // get the pin we want
+  return(status);
+}
+
+uint32_t query_gpio_puppdn(uint32_t pin) {
+  uint32_t reg   =  pin / 16;
+  uint32_t shift = (pin % 16) * 2;
+  uint32_t status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
+  status = (status >> shift) & 0x3;
+  return(status);
+}
+
+static void setup_gpio(uint32_t pin, uint32_t setting, uint32_t resistor) {
+  uint32_t reg   =  pin / 10;
+  uint32_t shift = (pin % 10) * 3;
+  uint32_t status = GPFSEL_REG(reg);    // read status
   status &= ~(7u << shift);              // clear bits
   status |=  (setting << shift);         // set bits
   GPFSEL_REG(reg) = status;
@@ -96,36 +112,61 @@ static const uint32_t UART_LCRH_WLEN_HIGH = 0x40;
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
   setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
+  setup_gpio(5, GPIO_ALTFN4, GPIO_PUP);
+  setup_gpio(6, GPIO_ALTFN4, GPIO_PUP);
   setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
   setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
-  setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
+  setup_gpio(15, GPIO_ALTFN0, GPIO_PUP);
 }
 
 static const uint32_t UARTCLK = 48000000;
 
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
-void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t stopbit) {
+void uart_config_and_enable_console() {
+  const int CONSOLE = 1;
   uint32_t cr_state;
+  uint32_t baudrate;
+  baudrate = 115200;
   // to avoid floating point, this computes 64 times the required baud divisor
   uint32_t baud_divisor = (uint32_t)((((uint64_t)UARTCLK)*4)/baudrate);
 
   // line control registers should not be changed while the UART is enabled, so disable it
-  cr_state = UART_REG(line, UART_CR);
-  UART_REG(line, UART_CR) = cr_state & ~UART_CR_UARTEN;
-  // set the line control registers: 8 bit, no parity, 1/2 stop bit, FIFOs enabled
-  uint32_t lcrh_msk = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_FEN;
-  if (stopbit == 2) lcrh_msk |= UART_LCRH_STP2;
-  UART_REG(line, UART_LCRH) = lcrh_msk;
-
+  cr_state = UART_REG(CONSOLE, UART_CR);
+  UART_REG(CONSOLE, UART_CR) = cr_state & ~UART_CR_UARTEN;
+  // set the line control registers: 8 bit, no parity, 1 stop bit, FIFOs enabled
+  UART_REG(CONSOLE, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_FEN;
   // set the baud rate
-  UART_REG(line, UART_IBRD) = baud_divisor >> 6;
-  UART_REG(line, UART_FBRD) = baud_divisor & 0x3f;
+  UART_REG(CONSOLE, UART_IBRD) = baud_divisor >> 6;
+  UART_REG(CONSOLE, UART_FBRD) = baud_divisor & 0x3f;
   // re-enable the UART
   // enable both transmit and receive regardless of previous state
-  UART_REG(line, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
+  UART_REG(CONSOLE, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
+}
+
+void uart_config_and_enable_marklin() {
+  const int MARKLIN = 2;
+  uint32_t cr_state;
+  uint32_t baudrate;
+  baudrate = 2400;
+  // to avoid floating point, this computes 64 times the required baud divisor
+  uint32_t baud_divisor = (uint32_t)((((uint64_t)UARTCLK)*4)/baudrate);
+
+  // line control registers should not be changed while the UART is enabled, so disable it
+  cr_state = UART_REG(MARKLIN, UART_CR);
+  UART_REG(MARKLIN, UART_CR) = cr_state & ~UART_CR_UARTEN;
+  // ========= BEGIN UART_PATCH ==============================================================================
+  // = The line control register (LCRH) needs to be set *after* the baud rate registers (IBRD and FBRD).
+  // =========================================================================================================
+    // set the baud rate
+  UART_REG(MARKLIN, UART_IBRD) = baud_divisor >> 6;
+  UART_REG(MARKLIN, UART_FBRD) = baud_divisor & 0x3f;
+  // set the line control registers: 8 bit, no parity, 2 stop bits, FIFOs enabled
+  UART_REG(MARKLIN, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_STP2 | UART_LCRH_FEN;
+  // ======== END UART_PATCH =================================================================================
+// re-enable the UART
+  // enable both transmit and receive regardless of previous state
+  UART_REG(MARKLIN, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
 }
 
 unsigned char uart_getc(size_t line) {

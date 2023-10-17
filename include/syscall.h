@@ -12,7 +12,8 @@ enum SYSCALL_N {
     SYS_EXIT,
     SYS_MSG_SEND,
     SYS_MSG_RCV,
-    SYS_MSG_RPLY
+    SYS_MSG_RPLY,
+    SYS_AWAIT
 };
 
 // stub f'n for syscalls

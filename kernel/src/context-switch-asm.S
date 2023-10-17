@@ -3,22 +3,15 @@
  * kernel task and vice versa
  */
 
+    #include "context-switch.h"
+
     .text
 
     .global init_exception_handlers
     .type   init_exception_handlers, %function
 
-    .global exception_vector
-    .type   exception_vector, %common
-
-    .global context_switch_in
-    .type   context_switch_in, %function
-
     .global context_switch_out
     .type   context_switch_out, %function
-
-    .global branch_if_assert
-    .type   branch_if_assert, %function
 
     .global get_el
     .type   get_el, %function
@@ -101,23 +94,29 @@ exception_vector:
     /* Lower EL using AArch64 */
     .balign 0x80
     lower_64_sync:
-        str     x0, [sp, #-8]!      // store on stack
+        str     x0, [sp, #-8]!      // store x0 on stack for later
+
         mrs     x0, ESR_EL1
         lsr     x0, x0, #26
         and     x0, x0, #0x3F       // extract EC
         sub     x0, x0, #0x3C       // EC is break?
         cbz     x0, reboot          // if breakpoint, restart
-        ldr     x0, [sp], #8        // pop from stack
+
+        movz    x0, #LOWER_EL_64_MSK
+        orr     x0, x0, #SYNC_MSK
+        str     x0, [sp, #-8]!      // for context_switch_in
 
         b   context_switch_in       // otherwise attempt to handle as syscall
 
     .balign 0x80
     lower_64_irq:
-        adr x0, lower_64_irq        // pass current PC as arg
-        mrs x1, ESR_EL1
-        mrs x2, SP_EL0
-        bl  unimplemented_handler   // exits
-        b   reboot
+        str     x0, [sp, #-8]!      // store x0 for later
+
+        movz    x0, #LOWER_EL_64_MSK
+        orr     x0, x0, #IRQ_MSK
+        str     x0, [sp, #-8]!      // for context_switch_in
+
+        b       context_switch_in
 
     .balign 0x80
     lower_64_fiq:
@@ -275,9 +274,7 @@ context_switch_in:
 
     msr     SPSel, #1           // make sure SP is EL1
 
-    str     x0, [sp, #-8]!      // store for later
-
-    ldr     x0, [sp, #16]       // curr_user_task
+    ldr     x0, [sp, #24]       // curr_user_task
 
     str     x1, [x0, #8]        // x1
     str     x2, [x0, #16]       // x2
@@ -310,7 +307,7 @@ context_switch_in:
     str     x29, [x0, #232]     // x29
     str     x30, [x0, #240]     // x30
 
-    ldr     x1, [sp], #8        // saved x0 value
+    ldr     x1, [sp, #8]        // saved x0 value
     str     x1, [x0]            // x0
 
     mrs     x1, ELR_EL1
@@ -323,7 +320,7 @@ context_switch_in:
     str     w1, [x0, #264]      // pstate (32 bit)
 
     // write kernel registers in from kernel_task
-    ldr     x0, [sp]            // kernel_task
+    ldr     x0, [sp, #16]       // kernel_task
 
     ldr     x1, [x0, #8]        // x1
     ldr     x2, [x0, #16]       // x2
@@ -357,9 +354,9 @@ context_switch_in:
     ldr     x30, [x0, #240]     // x30
 
     // all registers but x0
-    ldr     x0, [x0]            // x0
+    ldr     x0, [sp]            // return which handler called
 
-    add     sp, sp, #16         // pop tasks off the stack
+    add     sp, sp, #32         // pop local vars off stack
 
     br      x30                 // jump back to caller (task_activate)
 

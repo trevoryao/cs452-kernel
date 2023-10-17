@@ -5,6 +5,8 @@
     #include "k1.h"
 #elif defined(K2)
     #include "k2.h"
+#elif defined(K3)
+    #include "k3.h"
 #endif
 
 void user_main(void) {
@@ -13,5 +15,8 @@ void user_main(void) {
         kernel1_test();
     #elif defined(K2)
         kernel2_test();
+    #elif defined(K3)
+        kernel3_test();
+    
     #endif
 }
