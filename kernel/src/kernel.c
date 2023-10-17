@@ -83,17 +83,12 @@ int kernel_main(void *kernel_end) {
 
         KLOG("scheduling task-%d (%x)\r\n", curr_user_task->tid, curr_user_task);
 
-        if (curr_user_task->tid == idle_task_tid) { // idle task?
-            KLOG("entering idle task\r\n");
-            stopwatch_start(&stopwatch, STPW_IDLE_TASK);
-        }
+        enum STPWS stpw_t = (curr_user_task->tid == idle_task_tid) ? STPW_IDLE_TASK : STPW_USER_TASK;
+        stopwatch_start(&stopwatch, stpw_t);
 
         uint8_t handler = task_activate(curr_user_task, &kernel_task);
 
-        if (curr_user_task->tid == idle_task_tid) { // idle task?
-            stopwatch_end(&stopwatch, STPW_IDLE_TASK);
-            KLOG("exited idle task\r\n");
-        }
+        stopwatch_end(&stopwatch, stpw_t);
 
         int exited = 0;
 
@@ -117,8 +112,13 @@ int kernel_main(void *kernel_end) {
 
     // print out timer stats
     time_t idle_time;
-    stopwatch_get_total_time(&stopwatch, STPW_IDLE_TASK, &idle_time);
-    uart_printf(CONSOLE, "Total idle time: %u:%u.%u\r\n", idle_time.min, idle_time.sec, idle_time.tsec);
+    uint64_t idle_ticks = stopwatch_get_total_ticks(&stopwatch, STPW_IDLE_TASK);
+    uint64_t user_ticks = stopwatch_get_total_ticks(&stopwatch, STPW_USER_TASK);
+
+    time_from_ticks(&idle_time, idle_ticks);
+    int idle_prop = (idle_ticks * 100) / (idle_ticks + user_ticks);
+
+    uart_printf(CONSOLE, "Total idle time: %u:%u.%u (%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop);
 
     return 0;
 }

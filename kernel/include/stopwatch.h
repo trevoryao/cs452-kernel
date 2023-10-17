@@ -17,6 +17,7 @@ typedef struct stopwatch_entry {
 
 enum STPWS {
     STPW_IDLE_TASK,
+    STPW_USER_TASK,
     N_STPW
 };
 
