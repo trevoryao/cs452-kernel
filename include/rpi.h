@@ -8,7 +8,7 @@
 // here line denotes the serial channel
 enum LINE {
     CONSOLE = 1,
-    LINE
+    MARKLIN
 };
 
 #define NCH -1
