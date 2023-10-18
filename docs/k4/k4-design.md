@@ -10,7 +10,7 @@
     which event triggered, and unblock waiting on event
         - possibly modify event_queue unblock f'ns to allow us to properly return things?
         - alternatively read from physical UART line in `includes/rpi.h`?
-- disable UART FIFOs for both lines
+- disable UART FIFOs for Marklin line only
 
 1. I/O Servers (and wrappers) - Niclas
 - Create I/O server task, which receives **strings** (not just chars), and buffers them as individual chars. Separate queues for output/input.
@@ -27,8 +27,8 @@ for (;;) {
     }
 }
 ```
-    - Console output: wait on console TX
-    - Console input: wait on console RX
+    - Console output: regular blocking output calls
+    - Console input: polling every N ms for input, and pulling it all in and buffering it, returning to server, who can return char by char on request to user tasks
     - Marklin input: wait on marklin RX
     - Marklin output case special: need to implement the finite state machine as described
 ```
