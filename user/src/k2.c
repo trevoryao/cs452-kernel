@@ -276,7 +276,7 @@ void wait_for_next_test() {
 
 void run_game(void) {
     // start up game server
-    Create(P_SERVER, gameserver_main);
+    Create(P_SERVER_LO, gameserver_main);
     int tid_1, tid_2, tid_3, tid_4;
     int waiting_tid;
     struct game_msg player1, player2, player3, player4;

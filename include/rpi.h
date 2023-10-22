@@ -21,7 +21,17 @@ void uart_putl(size_t line, const char *buf, size_t blen);
 void uart_puts(size_t line, const char *buf);
 void uart_printf(size_t line, char *fmt, ...);
 
-bool uart_out_empty(size_t line);
+// masks for specific fields in interrupt return value
+static const uint32_t UART_I_CTS = 0x02;
+static const uint32_t UART_I_RX  = 0x10;
+
+uint32_t uart_get_interrupts(size_t line);
+void uart_clear_interrupt(size_t line, uint32_t msk);
+
+// returns actual CTS status (0 for lo, 1 for hi)
+int uart_get_cts_status(size_t line);
+bool uart_is_tx_clear(size_t line);
+bool uart_is_rx_clear(size_t line);
 
 void uart_config_and_enable_console();
 void uart_config_and_enable_marklin();

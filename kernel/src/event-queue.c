@@ -28,7 +28,7 @@ bool event_queue_block(event_queue *eq, task_t *t, int event_id) {
     return false; // invalid event_id
 }
 
-bool event_queue_unblock_one(event_queue *eq, enum EVENT e) {
+bool event_queue_unblock_one(event_queue *eq, enum EVENT e, int retval) {
     // equivalent to popping
     task_t *head;
     if (!(head = eq->front[e])) return false; // nothing to pop
@@ -37,19 +37,17 @@ bool event_queue_unblock_one(event_queue *eq, enum EVENT e) {
     if (!head->event_wait_next) eq->back[e] = NULL; // emptied queue
     else head->event_wait_next = NULL; // no longer on queue
 
-    head->ready_state = STATE_READY; // unblock
-
     // populate return code based on event
-    switch (e) {
-        default: break;
-    }
+    head->x0 = retval;
+
+    head->ready_state = STATE_READY; // unblock
 
     return true; // success
 }
 
-bool event_queue_unblock_all(event_queue *eq, enum EVENT e) {
+bool event_queue_unblock_all(event_queue *eq, enum EVENT e, int retval) {
     if (!eq->front[e]) return false;
 
-    while (event_queue_unblock_one(eq, e)); // spin
+    while (event_queue_unblock_one(eq, e, retval)); // spin
     return true;
 }

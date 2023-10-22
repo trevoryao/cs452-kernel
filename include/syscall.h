@@ -10,6 +10,7 @@ enum SYSCALL_N {
     SYS_PTID,
     SYS_YIELD,
     SYS_EXIT,
+    SYS_KILL_CHILD,
     SYS_MSG_SEND,
     SYS_MSG_RCV,
     SYS_MSG_RPLY,

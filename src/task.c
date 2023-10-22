@@ -24,3 +24,7 @@ void Yield(void) {
 void Exit(void) {
     syscall(SYS_EXIT, 0, 0, 0, 0, 0, 0, 0);
 }
+
+void KillAllChildren(void) {
+    syscall(SYS_KILL_CHILD, 0, 0, 0, 0, 0, 0, 0);
+}

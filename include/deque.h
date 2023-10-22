@@ -12,15 +12,13 @@
 
 #define BUF_SIZE 1025
 
-struct deque {
+typedef struct deque {
     uint16_t size; // cur size
     uint16_t max_size;
     int16_t front, back;
 
     int32_t buf[BUF_SIZE]; // extra black space for iterators
-};
-
-typedef struct deque deque;
+} deque;
 
 // where size is the exponent of 2. For example, if we
 // want a deque of maximum size 8, pass size = 3.

@@ -107,7 +107,8 @@ task_t *task_queue_schedule(task_queue *tq) {
         // go through the entire loop
         while (current != NULL) {
             // get next element in queue
-            if (current->ready_state == STATE_READY) {
+            if (current->ready_state == STATE_READY ||
+                current->ready_state == STATE_KILLED) {
                 // Case 1: current is the front of the queue
                 if (current == tq->front[p]) {
                     tq->front[p] = current->next;
@@ -123,7 +124,6 @@ task_t *task_queue_schedule(task_queue *tq) {
 
                 // NULL the next pointer of the current
                 current->next = NULL;
-                current->ready_state = STATE_RUNNING;
                 return current;
             } else {
                 last = current;
@@ -132,7 +132,7 @@ task_t *task_queue_schedule(task_queue *tq) {
         }
     }
 
-    KLOG("No available task\r\n");
+    KLOG("No avail task\r\n");
     return NULL;
 }
 
@@ -140,11 +140,7 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
     kassert(task);
 
     // assign the new task a tid, if it is zero
-    if (task->ready_state == STATE_KILLED) {
-        KLOG("Dropping task-%d\r\n", task->tid);
-        return -1; // drop killed task
-    }
-    else if (task->ready_state == STATE_RUNNING)
+    if (task->ready_state == STATE_RUNNING)
         task->ready_state = STATE_READY;
 
     if (task->tid == 0) {
@@ -157,14 +153,13 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
     }
 
     task_queue_push(tq, task);
-    KLOG("Added task-%d\r\n", task->tid);
 
     return task->tid;
 }
 
 bool task_queue_empty(task_queue *tq) {
-    // ignore P_IDLE & P_NOTIF & P_SERVER
-    for (int p = P_IDLE + 1; p < N_PRIORITY - 2; ++p) {
+    // ignore P_IDLE & P_NOTIF & P_SERVER_LO/HI
+    for (int p = P_IDLE + 1; p < N_PRIORITY - 3; ++p) {
         if (!task_queue_priority_is_empty(tq, p)) return false;
     }
 
@@ -195,4 +190,16 @@ task_t *task_queue_get(task_queue *tq, uint16_t tid) {
     }
 
     return NULL;
+}
+
+void task_queue_kill_children(task_queue *tq, uint16_t ptid) {
+    for (int priority = N_PRIORITY - 1; priority >= 0; --priority) {
+        task_t *cur = tq->front[priority];
+        while (cur) {
+            if (cur->parent->tid == ptid) {
+                cur->ready_state = STATE_KILLED; // lazy kill, let scheduler determine if killed
+            }
+            cur = cur->next;
+        }
+    }
 }

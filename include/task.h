@@ -12,8 +12,9 @@ enum PRIORITY {
     P_MED,
     P_HIGH,
     P_VHIGH,
+    P_SERVER_LO,
+    P_SERVER_HI,
     P_NOTIF,
-    P_SERVER,
     N_PRIORITY
 };
 
@@ -75,5 +76,11 @@ void Yield(void);
  * may be reclaimed.
  */
 void Exit(void);
+
+/*
+ * causes all children task to cease execution immediately (i.e.
+ * exit is called for all child tasks)
+ */
+void KillAllChildren(void);
 
 #endif

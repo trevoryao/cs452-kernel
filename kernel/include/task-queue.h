@@ -23,11 +23,11 @@ typedef struct task_queue {
 
     // assigning Ids missing here
     uint16_t global_tid;
-
 } task_queue;
 
 void task_queue_init(task_queue *tq);
 
+// returns first ready or killed task, since child tasks are killed lazily
 task_t *task_queue_schedule(task_queue *tq);
 int32_t task_queue_add(task_queue *tq, task_t *task);
 
@@ -38,5 +38,7 @@ void task_queue_free_tid(task_queue *tq, uint16_t tid);
 
 // returns a reference to the task w/ specified tid, or null if it did not exist
 task_t *task_queue_get(task_queue *tq, uint16_t tid);
+
+void task_queue_kill_children(task_queue *tq, uint16_t ptid);
 
 #endif
