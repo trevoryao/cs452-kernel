@@ -5,7 +5,6 @@
 #include "kassert.h"
 #include "stack-alloc.h"
 #include "stopwatch.h"
-#include "sys-clock.h"
 #include "task-alloc.h"
 #include "task-queue.h"
 #include "task-state.h"
@@ -14,8 +13,10 @@
 #include "nameserver.h"
 #include "rpi.h"
 #include "syscall.h"
+#include "sys-clock.h"
 #include "task.h"
 #include "term-control.h"
+#include "time.h"
 #include "uassert.h"
 #include "util.h"
 
@@ -50,7 +51,7 @@ static void kernel_init(kernel_state *kernel_task, task_t *curr_user_task,
 
     // initialise nameserver
     task_t *ns = task_alloc_new(talloc);
-    task_init(ns, nameserver_main, NULL, P_SERVER, salloc);
+    task_init(ns, nameserver_main, NULL, P_SERVER_LO, salloc);
     ns->tid = NAMESERVER_TID; // explicitly set TID
     task_queue_add(tqueue, ns);
 
@@ -81,7 +82,11 @@ int kernel_main(void *kernel_end) {
     for (;;) {
         curr_user_task = task_queue_schedule(&tqueue);
 
-        KLOG("scheduling task-%d (%x)\r\n", curr_user_task->tid, curr_user_task);
+        if (curr_user_task->ready_state == STATE_KILLED) {
+            goto CURR_TASK_KILLED;
+        } else { // ready
+            curr_user_task->ready_state = STATE_RUNNING;
+        }
 
         enum STPWS stpw_t = (curr_user_task->tid == idle_task_tid) ? STPW_IDLE_TASK : STPW_USER_TASK;
         stopwatch_start(&stopwatch, stpw_t);
@@ -90,10 +95,8 @@ int kernel_main(void *kernel_end) {
 
         stopwatch_end(&stopwatch, stpw_t);
 
-        int exited = 0;
-
         if ((handler & SYNC_MSK) == SYNC_MSK) { // syscall?
-            exited = task_svc_handle(curr_user_task, &talloc, &salloc, &tqueue, &equeue);
+            task_svc_handle(curr_user_task, &talloc, &salloc, &tqueue, &equeue);
         } else if ((handler & IRQ_MSK) == IRQ_MSK) { // interrupt?
             handle_interrupt(&equeue);
         } else {
@@ -101,7 +104,12 @@ int kernel_main(void *kernel_end) {
             kpanic("switched back from unimplemented handler %u????\n", handler);
         }
 
-        if (!exited) task_queue_add(&tqueue, curr_user_task);
+        if (curr_user_task->ready_state == STATE_KILLED) {
+CURR_TASK_KILLED:
+            task_dealloc(curr_user_task, &talloc, &salloc, &tqueue);
+        } else {
+            task_queue_add(&tqueue, curr_user_task);
+        }
         curr_user_task = NULL; // drop ownership
 
         if (task_queue_empty(&tqueue)) {
@@ -115,7 +123,7 @@ int kernel_main(void *kernel_end) {
     uint64_t idle_ticks = stopwatch_get_total_ticks(&stopwatch, STPW_IDLE_TASK);
     uint64_t user_ticks = stopwatch_get_total_ticks(&stopwatch, STPW_USER_TASK);
 
-    time_from_ticks(&idle_time, idle_ticks);
+    time_from_sys_ticks(&idle_time, idle_ticks);
     int idle_prop = (idle_ticks * 100) / (idle_ticks + user_ticks);
 
     uart_printf(CONSOLE, "Total idle time: %u:%u.%u (%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop);

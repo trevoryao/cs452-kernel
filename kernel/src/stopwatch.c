@@ -2,6 +2,7 @@
 
 // lib
 #include "sys-clock.h"
+#include "time.h"
 #include "util.h"
 
 void stopwatch_init(stopwatch *stpw) {
@@ -26,5 +27,5 @@ uint64_t stopwatch_get_total_ticks(stopwatch *stpw, enum STPWS n) {
 }
 
 void stopwatch_get_total_time(stopwatch *stpw, enum STPWS n, time_t *t) {
-    time_from_ticks(t, stopwatch_get_total_ticks(stpw, n));
+    time_from_sys_ticks(t, stopwatch_get_total_ticks(stpw, n));
 }

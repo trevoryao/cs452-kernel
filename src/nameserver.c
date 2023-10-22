@@ -110,9 +110,7 @@ void nameserver_main() {
     // for loop
     for (;;) {
         // register to receive a message
-        ULOG("nameserver - waiting for msg\r\n");
         response = Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_nameserver));
-        ULOG("nameserver - rcved msg %d\r\n", msg_received.type);
 
         // handle the received msg
         switch (msg_received.type) {
@@ -146,7 +144,6 @@ void nameserver_main() {
 
         // send the response msg
         response = Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_nameserver));
-        ULOG("nameserver - replying\r\n");
 
         // error handle
         switch (response) {

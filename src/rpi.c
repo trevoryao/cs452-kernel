@@ -82,10 +82,14 @@ static const uint32_t UART_IBRD = 0x24;
 static const uint32_t UART_FBRD = 0x28;
 static const uint32_t UART_LCRH = 0x2c;
 static const uint32_t UART_CR =   0x30;
+static const uint32_t UART_IMSC = 0x38;
+static const uint32_t UART_MIS =  0x40;
+static const uint32_t UART_ICR =  0x44;
 
 #define UART_REG(line, offset) (*(volatile uint32_t*)(line_uarts[line] + offset))
 
 // masks for specific fields in the UART registers
+static const uint32_t UART_FR_CTS  = 0x01;
 static const uint32_t UART_FR_RXFE = 0x10;
 static const uint32_t UART_FR_TXFF = 0x20;
 static const uint32_t UART_FR_RXFF = 0x40;
@@ -107,8 +111,7 @@ static const uint32_t UART_LCRH_WLEN_LOW = 0x20;
 static const uint32_t UART_LCRH_WLEN_HIGH = 0x40;
 
 // UART initialization, to be called before other UART functions
-// Nothing to do for UART0, for which GPIO is configured during boot process
-// For UART3 (line 2 on the RPi hat), we need to configure the GPIO to route
+// configure the GPIO to route
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
   setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
@@ -161,12 +164,33 @@ void uart_config_and_enable_marklin() {
     // set the baud rate
   UART_REG(MARKLIN, UART_IBRD) = baud_divisor >> 6;
   UART_REG(MARKLIN, UART_FBRD) = baud_divisor & 0x3f;
-  // set the line control registers: 8 bit, no parity, 2 stop bits, FIFOs enabled
-  UART_REG(MARKLIN, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_STP2 | UART_LCRH_FEN;
+  // set the line control registers: 8 bit, no parity, 2 stop bits, FIFOs disabled
+  UART_REG(MARKLIN, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_STP2;
+  // set interrupt register: CTS, RX, TX
+  UART_REG(MARKLIN, UART_IMSC) = UART_I_CTS | UART_I_RX;
   // ======== END UART_PATCH =================================================================================
 // re-enable the UART
   // enable both transmit and receive regardless of previous state
   UART_REG(MARKLIN, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
+}
+
+uint32_t uart_get_interrupts(size_t line) {
+  return UART_REG(line, UART_MIS);
+}
+
+void uart_clear_interrupt(size_t line, uint32_t msk) {
+  UART_REG(line, UART_ICR) = msk;
+}
+
+int uart_get_cts_status(size_t line) {
+  return UART_REG(line, UART_FR) & UART_FR_CTS;
+}
+
+bool uart_is_tx_clear(size_t line) {
+  return (UART_REG(line, UART_FR) & UART_FR_TXFE) == UART_FR_TXFE;
+}
+bool uart_is_rx_clear(size_t line) {
+  return (UART_REG(line, UART_FR) & UART_FR_RXFE) == UART_FR_RXFE;
 }
 
 unsigned char uart_getc(size_t line) {
@@ -193,10 +217,6 @@ void uart_putc(size_t line, unsigned char c) {
   UART_REG(line, UART_DR) = c;
 }
 
-bool uart_out_empty(size_t line) {
-  return UART_REG(line, UART_FR) & UART_FR_TXFE;
-}
-
 void uart_putl(size_t line, const char* buf, size_t blen) {
   uint32_t i;
   for(i=0; i < blen; i++) {
@@ -212,7 +232,7 @@ void uart_puts(size_t line, const char* buf) {
 }
 
 // printf-style printing, with limited format support
-static void uart_format_print (size_t line, char *fmt, va_list va ) {
+void uart_format_print (size_t line, char *fmt, va_list va ) {
 	char bf[12];
 	char ch;
 

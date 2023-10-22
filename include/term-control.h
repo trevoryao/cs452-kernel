@@ -17,9 +17,10 @@
 #define CURS_SAVE   "\033[s"    // save cursor pos'n
 #define CURS_UNSAVE "\033[u"    // unsave cursor pos'n
 
-#define CURS_BWD    "\033[D"    // move cursour backwards
+#define CURS_BWD    "\033[D"    // move cursor backwards
 
-void curs_move(uint16_t r, uint16_t c);
+#define CURS_MOV    "\033[%u;%uH" // printf str format
+
 
 // Code Effects
 #define COL_RST     "\033[0m"   // Reset special formatting
