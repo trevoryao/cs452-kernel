@@ -4,6 +4,7 @@
 // helpful enum for supported events
 enum EVENT {
     TIMER_TICK,
+    CONSOLE_RX,
     MARKLIN_RX,
     MARKLIN_CTS,
     N_EVENTS

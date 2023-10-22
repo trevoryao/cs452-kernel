@@ -75,9 +75,8 @@ void handle_interrupt(event_queue *eq) {
         }
         case UART_INTERRUPT_ID: {
             // determine which UART interrupt actually fired
-            // for each one, unblock from queue (all? one? should only ever be one)
-            // augment to return value through unblock method
 
+            // handle any marklin interrupts
             uint32_t marklin_interrupt = uart_get_interrupts(MARKLIN);
             uint32_t handled_interrupts = 0;
 
@@ -93,7 +92,15 @@ void handle_interrupt(event_queue *eq) {
                 handled_interrupts |= UART_I_RX;
             }
 
-            uart_clear_interrupt(MARKLIN, handled_interrupts);
+            if (handled_interrupts != 0)
+                uart_clear_interrupt(MARKLIN, handled_interrupts);
+
+            // handle console interrupt (only RTIM)
+            if ((uart_get_interrupts(CONSOLE) & UART_I_RTIM) == UART_I_RTIM) {
+                KLOG("RTIM\r\n");
+                event_queue_unblock_one(eq, CONSOLE_RX, 0);
+                uart_clear_interrupt(CONSOLE, UART_I_RTIM);
+            }
 
             break;
         }
