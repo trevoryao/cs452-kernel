@@ -84,7 +84,7 @@ void console_server_main(void) {
                 for(int i = 0; i < msg_received.length; i++){
                     char c = msg_received.buffer[i];
                     deque_push_back(&fifo_read, c);
-                } 
+                }
 
                 // reply to all possible waiting processes
                 while (!deque_empty(&waiting_readers) && !deque_empty(&fifo_read)) {
@@ -92,7 +92,7 @@ void console_server_main(void) {
                     int responseTid = deque_pop_front(&waiting_readers);
                     char c = deque_pop_front(&fifo_read);
                     replyCharacter(responseTid, c);
-                } 
+                }
                 break;
             }
 
@@ -113,9 +113,6 @@ void console_read_notifer_main(void) {
     msg.type = MSG_UART_NOTIFY_READ;
 
     msg.length = 0;
-    int clockTid = WhoIs(CLOCK_SERVER_NAME);
-
-    uint32_t target = Time(clockTid);
 
     for(;;) {
         int c = uart_getc_nb(CONSOLE);
@@ -125,9 +122,7 @@ void console_read_notifer_main(void) {
                 msg.length = 0;
             }
 
-            target += READ_DELAY_TICKS;
-        
-            int result = DelayUntil(clockTid, target);
+            int result = AwaitEvent(CONSOLE_RX);
             if (result < 0) {
                 upanic("[Console Read Notifier] Console Server error - make sure to start a clock server\r\n");
             }

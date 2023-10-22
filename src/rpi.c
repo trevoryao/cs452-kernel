@@ -139,6 +139,8 @@ void uart_config_and_enable_console() {
   UART_REG(CONSOLE, UART_CR) = cr_state & ~UART_CR_UARTEN;
   // set the line control registers: 8 bit, no parity, 1 stop bit, FIFOs enabled
   UART_REG(CONSOLE, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_FEN;
+  // enable RTIM interrupt
+  UART_REG(CONSOLE, UART_IMSC) = UART_I_RTIM;
   // set the baud rate
   UART_REG(CONSOLE, UART_IBRD) = baud_divisor >> 6;
   UART_REG(CONSOLE, UART_FBRD) = baud_divisor & 0x3f;
@@ -166,7 +168,7 @@ void uart_config_and_enable_marklin() {
   UART_REG(MARKLIN, UART_FBRD) = baud_divisor & 0x3f;
   // set the line control registers: 8 bit, no parity, 2 stop bits, FIFOs disabled
   UART_REG(MARKLIN, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_STP2;
-  // set interrupt register: CTS, RX, TX
+  // set interrupt register: CTS, RX
   UART_REG(MARKLIN, UART_IMSC) = UART_I_CTS | UART_I_RX;
   // ======== END UART_PATCH =================================================================================
 // re-enable the UART

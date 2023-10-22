@@ -22,8 +22,9 @@ void uart_puts(size_t line, const char *buf);
 void uart_printf(size_t line, char *fmt, ...);
 
 // masks for specific fields in interrupt return value
-static const uint32_t UART_I_CTS = 0x02;
-static const uint32_t UART_I_RX  = 0x10;
+static const uint32_t UART_I_CTS =  0x02;
+static const uint32_t UART_I_RX =   0x10;
+static const uint32_t UART_I_RTIM = 0x40;
 
 uint32_t uart_get_interrupts(size_t line);
 void uart_clear_interrupt(size_t line, uint32_t msk);
