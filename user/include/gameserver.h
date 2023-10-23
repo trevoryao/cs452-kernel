@@ -15,9 +15,6 @@ enum GAME_TURN {
     N_GAME_TURNS
 };
 
-static const char* GAME_TURN_NAMES[] = {"Paper", "Rock", "Scissors"};
-
-
 enum GAME_MSG_TYPE {
     MSG_GAMESERVER_SIGNUP = N_MSG_TYPE,
     MSG_GAMESERVER_PLAY,
@@ -29,9 +26,6 @@ enum GAME_MSG_TYPE {
     MSG_GAMESERVER_TIE,
     MSG_GAMESERVER_MAX
 };
-
-static const char* GAME_MSG_NAMES[] = {"Signup", "Play", "Quit", "Error", "Move_required", "Win", "Lose", "Tie"};
-
 
 // Messages for gameserver
 typedef struct msg_gameserver {

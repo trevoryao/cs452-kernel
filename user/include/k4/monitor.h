@@ -31,6 +31,7 @@ typedef struct time_t time_t;
 
 // must be called prior to any update f'ns
 void init_monitor(uint16_t tid);
+void shutdown_monitor(uint16_t tid);
 
 // pretty self-explanatory
 void print_prompt(uint16_t tid);

@@ -18,6 +18,8 @@ enum PRIORITY {
     N_PRIORITY
 };
 
+#define N_SERVER_PRIORITY 3
+
  /*
  * allocates and initializes a task descriptor, using the given priority, and the
  * given function pointer as a pointer to the entry point of executable code,
@@ -78,7 +80,7 @@ void Yield(void);
 void Exit(void);
 
 /*
- * causes all children task to cease execution immediately (i.e.
+ * causes all non-server child tasks to cease execution immediately (i.e.
  * exit is called for all child tasks)
  */
 void KillAllChildren(void);
