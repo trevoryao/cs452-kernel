@@ -12,32 +12,6 @@ static bool task_queue_priority_is_empty(task_queue *tq, enum PRIORITY p) {
     return (tq->front[p] == NULL && tq->back[p] == NULL);
 }
 
-static uint32_t task_queue_priority_size(task_queue *tq, enum PRIORITY p) {
-    uint32_t size = 0;
-    task_t *current = tq->front[p];
-
-    while (current != NULL) {
-        size += 1;
-        current = current->next;
-    }
-    return size;
-}
-
-static task_t *task_queue_pop(task_queue *tq, enum PRIORITY p) {
-    task_t *head = tq->front[p];
-    if (head != NULL) {
-        tq->front[p] = head->next;
-
-        if (head->next == NULL) {
-            tq->back[p] = NULL;
-        }
-
-        head->next = NULL; // unlink from queue
-    }
-
-    return head;
-}
-
 static void task_queue_push(task_queue *tq, task_t *task) {
     enum PRIORITY p = task->priority;
     // make sure that task next is NULL
@@ -158,8 +132,8 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
 }
 
 bool task_queue_empty(task_queue *tq) {
-    // ignore P_IDLE & P_NOTIF & P_SERVER_LO/HI
-    for (int p = P_IDLE + 1; p < N_PRIORITY - 3; ++p) {
+    // ignore P_IDLE & server priorities
+    for (int p = P_IDLE + 1; p < N_PRIORITY - N_SERVER_PRIORITY; ++p) {
         if (!task_queue_priority_is_empty(tq, p)) return false;
     }
 
@@ -193,8 +167,9 @@ task_t *task_queue_get(task_queue *tq, uint16_t tid) {
 }
 
 void task_queue_kill_children(task_queue *tq, uint16_t ptid) {
-    for (int priority = N_PRIORITY - 1; priority >= 0; --priority) {
-        task_t *cur = tq->front[priority];
+    // ignore P_IDLE & server priorities
+    for (int p = P_IDLE + 1; p < N_PRIORITY - N_SERVER_PRIORITY; ++p) {
+        task_t *cur = tq->front[p];
         while (cur) {
             if (cur->parent->tid == ptid) {
                 cur->ready_state = STATE_KILLED; // lazy kill, let scheduler determine if killed

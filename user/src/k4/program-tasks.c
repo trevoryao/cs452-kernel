@@ -121,7 +121,7 @@ void cmd_task_main(void) {
         }
     }
 
-ProgramEnd:
+ProgramEnd:;
     uint16_t ptid = MyParentTid();
     msg_control msg = {MSG_CONTROL_QUIT};
     uassert(Send(ptid, (char *)&msg, sizeof(msg_control), (char *)&msg, sizeof(msg_control)) == sizeof(msg_control));

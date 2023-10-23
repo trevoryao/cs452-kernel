@@ -60,10 +60,9 @@ static void replyWaitingForEmtpy(struct deque *waiting_for_empty) {
 static void handleSending(struct deque *fifo_write, struct deque *waiting_for_empty, enum MARKLIN_STATE *state, int *outstanding_bytes) {
     if ((*state == MARKLIN_READY) & !deque_empty(fifo_write)) {
         if (*outstanding_bytes > 0) {
-            ULOG("[Märklin-Server] Sensor data outstanding - no sending\r\n")
+            ULOG("[Märklin-Server] Sensor data outstanding - no sending\r\n");
         }
 
-        ULOG("[Märklin-Server] actually sending\r\n");
         char c = deque_pop_front(fifo_write);
         uart_putc(MARKLIN, c == ZERO_BYTE ? 0x0 : c);
         *state = MARKLIN_CMD_SENT;
@@ -80,8 +79,6 @@ static void handleSending(struct deque *fifo_write, struct deque *waiting_for_em
             replyWaitingForEmtpy(waiting_for_empty);
         }
 
-    } else {
-        ULOG("[Märklin-Server] Deque empty - nothing to send\r\n");
     }
 }
 
@@ -93,7 +90,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
 
         case MARKLIN_CMD_SENT: {
             if (cts_state == 0) {
-                ULOG("[Marklin-Server] transit to busy\r\n");
                 *state = MARKLIN_SERVER_BUSY;
             } else {
                 ULOG("[Marklin-Server] CTS has not expected state\r\n");
@@ -103,7 +99,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
 
         case MARKLIN_SERVER_BUSY: {
             if (cts_state == 1) {
-                ULOG("[Marklin-Server] transit to ready\r\n");
                 *state = MARKLIN_READY;
             } else {
                 ULOG("[Marklin-Server] CTS has not expected state\r\n");
@@ -158,8 +153,6 @@ void marklin_server_main(void) {
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_uartserver));
 
-        ULOG("[Märklin-Server] rcv'd msg %d\r\n", msg_received.type);
-
         switch (msg_received.type) {
             case MSG_UART_GETC: {
                 // check if sth can be returned
@@ -185,17 +178,13 @@ void marklin_server_main(void) {
 
                 // If ready -> send directly
                 if (marklin_state == MARKLIN_READY) {
-                    ULOG("[Märklin-Server] Sending character\r\n");
                     handleSending(&fifo_write, &waiting_for_empty, &marklin_state, &outstanding_bytes);
-                } else {
-                    ULOG("[Märklin-Server] State not ready - waiting for interrupt\r\n");
                 }
                 break;
             }
 
             case MSG_UART_NOTIFY_CTS: {
                 sendSuccessMsg(senderTid);
-                ULOG("[Märklin-Server] Received CTS\r\n");
 
                 // advance the state
                 advanceState(&marklin_state, msg_received.buffer[0]);

@@ -89,7 +89,6 @@ void gameserver_main() {
     int head = 0;
     int tail = 0;
     int players_in_queue = 0;
-    int requesttid = 0;
 
     // Signup server at nameserver
     int response = RegisterAs(GAME_SERVER_NAME);

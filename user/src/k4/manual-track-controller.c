@@ -16,7 +16,8 @@
 
 void manual_track_controller(void) {
     // start up clock, uart servers
-    uint16_t clock_tid = Create(P_SERVER_HI, clockserver_main);
+    Create(P_SERVER_HI, clockserver_main);
+
     uint16_t console_tid = Create(P_SERVER_LO, console_server_main);
     uint16_t marklin_tid = Create(P_SERVER_HI, marklin_server_main);
 
@@ -36,9 +37,10 @@ void manual_track_controller(void) {
     msg.type = MSG_CONTROL_ACK;
     uassert(Reply(cmd_task_tid, (char *)&msg, sizeof(msg_control)) == sizeof(msg_control));
 
-    // shutdown all
+    // shutdown all non-server children to exit gracefully
     KillAllChildren();
 
     // send shutdown commands
+    shutdown_monitor(console_tid);
     shutdown_track(marklin_tid);
 }

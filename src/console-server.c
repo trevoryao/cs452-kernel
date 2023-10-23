@@ -43,7 +43,6 @@ static void replyCharacter(int tid, char c) {
 
 void console_server_main(void) {
     int senderTid;
-    int mytid = MyTid();
     struct msg_uartserver msg_received;
 
     struct deque fifo_read, waiting_readers;

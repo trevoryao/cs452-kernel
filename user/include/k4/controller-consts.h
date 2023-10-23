@@ -35,7 +35,7 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define CUSTOM_WAIT_ARG -1 // for output buffer
 
 // time consts
-#define RV_WAIT_TIME    380 // 3.8s
-#define REFRESH_TIME    3   // refresh clock every 30ms
+#define RV_WAIT_TIME    320 // 3.2s
+#define REFRESH_TIME    9   // refresh clock every 90ms
 
 #endif

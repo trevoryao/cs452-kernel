@@ -1,11 +1,22 @@
 #include "k4/monitor.h"
 
+#if defined(LOG) || defined(USERLOG) || defined(KERNEL_LOG)
+    #define LOGGING 1
+#else
+    #define LOGGING 0
+#endif
+
 // lib
 #include "deque.h"
 #include "sys-clock.h"
 #include "term-control.h"
 #include "time.h"
+
+#if LOGGING
+#include "rpi.h"
+#else
 #include "uart-server.h"
+#endif
 
 // usr
 #include "k4/controller-consts.h"
@@ -35,12 +46,6 @@ static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 
 #define SW_TAB 10 // tab distance
 
-#if defined(LOG) || defined(USERLOG) || defined(KERNEL_LOG)
-    #define LOGGING 1
-#else
-    #define LOGGING 0
-#endif
-
 static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir) {
     uint16_t x_off, y_off;
     char *fmt;
@@ -50,7 +55,7 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
         y_off = (sw - SW0_BASE) >> 2; // divide by 4
 
         #if LOGGING
-        fmt = "SW%d: %c\r\n";
+        fmt = "[switch] SW%d: %c\r\n";
         #else
         fmt = "%s" CURS_MOV "SW%d: %s%c%s";
         #endif
@@ -59,7 +64,7 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
         y_off = ((sw - SW1_BASE) >> 1) + SW1_START_Y; // divide by 2
 
         #if LOGGING
-        fmt = "SW%x: %c\r\n";
+        fmt = "[switch] SW%x: %c\r\n";
         #else
         fmt = "%s" CURS_MOV "SW%x: %s%c%s";
         #endif
@@ -75,7 +80,11 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
     }
 
     #if LOGGING
-    Printf(tid, fmt, sw, dir_ch);
+    (void)tid;
+    (void)x_off;
+    (void)y_off;
+    (void)col;
+    uart_printf(CONSOLE, fmt, sw, dir_ch);
     #else
     Printf(tid, fmt,
         CURS_SAVE CURS_HIDE,
@@ -85,18 +94,21 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
 }
 
 void print_prompt(uint16_t tid) {
-    #if !LOGGING
+    #if LOGGING
+    (void)tid;
+    #else
     Printf(tid, CURS_MOV "cmd> " DEL_LINE, PRMT_START_Y, PRMT_START_X);
     #endif
 }
 
 void init_monitor(uint16_t tid) {
+    #if LOGGING
+    (void)tid;
+    #else
     // assume screen cleared by the kernel
-
     // paint initial structure
     // let time task start painting, no point in an initial time
 
-    #if !LOGGING
     // switch list header
     Printf(tid, CURS_MOV COL_YEL "Switches:" COL_RST, SW_START_Y - 1, SW_START_X);
 
@@ -121,11 +133,23 @@ void init_monitor(uint16_t tid) {
 
     // no triggered sensors
     print_prompt(tid);
+
+    #endif
+}
+
+void shutdown_monitor(uint16_t tid) {
+    #if LOGGING
+    (void)tid;
+    #else
+    Puts(tid, CLEAR CURS_START);
     #endif
 }
 
 void update_time(uint16_t tid, time_t *t) {
-    #if !LOGGING // don't print time if we're logging
+    #if LOGGING // don't print time if we're logging
+    (void)tid;
+    (void)t;
+    #else
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE BLD
         "%u:%u:%u" COL_RST CURS_UNSAVE CURS_SHOW,
         TIME_START_Y, TIME_START_X, t->min, t->sec, t->tsec);
@@ -137,7 +161,8 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
     if (trn_hash_no < 0) return;
 
     #if LOGGING
-    Printf(tid, "TR%d: %s\r\n", tr, speed_display_get(spd_t, tr));
+    (void)tid;
+    uart_printf(CONSOLE, "[speed] TR%d: %d\r\n", tr, speed_display_get(spd_t, tr));
     #else
 
     char *col;
@@ -183,6 +208,12 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
     deque_push_front(q, sen_no);
     deque_push_front(q, sen_mod);
 
+    #if LOGGING
+    (void)tid;
+    (void)q;
+    uart_printf(CONSOLE, "[sensor trigger] %c%d\r\n", 'A' + sen_mod, sen_no);
+    #else
+
     deque_itr it = deque_begin(q);
     for (uint16_t offset = 0; it != deque_end(q); ++offset) {
         char mod = 'A' + deque_itr_get(q, it); // module number
@@ -194,6 +225,8 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
             SEN_START_Y + offset, SEN_START_X,
             mod, no);
     }
+
+    #endif
 }
 
 void cmd_delete(uint16_t tid) {

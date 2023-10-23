@@ -39,6 +39,7 @@ void task_queue_free_tid(task_queue *tq, uint16_t tid);
 // returns a reference to the task w/ specified tid, or null if it did not exist
 task_t *task_queue_get(task_queue *tq, uint16_t tid);
 
+// kills a non-server priority level children
 void task_queue_kill_children(task_queue *tq, uint16_t ptid);
 
 #endif
