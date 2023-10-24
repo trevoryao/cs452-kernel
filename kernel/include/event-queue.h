@@ -23,7 +23,8 @@ void event_queue_init(event_queue *eq);
 bool event_queue_block(event_queue *eq, task_t *t, int event_id);
 
 // returns false if nothing to unblock, true otherwise
-bool event_queue_unblock_one(event_queue *eq, enum EVENT e);
-bool event_queue_unblock_all(event_queue *eq, enum EVENT e);
+// depending on event, will return value to retval or use the value of retval to return to client
+bool event_queue_unblock_one(event_queue *eq, enum EVENT e, int retval);
+bool event_queue_unblock_all(event_queue *eq, enum EVENT e, int retval);
 
 #endif

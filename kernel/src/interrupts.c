@@ -28,26 +28,14 @@ static const uint32_t EOIR = 0x10;
 #define TIMER_TICK_REG 1
 
 // interrupt IDs
-#define TIMER_C1_INTERRUPT_ID 97
-#define TIMER_C3_INTERRUPT_ID 99
+#define TIMER_C1_INTERRUPT_ID   97
+#define TIMER_C3_INTERRUPT_ID   99
+#define UART_INTERRUPT_ID       153
 
-static const uint16_t N_INTERRUPT_IDS = 2;
-static const uint32_t INTERRUPT_IDS[] = { TIMER_C1_INTERRUPT_ID, TIMER_C3_INTERRUPT_ID };
+static const uint16_t N_INTERRUPT_IDS = 3;
+static const uint32_t INTERRUPT_IDS[] = { TIMER_C1_INTERRUPT_ID, TIMER_C3_INTERRUPT_ID, UART_INTERRUPT_ID };
 
 static const uint32_t CPU0_MSK = 0x01;
-
-// map enum EVENT to GICD interrupt IDs (and vice versa)
-static const uint32_t interrupt_ids_from_event[N_EVENTS] = { TIMER_C1_INTERRUPT_ID };
-
-static enum EVENT event_from_interrupt_id(uint32_t interrupt_id) {
-    // boo, ugly, look away (but fast)
-    switch (interrupt_id) {
-        case TIMER_C1_INTERRUPT_ID: return TIMER_TICK;
-        default: kpanic("received unknown interrupt id %u\r\n", interrupt_id);
-    }
-
-    return N_EVENTS; // never gets here
-}
 
 void init_interrupt_handlers(void) {
     for (uint16_t i = 0; i < N_INTERRUPT_IDS; ++i) {
@@ -64,26 +52,56 @@ void init_interrupt_handlers(void) {
 }
 
 void trigger_interrupt(enum EVENT e) {
-    KLOG("interrupt %d triggered\r\n", e);
-
-        switch (e) {
-            case TIMER_TICK: {
-                set_timer(TIMER_TICK_REG, TICK_MS);
-                break;
-            }
-        default: kpanic("unexpected interrupt event %d requested\r\n", e);
+    switch (e) {
+        case TIMER_TICK: {
+            set_timer(TIMER_TICK_REG, TICK_MS);
+            break;
+        }
+        case N_EVENTS: kpanic("unexpected interrupt event %d requested\r\n", e);
+        default: break; // ignore all UART events, triggered externally
     }
 }
 
 void handle_interrupt(event_queue *eq) {
     uint32_t interrupt_id = GICC_REG(IAR);
 
-    KLOG("handling interrupt %d\r\n", interrupt_id);
-
-    switch (event_from_interrupt_id(interrupt_id)) {
-        case TIMER_TICK: {
+    switch (interrupt_id) {
+        case TIMER_C1_INTERRUPT_ID: {
+            // TIMER_TICK
             reset_timer(TIMER_TICK_REG);
-            event_queue_unblock_all(eq, TIMER_TICK);
+            event_queue_unblock_all(eq, TIMER_TICK, 0);
+
+            break;
+        }
+        case UART_INTERRUPT_ID: {
+            // determine which UART interrupt actually fired
+
+            // handle any marklin interrupts
+            uint32_t marklin_interrupt = uart_get_interrupts(MARKLIN);
+            uint32_t handled_interrupts = 0;
+
+            if ((marklin_interrupt & UART_I_CTS) == UART_I_CTS) {
+                KLOG("CTS(%d)\r\n", uart_get_cts_status(MARKLIN));
+                event_queue_unblock_one(eq, MARKLIN_CTS, uart_get_cts_status(MARKLIN));
+                handled_interrupts |= UART_I_CTS;
+            }
+
+            if ((marklin_interrupt & UART_I_RX) == UART_I_RX) {
+                KLOG("RX\r\n");
+                event_queue_unblock_one(eq, MARKLIN_RX, uart_getc_nb(MARKLIN));
+                handled_interrupts |= UART_I_RX;
+            }
+
+            if (handled_interrupts != 0)
+                uart_clear_interrupt(MARKLIN, handled_interrupts);
+
+            // handle console interrupt (only RTIM)
+            if ((uart_get_interrupts(CONSOLE) & UART_I_RTIM) == UART_I_RTIM) {
+                KLOG("RTIM\r\n");
+                event_queue_unblock_one(eq, CONSOLE_RX, 0);
+                uart_clear_interrupt(CONSOLE, UART_I_RTIM);
+            }
+
             break;
         }
         default: kpanic("unexpected interrupt occurred (id %u)\r\n", interrupt_id);

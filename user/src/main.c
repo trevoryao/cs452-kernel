@@ -7,6 +7,10 @@
     #include "k2.h"
 #elif defined(K3)
     #include "k3.h"
+#elif defined(K4)
+    extern void manual_track_controller(void);
+#else
+    #include "rpi.h"
 #endif
 
 void user_main(void) {
@@ -17,6 +21,9 @@ void user_main(void) {
         kernel2_test();
     #elif defined(K3)
         kernel3_test();
-    
+    #elif defined(K4)
+        manual_track_controller();
+    #else
+        uart_puts(CONSOLE, "No Kernel was loaded, please compile with make k1/k2/k3/k4\r\n");
     #endif
 }

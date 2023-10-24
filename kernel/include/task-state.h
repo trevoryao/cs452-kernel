@@ -93,10 +93,11 @@ void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY 
 uint8_t task_activate(task_t *t, kernel_state *k);
 
 // called after context return
-// returns 1 if task has exited, 0 otherwise
-int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq, event_queue *eq);
+void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq, event_queue *eq);
 
-void task_clear(task_t * t);
+void task_clear(task_t *t);
+
+void task_dealloc(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq);
 
 typedef struct kernel_state {
     // hardcoded assembly -- do not reorder or add before

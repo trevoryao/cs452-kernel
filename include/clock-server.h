@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#define CLOCK_SERVER_NAME "clockserver"
-
 void clockserver_main(void);
 
 void clocknotifier_main(void);

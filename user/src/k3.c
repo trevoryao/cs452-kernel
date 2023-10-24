@@ -36,7 +36,7 @@ void clock_client() {
 
 void kernel3_test() {
     // Create Clock server
-    Create(P_SERVER, clockserver_main);
+    Create(P_SERVER_HI, clockserver_main);
 
     ULOG("[User Task] Clockserver started - starting clients\r\n");
 

@@ -16,11 +16,11 @@ int Time(int tid) {
     msg.requesterTid = my_tid;
 
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_clockserver), (char *)&msg, sizeof(struct msg_clockserver));
-    
+
     if (ret < 0 || msg.type == MSG_CLOCKSERVER_ERROR) {
         return -1;
     } else {
-        return msg.clockTick / TIMER_TICK_UNIT;
+        return msg.clockTick / SYSTICKS_CLOCKTICK_UNIT;
     }
 }
 
@@ -34,21 +34,21 @@ int Delay(int tid, int ticks) {
     struct msg_clockserver msg;
     msg.type = MSG_CLOCKSERVER_DELAY;
     msg.requesterTid = my_tid;
-    msg.clockTick = (uint32_t)(TIMER_TICK_UNIT * ticks);
+    msg.clockTick = (uint32_t)(SYSTICKS_CLOCKTICK_UNIT * ticks);
 
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_clockserver), (char *)&msg, sizeof(struct msg_clockserver));
 
     if (ret < 0 || msg.type == MSG_CLOCKSERVER_ERROR) {
         return -1;
     } else {
-        return msg.clockTick / TIMER_TICK_UNIT;
+        return msg.clockTick / SYSTICKS_CLOCKTICK_UNIT;
     }
 }
 
 
 int DelayUntil(int tid, int ticks) {
     uint16_t my_tid = MyTid();
-    uint64_t realTicks = (uint64_t)(TIMER_TICK_UNIT * ticks);
+    uint64_t realTicks = (uint64_t)(SYSTICKS_CLOCKTICK_UNIT * ticks);
     if (realTicks < get_curr_ticks()) {
         return -2;
     }
@@ -63,6 +63,6 @@ int DelayUntil(int tid, int ticks) {
     if (ret < 0 || msg.type == MSG_CLOCKSERVER_ERROR) {
         return -1;
     } else {
-        return msg.clockTick / TIMER_TICK_UNIT;
+        return msg.clockTick / SYSTICKS_CLOCKTICK_UNIT;
     }
 }
