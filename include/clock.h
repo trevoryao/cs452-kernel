@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "msg-type.h"
 
+#define CLOCK_SERVER_NAME "clockserver"
+
 enum CLOCK_MSG_TYPE {
     MSG_CLOCKSERVER_TIME,
     MSG_CLOCKSERVER_DELAY,

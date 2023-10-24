@@ -20,7 +20,6 @@ void *stack_alloc_new(stack_alloc *salloc) {
     // since N_TASK_T is finite upper limit, can assume that there WILL be a free offset
     // never hurts to be safe regardless
     kassert(offset < N_TASK_T * N_SLABS);
-    KLOG("allocing stack offset %d\r\n", offset);
 
     salloc->is_allocd[offset] = 1;
 
@@ -29,7 +28,6 @@ void *stack_alloc_new(stack_alloc *salloc) {
 
 void stack_alloc_free(stack_alloc *salloc, void *stack_base) {
     uint16_t offset = (((char *)stack_base - (char *)salloc->base) / STACK_SIZE);
-    KLOG("dealocing stack offset %d\r\n", offset);
     kassert(offset < N_TASK_T * N_SLABS);
     salloc->is_allocd[offset] = 0;
 }

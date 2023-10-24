@@ -32,7 +32,6 @@ static void dequeueAllReady(clock_queue *waitingProcesses) {
 
     while (clock_queue_ready(waitingProcesses, currentClockTick)) {
         uint16_t readyTid = clock_queue_get(waitingProcesses, currentClockTick);
-        ULOG("dequeing %u\r\n", readyTid);
 
         if (readyTid == 0) {
             // TODO do error handling
@@ -72,13 +71,9 @@ void clockserver_main() {
     // init notifier
     Create(P_NOTIF, clocknotifier_main);
 
-    ULOG("[Clockserver] init done\r\n");
-
     // infinite main loop
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_clockserver));
-
-        ULOG("[Clockserver] rcv'd msg %d\r\n", msg_received.type);
 
         switch (msg_received.type) {
             case MSG_CLOCKSERVER_TIME: {

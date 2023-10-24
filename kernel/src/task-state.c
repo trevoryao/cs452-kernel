@@ -16,7 +16,7 @@
 
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
-    KLOG("user_start (%x) called\r\n", function);
+    KLOG("task-%x start\r\n", function);
     function();
     Exit();
 }
@@ -72,11 +72,9 @@ uint8_t task_activate(task_t *t, kernel_state *k) {
     return context_switch_out(t, k);
 }
 
-int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq,
+void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq,
     event_queue *eq) {
-    KLOG("task-%d: SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
-
-    int retval = 0;
+    KLOG("task-%d SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
 
     switch (t->x0) {
         case SYS_CREAT:
@@ -115,10 +113,10 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
         case SYS_YIELD:
             break; // let scheduler handle, already moved to back of queue
         case SYS_EXIT:
-            task_queue_free_tid(tq, t->tid);
-            stack_alloc_free(salloc, t->stack_base);
-            task_alloc_free(talloc, t);
-            retval = 1; // do not reschedule
+            t->ready_state = STATE_KILLED;
+            break;
+        case SYS_KILL_CHILD:
+            task_queue_kill_children(tq, t->tid);
             break;
         case SYS_MSG_SEND: {
             task_t *rcv_t;
@@ -128,7 +126,6 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
             }
 
             if (rcv_t->ready_state == STATE_RCV_WAIT) { // receive called first?
-                KLOG("MSG_SEND -- waiting rcver\r\n");
                 t->ready_state = STATE_RPLY_WAIT; // block waiting for receiver task to reply
 
                 // copy data from sender (t) to receiver
@@ -143,7 +140,6 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
 
                 rcv_t->ready_state = STATE_READY; // unblock receiver task
             } else { // send called first
-                KLOG("MSG_SEND -- no waiting rcver\r\n");
                 t->ready_state = STATE_SEND_WAIT; // block, wait for receive
 
                 // add to back of receiver task's queue
@@ -165,7 +161,6 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
         }
         case SYS_MSG_RCV: {
             if (t->waiting_senders_next) { // waiting senders => send called first?
-                KLOG("MSG_RCV -- waiting senders\r\n");
                 // pop first off the queue
                 task_t *send_t = t->waiting_senders_next;
                 t->waiting_senders_next = send_t->waiting_senders_next;
@@ -182,7 +177,6 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
 
                 t->x0 = len; // return msg size stored in dest
             } else { // rcv called first
-                KLOG("MSG_RCV -- no waiting senders\r\n");
                 t->ready_state = STATE_RCV_WAIT; // block until send is called
             }
 
@@ -222,9 +216,6 @@ int task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_que
         }
         default: kpanic("Unknown syscall number: %d\r\n", t->x0);
     }
-
-    KLOG("SYSCALL done\r\n");
-    return retval;
 }
 
 void task_clear(task_t *t) {
@@ -232,6 +223,12 @@ void task_clear(task_t *t) {
     t->waiting_senders_next = NULL;
     t->event_wait_next = NULL;
     t->tid = 0;
+}
+
+void task_dealloc(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq) {
+    task_queue_free_tid(tq, t->tid);
+    stack_alloc_free(salloc, t->stack_base);
+    task_alloc_free(talloc, t);
 }
 
 void kernel_state_init(kernel_state *k) {

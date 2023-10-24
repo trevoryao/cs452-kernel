@@ -12,32 +12,6 @@ static bool task_queue_priority_is_empty(task_queue *tq, enum PRIORITY p) {
     return (tq->front[p] == NULL && tq->back[p] == NULL);
 }
 
-static uint32_t task_queue_priority_size(task_queue *tq, enum PRIORITY p) {
-    uint32_t size = 0;
-    task_t *current = tq->front[p];
-
-    while (current != NULL) {
-        size += 1;
-        current = current->next;
-    }
-    return size;
-}
-
-static task_t *task_queue_pop(task_queue *tq, enum PRIORITY p) {
-    task_t *head = tq->front[p];
-    if (head != NULL) {
-        tq->front[p] = head->next;
-
-        if (head->next == NULL) {
-            tq->back[p] = NULL;
-        }
-
-        head->next = NULL; // unlink from queue
-    }
-
-    return head;
-}
-
 static void task_queue_push(task_queue *tq, task_t *task) {
     enum PRIORITY p = task->priority;
     // make sure that task next is NULL
@@ -107,7 +81,8 @@ task_t *task_queue_schedule(task_queue *tq) {
         // go through the entire loop
         while (current != NULL) {
             // get next element in queue
-            if (current->ready_state == STATE_READY) {
+            if (current->ready_state == STATE_READY ||
+                current->ready_state == STATE_KILLED) {
                 // Case 1: current is the front of the queue
                 if (current == tq->front[p]) {
                     tq->front[p] = current->next;
@@ -123,7 +98,6 @@ task_t *task_queue_schedule(task_queue *tq) {
 
                 // NULL the next pointer of the current
                 current->next = NULL;
-                current->ready_state = STATE_RUNNING;
                 return current;
             } else {
                 last = current;
@@ -132,7 +106,7 @@ task_t *task_queue_schedule(task_queue *tq) {
         }
     }
 
-    KLOG("No available task\r\n");
+    KLOG("No avail task\r\n");
     return NULL;
 }
 
@@ -140,11 +114,7 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
     kassert(task);
 
     // assign the new task a tid, if it is zero
-    if (task->ready_state == STATE_KILLED) {
-        KLOG("Dropping task-%d\r\n", task->tid);
-        return -1; // drop killed task
-    }
-    else if (task->ready_state == STATE_RUNNING)
+    if (task->ready_state == STATE_RUNNING)
         task->ready_state = STATE_READY;
 
     if (task->tid == 0) {
@@ -157,14 +127,13 @@ int32_t task_queue_add(task_queue *tq, task_t *task) {
     }
 
     task_queue_push(tq, task);
-    KLOG("Added task-%d\r\n", task->tid);
 
     return task->tid;
 }
 
 bool task_queue_empty(task_queue *tq) {
-    // ignore P_IDLE & P_NOTIF & P_SERVER
-    for (int p = P_IDLE + 1; p < N_PRIORITY - 2; ++p) {
+    // ignore P_IDLE & server priorities
+    for (int p = P_IDLE + 1; p < N_PRIORITY - N_SERVER_PRIORITY; ++p) {
         if (!task_queue_priority_is_empty(tq, p)) return false;
     }
 
@@ -195,4 +164,17 @@ task_t *task_queue_get(task_queue *tq, uint16_t tid) {
     }
 
     return NULL;
+}
+
+void task_queue_kill_children(task_queue *tq, uint16_t ptid) {
+    // ignore P_IDLE & server priorities
+    for (int p = P_IDLE + 1; p < N_PRIORITY - N_SERVER_PRIORITY; ++p) {
+        task_t *cur = tq->front[p];
+        while (cur) {
+            if (cur->parent->tid == ptid) {
+                cur->ready_state = STATE_KILLED; // lazy kill, let scheduler determine if killed
+            }
+            cur = cur->next;
+        }
+    }
 }

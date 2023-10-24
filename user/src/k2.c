@@ -66,8 +66,8 @@ static void sender(void) {
 
     timer_stats_end(&stats, PERF_TMR);
 
-    // uassert(reply_len == 1);
-    // uassert(reply[0] = 'A');
+    uassert(reply_len == 1);
+    uassert(reply[0] = 'A');
 
     ULOG("sender -- done\r\n");
     Send(p_tid, NULL, 0, NULL, 0);
@@ -95,20 +95,19 @@ static void receiver() {
 
     msg[info_msg.size] = '\0'; // null terminator dropped
 
-    // uassert(rcv_len == info_msg.size);
-    // uassert(sender_tid == info_msg.pair_tid);
+    uassert(rcv_len == info_msg.size);
+    uassert(sender_tid == info_msg.pair_tid);
 
     // construct duplicate msg
-    // char dup_msg[TIMING_MSG_SIZES[N_TIMING_MSG_SIZES - 1] + 1];
-    // memset(dup_msg, 'A', info_msg.size);
-    // dup_msg[info_msg.size] = '\0';
+    char dup_msg[TIMING_MSG_SIZES[N_TIMING_MSG_SIZES - 1] + 1];
+    memset(dup_msg, 'A', info_msg.size);
+    dup_msg[info_msg.size] = '\0';
 
-    // uassert(!strncmp(msg, dup_msg, TIMING_MSG_SIZES[N_TIMING_MSG_SIZES - 1]));
+    uassert(!strncmp(msg, dup_msg, TIMING_MSG_SIZES[N_TIMING_MSG_SIZES - 1]));
 
     ULOG("rcver -- replying to sender\r\n");
     int reply_len = Reply(sender_tid, msg, info_msg.size);
-
-    // uassert(reply_len == 1);
+    uassert(reply_len == 1);
 
     ULOG("rcver -- done\r\n");
 
@@ -119,6 +118,7 @@ void run_timings() {
     timer_stats_init(&stats);
 
     uint16_t my_tid = MyTid();
+    (void)my_tid;
 
     for (int i = 0; i < N_TIMING_MSG_SIZES; ++i) {
         uart_printf(CONSOLE, "Testing Message size %d\r\n", TIMING_MSG_SIZES[i]);
@@ -198,6 +198,8 @@ void run_timings() {
 #define CLIENT_LOG_ERROR(fmt, ...) uart_printf(CONSOLE, COL_RED "[Game Client ERROR] " fmt COL_RST "\r\n" __VA_OPT__(,) __VA_ARGS__)
 #define TEST_LOG(fmt, ...) uart_printf(CONSOLE, COL_WHT fmt COL_RST "\r\n" __VA_OPT__(,) __VA_ARGS__)
 
+static const char* GAME_TURN_NAMES[] = {"Paper", "Rock", "Scissors"};
+static const char *GAME_MSG_NAMES[] = {"Signup", "Play", "Quit", "Error", "Move_required", "Win", "Lose", "Tie"};
 
 void generic_client(void) {
     // get the information from main routine
@@ -276,7 +278,7 @@ void wait_for_next_test() {
 
 void run_game(void) {
     // start up game server
-    Create(P_SERVER, gameserver_main);
+    Create(P_SERVER_LO, gameserver_main);
     int tid_1, tid_2, tid_3, tid_4;
     int waiting_tid;
     struct game_msg player1, player2, player3, player4;

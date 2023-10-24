@@ -24,21 +24,11 @@ uint64_t get_curr_ticks(void) {
 uint32_t get_curr_lo_ticks(void) { return TIMER_CTR_REG(0); }
 uint32_t get_curr_hi_ticks(void) { return TIMER_CTR_REG(1); }
 
-void time_from_ticks(time_t *t, uint64_t ticks) {
-    t->min = ticks / TIMER_MIN_UNIT;
-
-    uint64_t sec_ctr = ticks % TIMER_MIN_UNIT;
-    t->sec = sec_ctr / TIMER_SEC_UNIT;
-
-    uint64_t tsec_ctr = sec_ctr % TIMER_SEC_UNIT;
-    t->tsec = tsec_ctr / TIMER_TSEC_UNIT;
-}
-
 void set_timer(uint16_t n, uint32_t ms) {
     if (n > 3) return;
 
     volatile uint32_t lo = TIMER_CTR_REG(0); // take only LO bits
-    TIMER_CMP_REG(n) = (uint32_t)(lo + (ms * TIMER_MSEC_UNIT)); // write offset of cur time + ms
+    TIMER_CMP_REG(n) = (uint32_t)(lo + (ms * SYSTICKS_MSEC_UNIT)); // write offset of cur time + ms
 }
 
 void reset_timer(uint16_t n) {

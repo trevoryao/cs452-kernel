@@ -45,6 +45,9 @@ k2-timings: all
 k3: DEFINES += -DK3
 k3: all
 
+k4: DEFINES += -DK4
+k4: all
+
 clean:
 	rm -f $(OBJECTS) $(DEPENDS) $(EXEC).elf $(EXEC).img
 
