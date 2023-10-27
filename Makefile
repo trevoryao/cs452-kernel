@@ -9,13 +9,14 @@ SRC:=src
 INCLUDES:=include
 KDIR:=kernel
 UDIR:=user
+TDIR:=track-control
 EXEC:=kernel
 
 # COMPILE OPTIONS
 WARNINGS=-Wall -Wextra -Wpedantic -Wno-unused-const-variable
 CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
 	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only -O3 -I$(INCLUDES) \
-	-I$(KDIR)/$(INCLUDES) -I$(UDIR)/$(INCLUDES)
+	-I$(KDIR)/$(INCLUDES) -I$(UDIR)/$(INCLUDES) -I$(TDIR)/$(INCLUDES)
 
 DEFINES := -DNOLOG
 
@@ -24,7 +25,7 @@ DEFINES := -DNOLOG
 LDFLAGS:=-Wl,-nmagic -Wl,-Tlinker.ld
 
 # Source files and include dirs
-SOURCES := $(shell find $(SRC) $(KDIR)/$(SRC) $(UDIR)/$(SRC) -type f -name '*.c' -o -name '*.S')
+SOURCES := $(shell find $(SRC) $(KDIR)/$(SRC) $(UDIR)/$(SRC) $(TDIR)/$(SRC) -type f -name '*.c' -o -name '*.S')
 
 # Create .o and .d files for every .cc and .S (hand-written assembly) file
 OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))
