@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define TC_MAX_DATA_LENGTH 256
+#define TC_MAX_DATA_LENGTH 64
 #define TC_SERVER_NAME "tc-server"
 
 enum TC_MSG_TYPE {
@@ -18,7 +18,7 @@ typedef struct msg_tc_server {
     enum TC_MSG_TYPE type;
     uint16_t requesterTid;
     uint64_t clockTick;
-    char data[256];
+    int data[TC_MAX_DATA_LENGTH];
 } msg_tc_server;
 
 

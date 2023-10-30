@@ -5,18 +5,42 @@
 #include "clock.h"
 #include "msg.h"
 #include "track-control-coordinator.h"
+#include "task.h"
+
+#define N_SENSOR 8
+
+void parseAndReply(char data, int no_of_byte, uint32_t latestTimestamp, int tcTid, int ownTid) {
+    struct msg_tc_server msg_tc_send, msg_tc_received;
+    msg_tc_send.clockTick = latestTimestamp;
+    msg_tc_send.type = MSG_TC_SENSOR_PUT;
+    msg_tc_send.requesterTid = ownTid;
+
+    int sensor_mod = no_of_byte / 2;
+    int mod_round = no_of_byte % 2;
+
+    for (uint8_t sen_bit = 1; sen_bit <= N_SENSOR; ++sen_bit) {
+        if (((data & (1 << (N_SENSOR - sen_bit))) >> (N_SENSOR - sen_bit)) == 0x01) { // bit matches?
+            int16_t sensor_no = sen_bit + (mod_round * N_SENSOR);
+
+            // send to server
+            msg_tc_send.data[0] = sensor_mod;
+            msg_tc_send.data[1] = sensor_no;
+
+            Send(tcTid, (char *)&msg_tc_send, sizeof(struct msg_tc_server), (char *)&msg_tc_received, sizeof(struct msg_tc_server));
+        }
+    }
+}
+
 
 void sensor_worker_main() {
     // Messages for requests
     int latestTimestamp = 0;
 
-    struct msg_tc_server msg_tc_send, msg_tc_received;
-
-
     // Get the required tids
     int clockTid = WhoIs(CLOCK_SERVER_NAME);
     int marklinTid = WhoIs(MARKLIN_SERVER_NAME);
     int tcTid = WhoIs(TC_SERVER_NAME);
+    int ownTid = MyTid();
 
 
 
@@ -27,15 +51,14 @@ void sensor_worker_main() {
         // Write sensor request
         Putc(marklinTid, S88_BASE + N_S88);
 
+        latestTimestamp = Time(clockTid);
         // Get sensor data
         for (int i = 0; i < (N_S88 * 2); i++) {
-            msg_tc_received.data[i] = Getc(marklinTid);
-        }
-        
-        latestTimestamp = Time(clockTid);
-        msg_tc_send.clockTick = latestTimestamp;
+            char data = Getc(marklinTid);
 
-        // send data to the control server
-        Send(tcTid, (char *)&msg_tc_send, sizeof(struct msg_tc_server), (char *)&msg_tc_received, sizeof(struct msg_tc_server));
+            if (data != 0x0) {
+                parseAndReply(data, i, latestTimestamp, tcTid, ownTid);
+            }
+        }
     }
 }
