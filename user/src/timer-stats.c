@@ -22,17 +22,18 @@ static uint64_t get_curr_ticks(void) {
 
 void timer_stats_init(timer_stats *s) {
     memset(s, 0, N_TMRS * sizeof(stat_t)); // all values to 0 (in stat_t)
+
+    for (int t = 0; t < N_TMRS; ++t) {
+        s->stats[t].min = UINT64_MAX;
+    }
 }
 
 void timer_stats_start(timer_stats *s, enum TMR_STATS t) {
-    s->stats[t].started = 1; // don't care if we already had one started, just discard
     s->stats[t].start_tick = get_curr_ticks();
 }
 
-void timer_stats_end(timer_stats *s, enum TMR_STATS t) {
+uint64_t timer_stats_end(timer_stats *s, enum TMR_STATS t) {
     uint64_t end_tick = get_curr_ticks();
-
-    if (!s->stats[t].started) return; // started a timer?
 
     uint64_t elapsed = end_tick - s->stats[t].start_tick;
 
@@ -41,6 +42,9 @@ void timer_stats_end(timer_stats *s, enum TMR_STATS t) {
     ++s->stats[t].n;
 
     if (elapsed > s->stats[t].max) s->stats[t].max = elapsed;
+    if (elapsed < s->stats[t].min) s->stats[t].min = elapsed;
+
+    return elapsed;
 }
 
 void timer_stats_clear(timer_stats *s, enum TMR_STATS t) {

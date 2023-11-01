@@ -32,8 +32,8 @@ static const uint32_t EOIR = 0x10;
 #define TIMER_C3_INTERRUPT_ID   99
 #define UART_INTERRUPT_ID       153
 
-static const uint16_t N_INTERRUPT_IDS = 3;
-static const uint32_t INTERRUPT_IDS[] = { TIMER_C1_INTERRUPT_ID, TIMER_C3_INTERRUPT_ID, UART_INTERRUPT_ID };
+static const uint16_t N_INTERRUPT_IDS = 2;
+static const uint32_t INTERRUPT_IDS[] = { TIMER_C1_INTERRUPT_ID, UART_INTERRUPT_ID };
 
 static const uint32_t CPU0_MSK = 0x01;
 
