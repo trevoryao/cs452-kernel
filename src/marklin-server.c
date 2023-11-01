@@ -58,11 +58,12 @@ static void replyWaitingForEmtpy(struct deque *waiting_for_empty) {
 }
 
 static void handleSending(struct deque *fifo_write, struct deque *waiting_for_empty, enum MARKLIN_STATE *state, int *outstanding_bytes) {
+
     if ((*state == MARKLIN_READY) & !deque_empty(fifo_write)) {
         if (*outstanding_bytes > 0) {
             ULOG("[Märklin-Server] Sensor data outstanding - no sending\r\n");
         }
-
+        ULOG("[Märklin-Server] Writing to Marklin \r\n");
         char c = deque_pop_front(fifo_write);
         uart_putc(MARKLIN, c == ZERO_BYTE ? 0x0 : c);
         *state = MARKLIN_CMD_SENT;
@@ -79,6 +80,8 @@ static void handleSending(struct deque *fifo_write, struct deque *waiting_for_em
             replyWaitingForEmtpy(waiting_for_empty);
         }
 
+    } else {
+        ULOG("[Märklin-Server] Trying to sent to Marklin but not in ready \r\n");
     }
 }
 
@@ -91,6 +94,7 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_CMD_SENT: {
             if (cts_state == 0) {
                 *state = MARKLIN_SERVER_BUSY;
+                ULOG("[Märklin-Server] Transit to busy \r\n");
             } else {
                 ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
@@ -100,6 +104,7 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_SERVER_BUSY: {
             if (cts_state == 1) {
                 *state = MARKLIN_READY;
+                ULOG("[Märklin-Server] Transit to ready \r\n");
             } else {
                 ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
@@ -118,10 +123,10 @@ void marklin_server_main(void) {
 
     // Structures for storing characters to be read or written
     struct deque fifo_read, fifo_write, waiting_readers, waiting_for_empty;
-    deque_init(&fifo_read, 4);
-    deque_init(&fifo_write, 4);
-    deque_init(&waiting_readers, 3);
-    deque_init(&waiting_for_empty, 3);
+    deque_init(&fifo_read, 8);
+    deque_init(&fifo_write, 8);
+    deque_init(&waiting_readers, 5);
+    deque_init(&waiting_for_empty, 5);
 
     // variables needed for block sending bc of sensor data
     int outstanding_bytes = 0;
@@ -152,6 +157,8 @@ void marklin_server_main(void) {
 
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_uartserver));
+        ULOG("[Märklin-Server] Received Message \r\n");
+
 
         switch (msg_received.type) {
             case MSG_UART_GETC: {
