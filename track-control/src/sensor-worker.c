@@ -9,9 +9,8 @@
 
 #define N_SENSOR 8
 
-void parseAndReply(char data, int no_of_byte, uint32_t latestTimestamp, int tcTid, int ownTid) {
+void parseAndReply(char data, int no_of_byte, int tcTid, int ownTid) {
     struct msg_tc_server msg_tc_send, msg_tc_received;
-    msg_tc_send.clockTick = latestTimestamp;
     msg_tc_send.type = MSG_TC_SENSOR_PUT;
     msg_tc_send.requesterTid = ownTid;
 
@@ -33,11 +32,7 @@ void parseAndReply(char data, int no_of_byte, uint32_t latestTimestamp, int tcTi
 
 
 void sensor_worker_main() {
-    // Messages for requests
-    int latestTimestamp = 0;
-
     // Get the required tids
-    int clockTid = WhoIs(CLOCK_SERVER_NAME);
     int marklinTid = WhoIs(MARKLIN_SERVER_NAME);
     int tcTid = WhoIs(TC_SERVER_NAME);
     int ownTid = MyTid();
@@ -51,13 +46,12 @@ void sensor_worker_main() {
         // Write sensor request
         Putc(marklinTid, S88_BASE + N_S88);
 
-        latestTimestamp = Time(clockTid);
         // Get sensor data
         for (int i = 0; i < (N_S88 * 2); i++) {
             char data = Getc(marklinTid);
 
             if (data != 0x0) {
-                parseAndReply(data, i, latestTimestamp, tcTid, ownTid);
+                parseAndReply(data, i, tcTid, ownTid);
             }
         }
     }
