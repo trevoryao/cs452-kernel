@@ -8,9 +8,9 @@
 #define TC_SERVER_NAME "tc-server"
 
 enum TC_MSG_TYPE {
-    MSG_TC_PLAN_REQUEST, 
+    MSG_TC_PLAN_REQUEST,
     MSG_TC_SENSOR_GET,
-    MSG_TC_SENSOR_PUT, 
+    MSG_TC_SENSOR_PUT,
     MSG_TC_MAX
 };
 
@@ -20,8 +20,6 @@ typedef struct msg_tc_server {
     uint64_t clockTick;
     int data[TC_MAX_DATA_LENGTH];
 } msg_tc_server;
-
-
 
 // wrappers to be send to the server
 void track_control_coordinator_main();

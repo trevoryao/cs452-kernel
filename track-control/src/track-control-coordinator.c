@@ -12,19 +12,6 @@
 #define MAX_WAITING_TID 4
 #define SENSOR_IGNORE_TIME 10
 
-
-
-void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t sen_no) {
-    if (deque_full(q)) {
-        // scrolls triggered sensors
-        deque_pop_back(q);
-        deque_pop_back(q);
-    }
-
-    deque_push_front(q, sen_no);
-    deque_push_front(q, sen_mod);    
-}
-
 void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no) {
     struct msg_tc_server msg_reply;
     msg_reply.type = MSG_TC_SENSOR_GET;
@@ -81,12 +68,12 @@ void track_control_coordinator_main() {
                 // TODO:
                 // for (..)
                 //      if timestamp > sensorTimestamp[..][..] {add sensor}
-                
+
                 // TODO: Maybe replace
                 uint16_t sensor_mod = msg_received.data[0];
                 uint16_t sensor_no = msg_received.data[1];
 
-                if (latestSensorMod == sensor_mod && latestSensorNo == sensor_no 
+                if (latestSensorMod == sensor_mod && latestSensorNo == sensor_no
                     && ((latestSensorTimestamp + SENSOR_IGNORE_TIME) > msg_received.clockTick)) {
                     // ignore sensor message
                     break;
@@ -97,13 +84,13 @@ void track_control_coordinator_main() {
 
                     // dequeue waiting processes
                     replyWaitingProcess(&sensor_queue, sensor_mod, sensor_no);
-                    
+
                     // TODO: inform UI about sensor update
                 }
 
                 break;
-            } 
-        
+            }
+
             default:
                 break;
         }
