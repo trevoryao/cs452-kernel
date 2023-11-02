@@ -132,7 +132,83 @@ int32_t get_acceleration(speed_t *spd_t, uint16_t n, uint16_t s) {
     return spd_t->acceleration_data[trn_hash(n)][spd_hash(speed_get(spd_t, n))][spd_hash(s)];
 }
 
+int32_t get_acceleration_general(speed_t *spd_t, uint16_t n, uint16_t speed1, uint16_t speed2) {
+    return spd_t->acceleration_data[trn_hash(n)][spd_hash(speed1)][spd_hash(speed2)];
+}
+
+
 
 uint32_t get_stopping_distance(speed_t *spd_t, uint16_t n) {
     return spd_t->stopping_data[trn_hash(n)];
+}
+
+int32_t get_distance_from_acceleration(speed_t *spd_t, uint16_t trn, uint16_t speed1, uint16_t speed2) {
+    /*
+    *   We assume a linear acceleration
+    *   Basic kinematic formula
+    *   v^2 = u^2 + 2 * a * d 
+    *   
+    *   with:
+    *       - v^2 [(um/s)^2]     = squared final velocity (here v2)
+    *       - u^2 [(um/s)^2]     = squared inital velocity (here v1)
+    *       - a   [um/(s^2)]     = acceleration
+    *       - d   [um]           = distance traveled
+    *
+    *   To calculate the distance
+    * 
+    *   d = 0.5 * (v^2 - u^2) / a 
+    * 
+    */
+    
+    int8_t idx = trn_hash(trn);
+    if (idx < 0) return;
+
+    // in um/s2
+    int64_t acceleration = get_acceleration_general(spd_t, trn, speed1, speed2);
+    // velocity in um/s
+    int32_t v1 = get_velocity(spd_t, trn, speed1);
+    int32_t v2 = get_velocity(spd_t, trn, speed2);
+
+    int64_t v1_squared = v1 * v1;
+    int64_t v2_squared = v2 * v2;
+
+    int64_t distance = (v2_squared - v1_squared) / (2 * acceleration);
+
+    return (int32_t) distance;
+}
+
+int32_t get_time_from_acceleration(speed_t *spd_t, uint16_t trn, uint16_t speed1, uint16_t speed2) {
+    /*
+    *   We again assume linear acceleration
+    *   Basic formula: 
+    *   v = u + t * a
+    *   
+    *   with:
+    *       - v   [(um/s)]       = final velocity (here v2)
+    *       - u   [(um/s)]       = inital velocity (here v1)
+    *       - a   [um/s]         = acceleration
+    *       - t   [s]            = time returned
+    * 
+    *  t_seconds = (v - u) / a
+    *  t_clock_ticks = 100 * (v - u) / a
+    */
+
+
+    int64_t acceleration = get_acceleration_general(spd_t, trn, speed1, speed2);
+    int32_t v1 = get_velocity(spd_t, trn, speed1);
+    int32_t v2 = get_velocity(spd_t, trn, speed2);
+
+
+    int32_t t_clock_ticks = 100 * (v2 - v1);
+    return t_clock_ticks / acceleration;
+}
+
+int32_t get_time_from_velocity(speed_t *spd_t, uint16_t trn, int32_t dist) {
+    /*
+    *
+    *   Formula: t_clock_ticks = 100 * d / v
+    * 
+    */
+   int32_t velocity = get_current_velocity(spd_t, trn);
+   return 100 * dist / velocity;
 }
