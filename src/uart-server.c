@@ -101,8 +101,12 @@ static void uart_server_format_print(struct msg_uartserver *msg, char *fmt, va_l
 			    case 'u':
 				    ui2a( va_arg( va, unsigned int ), 10, bf );
 				    uart_server_buffer_puts(msg, &length, bf);
-				    break;
-			    case 'd':
+                    break;
+                case 'l':
+                    ui2a( va_arg( va, unsigned long long ), 10, bf );
+                    uart_server_buffer_puts(msg, &length, bf);
+                    break;
+                case 'd':
 				    i2a( va_arg( va, int ), bf );
 				    uart_server_buffer_puts(msg, &length, bf);
 				    break;
@@ -154,6 +158,3 @@ int WaitOutputEmpty(int tid) {
 
     return (ret < 0 || msg.type == MSG_UART_ERROR) ? -1 : 0;
 }
-
-
-
