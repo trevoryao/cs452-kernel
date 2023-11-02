@@ -21,6 +21,9 @@ struct track_edge {
   int dist;             /* in millimetres */
 };
 
+// converting sensor module/number to num
+// (mod - 1) * 16 + (num - 1)
+
 struct track_node {
   const char *name;
   node_type type;
