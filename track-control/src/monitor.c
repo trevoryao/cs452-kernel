@@ -39,6 +39,9 @@
 #define PRMT_START_X 1
 #define PRMT_START_Y 24
 
+#define ERR_START_X 1
+#define ERR_START_Y 26
+
 static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
@@ -235,4 +238,16 @@ void cmd_delete(uint16_t tid) {
 
 void cmd_out(uint16_t tid, char c) {
     Putc(tid, c);
+}
+
+void print_error_message(uint16_t tid) {
+    Printf(tid, CURS_SAVE CURS_HIDE COL_RED CURS_MOV DEL_LINE "Invalid Command entered - Try again" COL_RST CURS_UNSAVE CURS_SHOW,
+            ERR_START_Y, ERR_START_X);
+
+}
+
+void reset_error_message(uint16_t tid) {
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE COL_RST CURS_UNSAVE CURS_SHOW,
+            ERR_START_Y, ERR_START_X);
+
 }

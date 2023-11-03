@@ -45,4 +45,7 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
 void cmd_delete(uint16_t tid); // delete prev char before cursor
 void cmd_out(uint16_t tid, char c); // echo back cmd
 
+void print_error_message(uint16_t tid);
+void reset_error_message(uint16_t tid);
+
 #endif

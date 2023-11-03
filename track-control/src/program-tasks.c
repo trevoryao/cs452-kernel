@@ -80,6 +80,7 @@ void cmd_task_main(void) {
         } else if (c == '\r') { // enter
             parse_cmd(&console_in, &cmd);
             deque_reset(&console_in);
+            reset_error_message(console_tid);
 
             switch (cmd.kind) {
                 case CMD_TR:
@@ -111,7 +112,9 @@ void cmd_task_main(void) {
                     track_stop(marklin_tid);
                     break;
                 case CMD_Q: goto ProgramEnd;
-                default: break; // error (do nothing)
+                default: 
+                    print_error_message(console_tid);
+                    break; // error (do nothing)
             }
 
             print_prompt(console_tid); // clear last cmd
