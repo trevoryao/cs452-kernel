@@ -210,5 +210,7 @@ int32_t get_time_from_velocity(speed_t *spd_t, uint16_t trn, int32_t dist) {
     * 
     */
    int32_t velocity = get_current_velocity(spd_t, trn);
-   return 100 * dist / velocity;
+   int32_t distance_in_um = dist * 1000;
+
+   return 100 * distance_in_um / velocity;
 }
