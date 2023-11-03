@@ -132,8 +132,8 @@ void sensor_task_main(void) {
     uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
     uint16_t marklin_tid = WhoIs(MARKLIN_SERVER_NAME);
 
-    struct sen_data sen_data;
-    sen_data_init(&sen_data);
+    struct sensor sensor;
+    sen_data_init(&sensor);
 
     deque triggered_sensors;
     deque_init(&triggered_sensors, 4); // 16 (8 in total)
@@ -147,7 +147,7 @@ void sensor_task_main(void) {
         for (;;) {
             sen_byte = Getc(marklin_tid);
 
-            if (rcv_sen_dump(&sen_data, sen_byte, console_tid, &triggered_sensors)) // finished?
+            if (rcv_sen_dump(&sensor, sen_byte, console_tid, &triggered_sensors)) // finished?
                 break; // inner for loop
         }
     }

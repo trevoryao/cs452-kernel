@@ -118,14 +118,14 @@ void parse_cmd(struct deque *in, cmd_s *out) {
 
                     char mod = (char)deque_pop_front(in);
                     if ('A' <= mod && mod <= 'E') {
-                        out->args.path[i].mod = mod - 'A' + 1;
+                        out->args.path[i].mod_num = mod - 'A' + 1;
                     } else if ('a' <= mod && mod <= 'e') {
-                        out->args.path[i].mod = mod - 'a' + 1;
+                        out->args.path[i].mod_num = mod - 'a' + 1;
                     } else { RET_ERR }
 
                     int mod_no;
                     if ((mod_no = parse_num(in)) < 0) { RET_ERR }
-                    else out->args.path[i].mod_no = mod_no;
+                    else out->args.path[i].mod_sensor = mod_no;
 
                     out->args.path[i].num = (mod - 1) * NUM_MOD_PER_SEN + (mod_no - 1);
                 }

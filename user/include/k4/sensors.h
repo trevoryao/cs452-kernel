@@ -12,12 +12,12 @@ typedef struct deque deque;
  */
 
 // struct for counting rcv'd sensor data
-typedef struct sen_data {
+typedef struct sensor {
     uint16_t mod_num; // which sensor to dump
-    uint16_t mod_round; // which sensor byte to process
-} sen_data;
+    uint16_t mod_sensor; // which sensor byte to process
+} sensor;
 
-void sen_data_init(sen_data *d);
+void sen_data_init(sensor *d);
 
 // start sensor dump
 void sen_start_dump(uint16_t tid);
@@ -25,6 +25,6 @@ void sen_start_dump(uint16_t tid);
 // processes a byte of received data
 // returns 1 if no more bytes left to receive for dump
 // if so, call sen_start_dump
-int rcv_sen_dump(sen_data *d, char b, uint16_t tid, deque *recent_sens);
+int rcv_sen_dump(sensor *d, char b, uint16_t tid, deque *recent_sens);
 
 #endif

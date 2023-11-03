@@ -132,7 +132,7 @@ void sensor_task_main(void) {
     uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
     uint16_t marklin_tid = WhoIs(MARKLIN_SERVER_NAME);
 
-    struct sen_data sen_data;
+    struct sensor sen_data;
     sen_data_init(&sen_data);
 
     deque triggered_sensors;
