@@ -12,6 +12,7 @@
 #include "monitor.h"
 #include "speed.h"
 #include "track.h"
+#include "rpi.h"
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
@@ -59,19 +60,20 @@ void replySwitchPosition(uint16_t senderTid, uint16_t sw_no, enum SWITCH_DIR sw_
 void track_control_coordinator_main() {
     // structs for reading & writing
     int senderTid;
-    struct msg_tc_server msg_received, msg_send;
+    struct msg_tc_server msg_received;
 
 
     // Data structure to keep latest sensor activations
     struct sensor_queue sensor_queue;
     sensor_queue_init(&sensor_queue);
+
     uint16_t latestSensorMod = 0;
     uint16_t latestSensorNo = 0;
     uint16_t latestSensorTimestamp = 0;
 
     // Structure for UI sensor
     struct deque ui_sensor_queue;
-    deque_init(&ui_sensor_queue, 3);
+    deque_init(&ui_sensor_queue, 4);
 
     // Register at Nameserver
     RegisterAs(TC_SERVER_NAME);
@@ -81,7 +83,7 @@ void track_control_coordinator_main() {
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
 
     // start up a sensorWorker
-    int sensorWorker = Create(P_NOTIF, sensor_worker_main);
+    int sensorWorker = Create(P_HIGH, sensor_worker_main);
 
     /*
     *
@@ -106,13 +108,13 @@ void track_control_coordinator_main() {
                 // enqueue to sensor
                 // TODO: fix when better structure
                 sensor received_sensor = msg_received.data.sensor;
-                sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_sensor, received_sensor.mod_num, msg_received.requesterTid);
+                //sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_sensor, received_sensor.mod_num, msg_received.requesterTid);
                 break;
             }
 
             case MSG_TC_SENSOR_PUT: {
                 Reply(senderTid, NULL, 0);
-
+                
                 uint16_t sensor_mod = msg_received.data.sensor.mod_sensor;
                 uint16_t sensor_no = msg_received.data.sensor.mod_num;
                 int current_Timestamp = Time(clockTid);
@@ -131,6 +133,7 @@ void track_control_coordinator_main() {
 
                     // inform UI about sensor update
                     update_triggered_sensor(consoleTid, &ui_sensor_queue, sensor_mod, sensor_no);
+                    
                 }
 
                 break;
@@ -141,6 +144,7 @@ void track_control_coordinator_main() {
                 // set train speed
                 switch_throw(marklinTid, msg_received.data.sw_cmd.sw_no, msg_received.data.sw_cmd.sw_dir);
                 replySwitchPosition(senderTid, msg_received.data.sw_cmd.sw_no, msg_received.data.sw_cmd.sw_dir);
+                update_switch(consoleTid, msg_received.data.sw_cmd.sw_no, msg_received.data.sw_cmd.sw_dir);
                 break;
             }
 
@@ -148,6 +152,7 @@ void track_control_coordinator_main() {
                 /* code */
                 train_mod_speed(marklinTid, &spd_t, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd);
                 replyTrainSpeed(&spd_t, msg_received.data.trn_cmd.trn_no, senderTid);
+                update_speed(consoleTid, &spd_t, msg_received.data.trn_cmd.trn_no);
                 break;
             }
 

@@ -34,21 +34,6 @@ DEPENDS := $(patsubst %.c, %.d, $(patsubst %.S, %.d, $(SOURCES)))
 # The first rule is the default, ie. "make", "make all" and "make kernel8.img" mean the same
 all: $(EXEC).img
 
-k1: DEFINES += -DK1
-k1: all
-
-k2: DEFINES += -DK2 -DK2_TEST_GAME
-k2: all
-
-k2-timings: DEFINES += -DK2 -DK2_TEST_TIMINGS
-k2-timings: all
-
-k3: DEFINES += -DK3
-k3: all
-
-k4: DEFINES += -DK4
-k4: all
-
 clean:
 	rm -f $(OBJECTS) $(DEPENDS) $(EXEC).elf $(EXEC).img
 

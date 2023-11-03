@@ -6,8 +6,11 @@
 
 void sensor_queue_init(sensor_queue *sq) {
     memset(sq->storage, 0, sizeof(struct sensor_queue_entry) * MAX_WAITING_PROCESSES);
-    memset(sq->sensors, 0, sizeof(sensor_queue_entry*) * N_SENSOR_MODULES * N_SENSORS);
+    
+    for (int i = 0; i < N_SENSOR_MODULES; ++i) {
+        memset(sq->sensors[i], 0, sizeof(sensor_queue_entry*) * N_SENSORS);
 
+    }   
     sq->freelist = NULL;
 }
 

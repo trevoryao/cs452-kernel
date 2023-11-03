@@ -6,7 +6,7 @@
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
-#define MAX_WAITING_PROCESSES 64
+#define MAX_WAITING_PROCESSES 8
 
 typedef struct sensor_queue_entry sensor_queue_entry;
 

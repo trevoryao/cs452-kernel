@@ -16,7 +16,8 @@
 #include "parsing.h"
 #include "sensors.h"
 #include "speed.h"
-#include "track.h"
+#include "track-control.h"
+#include "track-control-coordinator.h"
 
 // pass to worker task to prevent perf hit of multiple syscalls
 typedef struct msg_rv {
@@ -59,6 +60,7 @@ void cmd_task_main(void) {
     uint16_t clock_tid = WhoIs(CLOCK_SERVER_NAME);
     uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
     uint16_t marklin_tid = WhoIs(MARKLIN_SERVER_NAME);
+    uint16_t tcc_tid = WhoIs(TC_SERVER_NAME);
 
     deque console_in; // entered command deque
     deque_init(&console_in, 10);
@@ -66,8 +68,8 @@ void cmd_task_main(void) {
     char c;
     cmd_s cmd; // for parsing
 
-    speed_t spd_t;
-    speed_t_init(&spd_t);
+    // speed_t spd_t;
+    // speed_t_init(&spd_t);
 
     for (;;) {
         c = Getc(console_tid);
@@ -81,10 +83,9 @@ void cmd_task_main(void) {
 
             switch (cmd.kind) {
                 case CMD_TR:
-                    train_mod_speed(marklin_tid, &spd_t, cmd.args.params[0], cmd.args.params[1]);
-                    update_speed(console_tid, &spd_t, cmd.args.params[0]);
+                    track_control_set_train_speed(tcc_tid, cmd.args.params[0], cmd.args.params[1]);
                     break;
-                case CMD_RV:
+                /*case CMD_RV:
                     train_reverse_start(marklin_tid, &spd_t, cmd.args.params[0]);
                     int rev_time = Time(clock_tid) + RV_WAIT_TIME;
 
@@ -99,10 +100,9 @@ void cmd_task_main(void) {
                     Send(rev_tid, (char *)&params, sizeof(msg_rv), NULL, 0);
 
                     update_speed(console_tid, &spd_t, cmd.args.params[0]);
-                    break;
+                    break;*/
                 case CMD_SW:
-                    switch_throw(marklin_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
-                    update_switch(console_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
+                    track_control_set_switch(tcc_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
                     break;
                 case CMD_GO:
                     track_go(marklin_tid);

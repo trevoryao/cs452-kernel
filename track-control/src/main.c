@@ -9,6 +9,7 @@
 #include "time.h"
 #include "uart-server.h"
 #include "uassert.h"
+#include "track-control-coordinator.h"
 
 #include "control-msgs.h"
 #include "program-tasks.h"
@@ -20,6 +21,7 @@ void user_main(void) {
 
     uint16_t console_tid = Create(P_SERVER_LO, console_server_main);
     uint16_t marklin_tid = Create(P_SERVER_HI, marklin_server_main);
+    uint16_t tcc_tid = Create(P_SERVER_HI, track_control_coordinator_main);
 
     // initialisation commands
     init_monitor(console_tid);
@@ -28,7 +30,7 @@ void user_main(void) {
     // start all tasks
     Create(P_HIGH, time_task_main);
     Create(P_MED, cmd_task_main);
-    Create(P_HIGH, sensor_task_main);
+    //Create(P_HIGH, sensor_task_main);
 
     // wait for quit control msg from cmd_task
     int cmd_task_tid;
