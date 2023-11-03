@@ -81,28 +81,28 @@ void cmd_task_main(void) {
 
             switch (cmd.kind) {
                 case CMD_TR:
-                    train_mod_speed(marklin_tid, &spd_t, cmd.args.params[0], cmd.args.params[1]);
-                    update_speed(console_tid, &spd_t, cmd.args.params[0]);
+                    train_mod_speed(marklin_tid, &spd_t, cmd.params[0], cmd.params[1]);
+                    update_speed(console_tid, &spd_t, cmd.params[0]);
                     break;
                 case CMD_RV:
-                    train_reverse_start(marklin_tid, &spd_t, cmd.args.params[0]);
+                    train_reverse_start(marklin_tid, &spd_t, cmd.params[0]);
                     int rev_time = Time(clock_tid) + RV_WAIT_TIME;
 
                     int rev_tid = Create(P_HIGH, reverse_task_main);
                     msg_rv params = {
                         clock_tid,
                         marklin_tid,
-                        speed_get(&spd_t, cmd.args.params[0]),
-                        cmd.args.params[0],
+                        speed_get(&spd_t, cmd.params[0]),
+                        cmd.params[0],
                         rev_time
                     };
                     Send(rev_tid, (char *)&params, sizeof(msg_rv), NULL, 0);
 
-                    update_speed(console_tid, &spd_t, cmd.args.params[0]);
+                    update_speed(console_tid, &spd_t, cmd.params[0]);
                     break;
                 case CMD_SW:
-                    switch_throw(marklin_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
-                    update_switch(console_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
+                    switch_throw(marklin_tid, cmd.params[0], (enum SWITCH_DIR)cmd.params[1]);
+                    update_switch(console_tid, cmd.params[0], (enum SWITCH_DIR)cmd.params[1]);
                     break;
                 case CMD_GO:
                     track_go(marklin_tid);
