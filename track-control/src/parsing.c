@@ -3,6 +3,7 @@
 #include "deque.h"
 
 #include "controller-consts.h"
+#include "speed.h"
 
 // returns number of ws chars stripped
 static uint16_t strip_ws(deque *in) {
@@ -99,14 +100,14 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 int tr_no; // train no
                 if ((tr_no = parse_num(in)) < 0) { RET_ERR } // not a num
                 else if (tr_no >= MAX_TRNS) { RET_ERR } // invalid
-                out->args.params[0] = tr_no;
+                out->params[0] = tr_no;
 
                 // get train speed
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 int spd; // train no
                 if ((spd = parse_num(in)) < 0) { RET_ERR } // not a num
                 else if (spd > SP_REVERSE + LIGHTS) { RET_ERR } // invalid
-                out->args.params[1] = spd;
+                out->params[1] = spd;
 
                 out->kind = CMD_TR;
                 break; // check end
@@ -118,19 +119,44 @@ void parse_cmd(struct deque *in, cmd_s *out) {
 
                     char mod = (char)deque_pop_front(in);
                     if ('A' <= mod && mod <= 'E') {
-                        out->args.path[i].mod_num = mod - 'A' + 1;
+                        out->path[i].mod_num = mod - 'A' + 1;
                     } else if ('a' <= mod && mod <= 'e') {
-                        out->args.path[i].mod_num = mod - 'a' + 1;
+                        out->path[i].mod_num = mod - 'a' + 1;
                     } else { RET_ERR }
 
                     int mod_no;
                     if ((mod_no = parse_num(in)) < 0) { RET_ERR }
-                    else out->args.path[i].mod_sensor = mod_no;
+                    else out->path[i].mod_sensor = mod_no;
 
-                    out->args.path[i].num = (mod - 1) * NUM_MOD_PER_SEN + (mod_no - 1);
+                    out->path[i].num = (mod - 1) * NUM_MOD_PER_SEN + (mod_no - 1);
                 }
 
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
+
+                int mult = (deque_front(in) == '-') ? -1 : 1;
+                int offset; // train no
+                if ((offset = parse_num(in)) < 0) { RET_ERR } // not a num
+                out->params[0] = mult * offset;
+
+                if (strip_ws(in) == 0) { RET_ERR } // no ws?
+
+                // get desired spd
+                c = (char)deque_pop_front(in);
+                if (c == 'l') {
+                    if (deque_pop_front(in) == 'o') {
+                        out->params[1] = SPD_LO;
+                    } else { RET_ERR }
+                } else if (c == 'm') {
+                    if (deque_pop_front(in) == 'e' &&
+                        deque_pop_front(in) == 'd') {
+                        out->params[1] = SPD_MED;
+                    } else { RET_ERR }
+                } else if (c == 'h') {
+                    if (deque_pop_front(in) == 'i') {
+                        out->params[1] = SPD_HI;
+                    } else { RET_ERR }
+                } else { RET_ERR }
+
                 break;
             } else { RET_ERR }
         }
@@ -141,7 +167,7 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 int tr_no; // train no
                 if ((tr_no = parse_num(in)) < 0) { RET_ERR } // not a num
                 else if (tr_no >= MAX_TRNS) { RET_ERR } // invalid
-                out->args.params[0] = tr_no;
+                out->params[0] = tr_no;
 
                 out->kind = CMD_RV;
                 break; // check end
@@ -154,7 +180,7 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 int sw; // switch no
                 if ((sw = parse_num(in)) < 0) { RET_ERR } // not a num
 
-                out->args.params[0] = sw;
+                out->params[0] = sw;
 
                 if (!(SW0_BASE <= sw && sw < SW0_BASE + N_SW0) &&
                     !(SW1_BASE <= sw && sw < SW1_BASE + N_SW1)) { // invalid?
@@ -168,11 +194,11 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 switch (dir) {
                     case 'S':
                     case 's':
-                        out->args.params[1] = STRT;
+                        out->params[1] = STRT;
                         break;
                     case 'C':
                     case 'c':
-                        out->args.params[1] = CRV;
+                        out->params[1] = CRV;
                         break;
                     default: { RET_ERR }
                 }

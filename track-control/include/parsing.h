@@ -26,10 +26,8 @@ enum CMD_KIND {
 // organised multi-value return struct
 typedef struct cmd_s {
     enum CMD_KIND kind;
-    union {
-        uint16_t params[2]; // args
-        sensor path[2]; // start and end
-    } args;
+    uint16_t params[2]; // args
+    sensor path[2]; // start and end
 } cmd_s;
 
 // parses received cmd returns CMD_KIND

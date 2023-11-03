@@ -83,7 +83,7 @@ void cmd_task_main(void) {
 
             switch (cmd.kind) {
                 case CMD_TR:
-                    track_control_set_train_speed(tcc_tid, cmd.args.params[0], cmd.args.params[1]);
+                    track_control_set_train_speed(tcc_tid, cmd.params[0], cmd.params[1]);
                     break;
                 /*case CMD_RV:
                     train_reverse_start(marklin_tid, &spd_t, cmd.args.params[0]);
@@ -93,8 +93,8 @@ void cmd_task_main(void) {
                     msg_rv params = {
                         clock_tid,
                         marklin_tid,
-                        speed_get(&spd_t, cmd.args.params[0]),
-                        cmd.args.params[0],
+                        speed_get(&spd_t, cmd.params[0]),
+                        cmd.params[0],
                         rev_time
                     };
                     Send(rev_tid, (char *)&params, sizeof(msg_rv), NULL, 0);
@@ -102,7 +102,7 @@ void cmd_task_main(void) {
                     update_speed(console_tid, &spd_t, cmd.args.params[0]);
                     break;*/
                 case CMD_SW:
-                    track_control_set_switch(tcc_tid, cmd.args.params[0], (enum SWITCH_DIR)cmd.args.params[1]);
+                    track_control_set_switch(tcc_tid, cmd.params[0], (enum SWITCH_DIR)cmd.params[1]);
                     break;
                 case CMD_GO:
                     track_go(marklin_tid);
