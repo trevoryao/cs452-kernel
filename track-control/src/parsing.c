@@ -133,20 +133,27 @@ void parse_cmd(struct deque *in, cmd_s *out) {
 
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
 
+                int mult = (deque_front(in) == '-') ? -1 : 1;
+                int offset; // train no
+                if ((offset = parse_num(in)) < 0) { RET_ERR } // not a num
+                out->params[0] = mult * offset;
+
+                if (strip_ws(in) == 0) { RET_ERR } // no ws?
+
                 // get desired spd
                 c = (char)deque_pop_front(in);
                 if (c == 'l') {
                     if (deque_pop_front(in) == 'o') {
-                        out->params[0] = SPD_LO;
+                        out->params[1] = SPD_LO;
                     } else { RET_ERR }
                 } else if (c == 'm') {
                     if (deque_pop_front(in) == 'e' &&
                         deque_pop_front(in) == 'd') {
-                        out->params[0] = SPD_MED;
+                        out->params[1] = SPD_MED;
                     } else { RET_ERR }
                 } else if (c == 'h') {
                     if (deque_pop_front(in) == 'i') {
-                        out->params[0] = SPD_HI;
+                        out->params[1] = SPD_HI;
                     } else { RET_ERR }
                 } else { RET_ERR }
 
