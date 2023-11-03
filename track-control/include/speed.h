@@ -66,7 +66,7 @@ int32_t get_distance_to_stop(speed_t *spd_t, uint16_t trn);
 // returns time in clock server ticks (10ms ticks) needed to deaccelerate to base spd (7) and stop
 // int32_t get_time_to_stop(speed_t *spd_t, uint16_t trn);
 
-// returns time taken to travel dist at current spd
+// returns time taken to travel dist at current spd (expected distance in mm)
 int32_t get_time_from_velocity(speed_t *spd_t, uint16_t trn, int32_t dist);
 
 #endif
