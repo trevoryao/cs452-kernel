@@ -1,6 +1,7 @@
 #include "rpi.h"
-
 #include "uassert.h"
+
+#include "controller-consts.h"
 #include "routing.h"
 #include "speed-data.h"
 #include "track-data.h"
@@ -20,7 +21,10 @@ void user_main(void) {
     routing_action_queue speed_changes;
     routing_action_queue_init(&speed_changes);
 
-    plan_route(NULL, NULL, 0, 77, SPD_STP, SPD_HI, &path, &speed_changes);
+    uart_printf(CONSOLE, "Planning route...\r\n");
+
+    // A1 -> C3
+    plan_route(&track[0], &track[34], 0, 77, SPD_STP, SPD_LO, &path, &speed_changes);
 
     routing_action action;
 
@@ -30,8 +34,9 @@ void user_main(void) {
         uassert(action.action_type == SWITCH);
         uassert(action.delay_ticks == 0);
 
-        uart_printf(CONSOLE, "Switch %d (at Sensor %c%d)\r\n",
-            action.action.sw_num, SENSOR_MOD(action.sensor_num), SENSOR_NO(action.sensor_num));
+        uart_printf(CONSOLE, "Switch %d to %c (at Sensor %c%d)\r\n",
+            action.action.sw.num, (action.action.sw.dir == STRT) ? 'S' : 'C',
+            SENSOR_MOD(action.sensor_num), SENSOR_NO(action.sensor_num));
     }
 
     uart_printf(CONSOLE, "Speed Changes:\r\n");

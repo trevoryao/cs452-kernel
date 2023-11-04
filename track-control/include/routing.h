@@ -33,8 +33,12 @@ typedef struct routing_action {
     } action_type;
 
     union {
-        uint8_t sw_num;
+        struct {
+            uint8_t num;
+            uint8_t dir;
+        } sw;
         uint8_t spd;
+        uint16_t total; // only for copying
     } action;
 
     uint32_t delay_ticks;
