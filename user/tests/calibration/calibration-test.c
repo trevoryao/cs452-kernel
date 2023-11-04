@@ -397,7 +397,7 @@ void stop_train_at_sensor(uint16_t clock, uint16_t console, uint16_t marklin,
     int32_t breaking_distance = get_stopping_distance(speed, trainNo);
 
     // Calculate expected delay
-    int64_t scaling = 1000;
+    int64_t scaling = 1000; // scale by 100 for proper clock ticks
     int64_t delay_nominator = (dist_um - breaking_distance) * scaling;
 
     int64_t delay = (delay_nominator / v) / TICK_MS;

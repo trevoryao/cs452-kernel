@@ -1,5 +1,7 @@
 #include "priority-queue.h"
 
+#include "stddef.h"
+
 #define LEFT(i) (((i) * 2) + 1)
 #define RIGHT(i) (((i) * 2) + 2)
 #define PARENT(i) (((i) - 1) / 2)
@@ -60,7 +62,7 @@ static void priority_queue_bubble_up(priority_queue *pq, int16_t i) {
     }
 }
 
-void priority_queue_add(priority_queue *pq, int16_t val, int16_t priority) {
+void priority_queue_add(priority_queue *pq, void *val, int16_t priority) {
     if (pq->size < MAX_PQ_ELEMENTS) {
         pq->heap[pq->size].value = val;
         pq->heap[pq->size].priority = priority;
@@ -69,10 +71,10 @@ void priority_queue_add(priority_queue *pq, int16_t val, int16_t priority) {
     }
 }
 
-int32_t priority_queue_pop_min(priority_queue *pq) {
-    if (pq->size == 0) return PQ_EMPTY;
+void *priority_queue_pop_min(priority_queue *pq) {
+    if (pq->size == 0) return NULL;
 
-    int16_t retval = pq->heap[0].value;
+    void *retval = pq->heap[0].value;
 
     // replace top with last node
     pq->heap[0].value = pq->heap[pq->size - 1].value;
@@ -84,7 +86,7 @@ int32_t priority_queue_pop_min(priority_queue *pq) {
     return retval;
 }
 
-bool priority_queue_decrease(priority_queue *pq, int16_t val,
+bool priority_queue_decrease(priority_queue *pq, void *val,
     int16_t new_priority) {
     // find idx
     int16_t i = 0;
@@ -95,4 +97,8 @@ bool priority_queue_decrease(priority_queue *pq, int16_t val,
 
     priority_queue_bubble_up(pq, i);
     return true;
+}
+
+bool priority_queue_empty(priority_queue *pq) {
+    return pq->size == 0;
 }

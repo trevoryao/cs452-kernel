@@ -5,12 +5,12 @@ XBINDIR:=$(XDIR)/bin
 CC:=$(XBINDIR)/$(TRIPLE)-gcc
 OBJCOPY:=$(XBINDIR)/$(TRIPLE)-objcopy
 OBJDUMP:=$(XBINDIR)/$(TRIPLE)-objdump
-ROOT:=../..
+ROOT:=../../..
 SRC:=src
 INCLUDES:=include
 KDIR:=kernel
 TDIR:=track-control
-EXEC:=speed-test
+EXEC:=routing-test
 
 # COMPILE OPTIONS
 # -ffunction-sections causes each function to be in a separate section (linker script relies on this)

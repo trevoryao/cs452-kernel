@@ -19,6 +19,8 @@
 
 #define MAX_TRNS 100 // maximum possible train number
 
+#define MM_TO_UM 1000 // mm -> um
+
 // codes for switch commands
 enum SWITCH_DIR {
     STRT = 33,
