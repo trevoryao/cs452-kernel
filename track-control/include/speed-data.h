@@ -14,11 +14,7 @@ void speed_data_init(speed_data *data);
 
 // velocity data
 int32_t get_velocity(speed_data *data, uint16_t n, uint16_t s); // um/s
-
-// as f'n of current speed
-int32_t get_current_velocity(speed_data *data, uint16_t n); // um/s
-int32_t get_acceleration(speed_data *data, uint16_t n, uint16_t s);
-int32_t get_acceleration_general(speed_data *data, uint16_t n, uint16_t speed1, uint16_t speed2);
+int32_t get_acceleration(speed_data *data, uint16_t n, uint16_t speed1, uint16_t speed2);
 
 // returns distance in um needed to accelerate trn from s1 -> s2
 int32_t get_distance_from_acceleration(speed_data *data, uint16_t trn, uint16_t speed1, uint16_t speed2);
@@ -30,6 +26,6 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
 int32_t get_stopping_distance(speed_data *data, uint16_t n);
 
 // returns time taken to travel dist at current spd (expected distance in mm)
-int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist);
+int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s);
 
 #endif

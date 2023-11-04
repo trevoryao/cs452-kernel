@@ -1,5 +1,7 @@
 #include "speed-data.h"
 
+#include "util.h"
+
 inline static uint8_t spd_hash(enum SPEEDS s) {
     if (s == 0) return 0;
     return (s - 5) >> 1; // div 2
@@ -57,19 +59,11 @@ void speed_data_init(speed_data *data) {
     data->stopping_data[2] = 226606; // tr 77
 }
 
-int32_t get_current_velocity(speed_data *data, uint16_t n) {
-    return get_velocity(data, n, speed_get(data, n));
-}
-
 int32_t get_velocity(speed_data *data, uint16_t n, uint16_t s) {
     return data->velocity_data[trn_hash(n)][spd_hash(s)];
 }
 
-int32_t get_acceleration(speed_data *data, uint16_t n, uint16_t s) {
-    return data->acceleration_data[trn_hash(n)][spd_hash(speed_get(data, n))][spd_hash(s)];
-}
-
-int32_t get_acceleration_general(speed_data *data, uint16_t n, uint16_t speed1, uint16_t speed2) {
+int32_t get_acceleration(speed_data *data, uint16_t n, uint16_t speed1, uint16_t speed2) {
     return data->acceleration_data[trn_hash(n)][spd_hash(speed1)][spd_hash(speed2)];
 }
 
@@ -101,7 +95,7 @@ int32_t get_distance_from_acceleration(speed_data *data, uint16_t trn, uint16_t 
     if (idx < 0) return 0;
 
     // in um/s2
-    int64_t acceleration = get_acceleration_general(data, trn, speed1, speed2);
+    int64_t acceleration = get_acceleration(data, trn, speed1, speed2);
     // velocity in um/s
     int32_t v1 = get_velocity(data, trn, speed1);
     int32_t v2 = get_velocity(data, trn, speed2);
@@ -133,7 +127,7 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
     */
 
 
-    int64_t acceleration = get_acceleration_general(data, trn, speed1, speed2);
+    int64_t acceleration = get_acceleration(data, trn, speed1, speed2);
     int32_t v1 = get_velocity(data, trn, speed1);
     int32_t v2 = get_velocity(data, trn, speed2);
 
@@ -141,13 +135,13 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
     return t_clock_ticks / acceleration;
 }
 
-int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist) {
+int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
     /*
     *
     *   Formula: t_clock_ticks = 100 * d / v
     *
     */
-   int32_t velocity = get_current_velocity(data, trn);
+   int32_t velocity = get_velocity(data, trn, s);
    int32_t distance_in_um = dist * 1000;
 
    return 100 * distance_in_um / velocity;

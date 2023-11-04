@@ -23,7 +23,7 @@ static void heapify(priority_queue *pq, int16_t i) {
 
     if (min != i) { // need to swap?
         // swap min and i nodes
-        int16_t tmp;
+        void *tmp;
 
         tmp = pq->heap[min].value;
         pq->heap[min].value = pq->heap[i].value;

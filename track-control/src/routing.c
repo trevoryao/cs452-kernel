@@ -137,7 +137,6 @@ void plan_route(track_node *start_node, track_node *end_node,
     routing_action action; // used for pushing back actions
 
     track_node *next = end_node;
-    track_node *next_sensor = end_node; // assume enough space to have at least one sensor
     track_node *node = prev[HASH(end_node)];
     while (node != NULL) {
         if (node->type == NODE_BRANCH) {
@@ -194,10 +193,11 @@ void plan_route(track_node *start_node, track_node *end_node,
             }
         }
 
-        next_sensor = node;
         next = node;
         node = prev[HASH(next)];
     }
+
+    // need to take into account non-zero starting speed
 
     // add start up acceleration data
     // next holds first node
