@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "sensors.h"
+#include "track-node.h"
 
 /*
  * command parsing
@@ -26,8 +26,8 @@ enum CMD_KIND {
 // organised multi-value return struct
 typedef struct cmd_s {
     enum CMD_KIND kind;
-    uint16_t params[2]; // args
-    sensor path[2]; // start and end
+    int16_t params[3]; // args
+    track_node *path[2]; // start and end
 } cmd_s;
 
 // parses received cmd returns CMD_KIND
