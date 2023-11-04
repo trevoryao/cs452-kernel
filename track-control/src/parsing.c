@@ -5,6 +5,8 @@
 #include "controller-consts.h"
 #include "speed.h"
 
+extern track_node track[];
+
 // returns number of ws chars stripped
 static uint16_t strip_ws(deque *in) {
     char c;
@@ -85,6 +87,90 @@ static int parse_num(deque *in) {
     } else return parse_int(in);
 }
 
+#define SENS_NODE_BASE  0
+#define SW0_NODE_BASE   80
+#define SW1_NODE_BASE   116
+#define END_NODE_BASE   124
+#define END1_NODE_BASE  132
+
+/*
+ * [A-E][1-16]
+ * (B/M)R[1-18 / 153 - 156]
+ * E(N/X)[1-10]
+ */
+
+static int parse_path_node(deque *in, track_node **out) {
+    char second_char = deque_itr_get(in, deque_itr_next(deque_begin(in)));
+    switch (second_char) { // check second char to eliminate many
+        case 'R': { // BR or MR?
+            int offset;
+            char c = (char)deque_pop_front(in);
+            if (c == 'B') {
+                offset = 0;
+            } else if (c == 'M') {
+                offset = 1;
+            } else return -1;
+
+            deque_pop_front(in); // pop off all letters
+
+            int sw_no = parse_num(in);
+            if (sw_no < 0) return -1;
+            else if (SW0_BASE <= sw_no && sw_no < SW0_BASE + N_SW0) {
+                *out = &track[SW0_NODE_BASE + (2 * (sw_no - SW0_BASE)) + offset];
+            } else if (SW1_BASE <= sw_no && sw_no < SW1_BASE + N_SW1) {
+                *out = &track[SW1_NODE_BASE + (2 * (sw_no - SW1_BASE)) + offset];
+            } else {
+                return -1;
+            }
+
+            break;
+        }
+        case 'N': // EN?
+        case 'X': { // EX?
+            if ((char)deque_pop_front(in) != 'E') {
+                return -1;
+            }
+
+            int offset = (second_char == 'N') ? 0 : 1; // offset 1 for EX
+
+            deque_pop_front(in); // pop off all letters
+
+            // switch number parsing super ugly since not very linear
+            int end_no = parse_num(in);
+            if (end_no < 0) return -1;
+            else if (1 <= end_no && end_no <= 5) {
+                *out = &track[END_NODE_BASE + (2 * (end_no - 1)) + offset];
+            } else if (5 <= end_no && end_no <= 9 && ((end_no % 2) == 1)) {
+                *out = &track[END1_NODE_BASE + (end_no - 5) + offset];
+            } else if (end_no == 10) {
+                *out = &track[END1_NODE_BASE + 4 + offset];
+            } else {
+                return -1;
+            }
+
+            break;
+        }
+        default: { // try parse as switch
+            char mod = (char)deque_pop_front(in);
+            if ('A' <= mod && mod <= 'E') {
+                mod = mod - 'A';
+            } else return -1;
+
+            int mod_no = parse_num(in);
+            if (mod_no < 0) return -1;
+            else if (1 <= mod_no && mod_no <= NUM_MOD_PER_SEN) {
+                *out = &track[SENS_NODE_BASE + (mod * NUM_MOD_PER_SEN) + (mod_no - 1)];
+            } else {
+                return -1;
+            }
+
+            break;
+        }
+    }
+
+    return 0;
+}
+
 #define RET_ERR out->kind = ERR; return; // just to stop repetition, not amazing form
 
 void parse_cmd(struct deque *in, cmd_s *out) {
@@ -99,7 +185,7 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 int tr_no; // train no
                 if ((tr_no = parse_num(in)) < 0) { RET_ERR } // not a num
-                else if (tr_no >= MAX_TRNS) { RET_ERR } // invalid
+                else if (trn_hash(tr_no) == -1) { RET_ERR } // invalid
                 out->params[0] = tr_no;
 
                 // get train speed
@@ -112,51 +198,50 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 out->kind = CMD_TR;
                 break; // check end
             } else if (c == 'c') {
-                out->kind = CMD_TC;
-
                 for (int i = 0; i < 2; ++i) {
                     if (strip_ws(in) == 0) { RET_ERR } // no ws?
-
-                    char mod = (char)deque_pop_front(in);
-                    if ('A' <= mod && mod <= 'E') {
-                        out->path[i].mod_num = mod - 'A' + 1;
-                    } else if ('a' <= mod && mod <= 'e') {
-                        out->path[i].mod_num = mod - 'a' + 1;
-                    } else { RET_ERR }
-
-                    int mod_no;
-                    if ((mod_no = parse_num(in)) < 0) { RET_ERR }
-                    else out->path[i].mod_sensor = mod_no;
-
-                    out->path[i].num = (mod - 1) * NUM_MOD_PER_SEN + (mod_no - 1);
+                    if (parse_path_node(in, &out->path[i]) < 0) { RET_ERR }
                 }
 
+                // parse offset
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
 
-                int mult = (deque_front(in) == '-') ? -1 : 1;
-                int offset; // train no
+                int mult = 1;
+                if (deque_front(in) == '-') {
+                    mult = -1;
+                    deque_pop_front(in);
+                }
+
+                int offset;
                 if ((offset = parse_num(in)) < 0) { RET_ERR } // not a num
                 out->params[0] = mult * offset;
 
+                // parse train number
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
+                int tr_no; // train no
+                if ((tr_no = parse_num(in)) < 0) { RET_ERR } // not a num
+                else if (trn_hash(tr_no) == -1) { RET_ERR } // invalid
+                out->params[1] = tr_no;
 
                 // get desired spd
+                if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 c = (char)deque_pop_front(in);
                 if (c == 'l') {
                     if (deque_pop_front(in) == 'o') {
-                        out->params[1] = SPD_LO;
+                        out->params[2] = SPD_LO;
                     } else { RET_ERR }
                 } else if (c == 'm') {
                     if (deque_pop_front(in) == 'e' &&
                         deque_pop_front(in) == 'd') {
-                        out->params[1] = SPD_MED;
+                        out->params[2] = SPD_MED;
                     } else { RET_ERR }
                 } else if (c == 'h') {
                     if (deque_pop_front(in) == 'i') {
-                        out->params[1] = SPD_HI;
+                        out->params[2] = SPD_HI;
                     } else { RET_ERR }
                 } else { RET_ERR }
 
+                out->kind = CMD_TC;
                 break;
             } else { RET_ERR }
         }
@@ -166,7 +251,7 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 int tr_no; // train no
                 if ((tr_no = parse_num(in)) < 0) { RET_ERR } // not a num
-                else if (tr_no >= MAX_TRNS) { RET_ERR } // invalid
+                else if (trn_hash(tr_no) == -1) { RET_ERR } // invalid
                 out->params[0] = tr_no;
 
                 out->kind = CMD_RV;

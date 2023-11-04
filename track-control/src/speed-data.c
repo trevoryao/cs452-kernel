@@ -136,8 +136,7 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
     return t_clock_ticks / acceleration;
 }
 
-
-int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
+uint32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
     /*
     *
     *   Formula: t_clock_ticks = 100 * d / v
@@ -149,13 +148,13 @@ int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uin
    return 100 * distance_in_um / velocity;
 }
 
-int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t time, uint16_t s) {
+int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, uint32_t ticks, uint16_t s) {
     /*
     *
-    *   Formula: t_clock_ticks * v / 100 = d
+    *   Formula: d = (ticks * v) / 100
     *
     */
    int32_t velocity = get_velocity(data, trn, s);
 
-   return (velocity * time) / 100;
+   return (ticks * velocity) / 100;
 }

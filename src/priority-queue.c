@@ -23,22 +23,20 @@ static void heapify(priority_queue *pq, int16_t i) {
 
     if (min != i) { // need to swap?
         // swap min and i nodes
-        void *tmp;
-
-        tmp = pq->heap[min].value;
+        void *tmp_value = pq->heap[min].value;
         pq->heap[min].value = pq->heap[i].value;
-        pq->heap[i].value = tmp;
+        pq->heap[i].value = tmp_value;
 
-        tmp = pq->heap[min].priority;
+        uint16_t tmp_priority = pq->heap[min].priority;
         pq->heap[min].priority = pq->heap[i].priority;
-        pq->heap[i].priority = tmp;
+        pq->heap[i].priority = tmp_priority;
 
         heapify(pq, min);
     }
 }
 
-void priority_queue_init(priority_queue *pq) {
-    // also assume size is fine
+void priority_queue_init(priority_queue *pq, uint16_t size) {
+    pq->size = size;
     for (int i = (pq->size >> 1) - 1; i >= 0; --i)
         heapify(pq, i);
 }
@@ -48,21 +46,19 @@ static void priority_queue_bubble_up(priority_queue *pq, int16_t i) {
 
     if (pq->heap[parent].priority > pq->heap[i].priority) {
         // swap parent and i nodes
-        int16_t tmp;
-
-        tmp = pq->heap[parent].value;
+        void *tmp_value = pq->heap[parent].value;
         pq->heap[parent].value = pq->heap[i].value;
-        pq->heap[i].value = tmp;
+        pq->heap[i].value = tmp_value;
 
-        tmp = pq->heap[parent].priority;
+        uint16_t tmp_priority = pq->heap[parent].priority;
         pq->heap[parent].priority = pq->heap[i].priority;
-        pq->heap[i].priority = tmp;
+        pq->heap[i].priority = tmp_priority;
 
         priority_queue_bubble_up(pq, parent);
     }
 }
 
-void priority_queue_add(priority_queue *pq, void *val, int16_t priority) {
+void priority_queue_add(priority_queue *pq, void *val, uint16_t priority) {
     if (pq->size < MAX_PQ_ELEMENTS) {
         pq->heap[pq->size].value = val;
         pq->heap[pq->size].priority = priority;
@@ -87,7 +83,7 @@ void *priority_queue_pop_min(priority_queue *pq) {
 }
 
 bool priority_queue_decrease(priority_queue *pq, void *val,
-    int16_t new_priority) {
+    uint16_t new_priority) {
     // find idx
     int16_t i = 0;
     while (i < pq->size && pq->heap[i].value != val) ++i;

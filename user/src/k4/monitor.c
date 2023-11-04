@@ -105,12 +105,9 @@ void init_monitor(uint16_t tid) {
     #if LOGGING
     (void)tid;
     #else
-    // assume screen cleared by the kernel
-    // paint initial structure
-    // let time task start painting, no point in an initial time
 
     // switch list header
-    Printf(tid, CURS_MOV COL_YEL "Switches:" COL_RST, SW_START_Y - 1, SW_START_X);
+    Printf(tid, CLEAR CURS_MOV COL_YEL "Switches:" COL_RST, SW_START_Y - 1, SW_START_X);
 
     for (uint16_t i = SW0_BASE; i < SW0_BASE + N_SW0; ++i) // SW0
         update_single_switch(tid, i, UNKNOWN);
