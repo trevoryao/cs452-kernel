@@ -28,4 +28,7 @@ int32_t get_stopping_distance(speed_data *data, uint16_t n);
 // returns time taken to travel dist at current spd (expected distance in mm)
 int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s);
 
+// returns distance in mm given time in clock ticks
+int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t time, uint16_t s)
+
 #endif

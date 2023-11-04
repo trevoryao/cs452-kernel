@@ -48,4 +48,8 @@ void cmd_out(uint16_t tid, char c); // echo back cmd
 void print_error_message(uint16_t tid);
 void reset_error_message(uint16_t tid);
 
+void print_train_time(uint16_t tid, int8_t trainNo, int32_t diff, int8_t sensor_mod, int8_t sensor_no);
+void print_train_location_error(uint16_t tid, int8_t trainNo, int8_t exp_sensor_mod, int8_t exp_sensor_no, int8_t actual_sensor_mod, int8_t actual_sensor_no);
+
+
 #endif

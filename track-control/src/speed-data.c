@@ -2,6 +2,7 @@
 
 #include "util.h"
 
+
 inline static uint8_t spd_hash(enum SPEEDS s) {
     if (s == 0) return 0;
     return (s - 5) >> 1; // div 2
@@ -135,6 +136,7 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
     return t_clock_ticks / acceleration;
 }
 
+
 int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
     /*
     *
@@ -145,4 +147,15 @@ int32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uin
    int32_t distance_in_um = dist * 1000;
 
    return 100 * distance_in_um / velocity;
+}
+
+int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t time, uint16_t s) {
+    /*
+    *
+    *   Formula: t_clock_ticks * v / 100 = d
+    *
+    */
+   int32_t velocity = get_velocity(data, trn, s);
+
+   return (velocity * time) / 100;
 }
