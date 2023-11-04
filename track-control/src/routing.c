@@ -197,21 +197,43 @@ void plan_route(track_node *start_node, track_node *end_node,
         node = prev[HASH(next)];
     }
 
-    // need to take into account non-zero starting speed
-
     // add start up acceleration data
     // next holds first node
-    // to go from 0 -> 7 -> spd
+
+    if (target_spd == start_spd) return; // no need to get to speed
+
     int32_t initial_start_time = get_time_from_acceleration(&spd_data, trn, SPD_STP, SPD_LO);
     int32_t secondary_start_time = get_time_from_acceleration(&spd_data, trn, SPD_LO, target_spd);
 
-    if (secondary_start_time == 0) { // no extra acceleration to target spd? (target_spd == SPD_LO)
-        action.sensor_num = SENSOR_NONE;
-        action.action_type = SPD_REACHED;
-        action.action.sw_num = 0;
-        action.delay_ticks = initial_start_time;
+    if (start_spd == 0) {
+        // to go from 0 -> 7 -> spd
+        if (secondary_start_time == 0) { // no extra acceleration to target spd? (target_spd == SPD_LO)
+            action.sensor_num = SENSOR_NONE;
+            action.action_type = SPD_REACHED;
+            action.action.sw_num = 0;
+            action.delay_ticks = initial_start_time;
+            routing_action_queue_push_front(speed_changes, &action);
+        } else {
+            action.sensor_num = SENSOR_NONE;
+            action.action_type = SPD_REACHED;
+            action.action.sw_num = 0;
+            action.delay_ticks = secondary_start_time;
+            routing_action_queue_push_front(speed_changes, &action);
+
+            action.sensor_num = start_node->num;
+            action.action_type = SPD_CHANGE;
+            action.action.spd = target_spd;
+            action.delay_ticks = initial_start_time;
+            routing_action_queue_push_front(speed_changes, &action);
+        }
+
+        action.sensor_num = start_node->num;
+        action.action_type = SPD_CHANGE;
+        action.action.spd = SPD_LO;
+        action.delay_ticks = 0;
         routing_action_queue_push_front(speed_changes, &action);
     } else {
+        // only need to go from 7 -> spd
         action.sensor_num = SENSOR_NONE;
         action.action_type = SPD_REACHED;
         action.action.sw_num = 0;
@@ -221,13 +243,7 @@ void plan_route(track_node *start_node, track_node *end_node,
         action.sensor_num = start_node->num;
         action.action_type = SPD_CHANGE;
         action.action.spd = target_spd;
-        action.delay_ticks = initial_start_time;
+        action.delay_ticks = 0;
         routing_action_queue_push_front(speed_changes, &action);
     }
-
-    action.sensor_num = start_node->num;
-    action.action_type = SPD_CHANGE;
-    action.action.spd = SPD_LO;
-    action.delay_ticks = 0;
-    routing_action_queue_push_front(speed_changes, &action);
 }
