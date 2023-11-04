@@ -6,6 +6,8 @@
 #include "speed-data.h"
 #include "track-data.h"
 
+#include "sys-clock.h"
+
 speed_data spd_data;
 track_node track[TRACK_MAX];
 
@@ -24,7 +26,11 @@ void user_main(void) {
     uart_printf(CONSOLE, "Planning route...\r\n");
 
     // A1 -> C3
-    plan_route(&track[0], &track[34], 0, 77, SPD_STP, SPD_LO, &path, &speed_changes);
+    uint64_t ticks = get_curr_ticks();
+    plan_route(&track[0], &track[34], 0, 77, SPD_STP, SPD_HI, &path, &speed_changes);
+    ticks = get_curr_ticks() - ticks;
+
+    uart_printf(CONSOLE, "Run Time (Ticks) %u\r\n", ticks);
 
     routing_action action;
 

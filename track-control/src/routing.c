@@ -68,7 +68,9 @@ void routing_action_queue_front(routing_action_queue *raq, routing_action *actio
     action->delay_ticks = (uint32_t)deque_itr_get(&raq->q, deque_itr_next(itr));
 }
 
-#define HASH(node) (node) - track
+#define HASH(node) ((node) - track)
+#define DIST_TRAVELLED(h1, h2) ((dist[(h2)] - dist[(h1)]) * MM_TO_UM)
+
 #define SW_DELAY_TICKS 75 // 750ms
 
 static inline uint8_t calculate_nbhd_size(node_type type) {
@@ -83,26 +85,6 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
     int32_t sensor_distance, enum SPEEDS start_spd) {
     return ((sensor_distance - stopping_distance) * 100) / get_velocity(&spd_data, trn, start_spd);
 }
-
-#ifdef USERLOG
-void output_heap(priority_queue *pq) {
-    int level_max = 1;
-    int level = 0;
-    for (int i = 0; i < pq->size; ++i, ++level) {
-        if (level == level_max) {
-            uart_puts(CONSOLE, "\r\n");
-            level_max *= 2;
-            level = 0;
-        }
-
-        track_node *value = pq->heap[i].value;
-
-        uart_printf(CONSOLE, "(%d) %s\t", pq->heap[i].priority, value->name);
-    }
-
-    uart_printf(CONSOLE, "\r\n");
-}
-#endif
 
 void plan_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS start_spd,
@@ -130,16 +112,9 @@ void plan_route(track_node *start_node, track_node *end_node,
 
     priority_queue_init(&pq, TRACK_MAX); // heapifies
 
-    ULOG("initialisation done\r\n");
-    #ifdef USERLOG
-    output_heap(&pq);
-    #endif
-
     while (!priority_queue_empty(&pq)) {
-        ULOG("itr start\r\n");
         track_node *node = priority_queue_pop_min(&pq);
         uassert(node);
-        ULOG("new min: %s (%d)\r\n", node->name, HASH(node));
         if (node == end_node)
             break; // reached!
 
@@ -154,20 +129,14 @@ void plan_route(track_node *start_node, track_node *end_node,
             int32_t alt = dist[HASH(node)] + node->edge[i].dist;
 
             if (alt < dist[HASH(nbr)]) {
-                ULOG("recalculating: new dist %d\r\n", alt);
                 dist[HASH(nbr)] = alt;
                 prev[HASH(nbr)] = node;
                 uassert(priority_queue_decrease(&pq, nbr, alt));
-                ULOG("finished pq decrease\r\n");
             }
         }
     }
 
-    ULOG("path finding done\r\n");
-
     // backtrack to find route
-    int32_t route_dist = offset * MM_TO_UM;
-
     // to go from 7 -> 0
     int32_t stopping_dist = get_stopping_distance(&spd_data, trn);
     // to go from 9 -> 7
@@ -176,11 +145,9 @@ void plan_route(track_node *start_node, track_node *end_node,
 
     int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, target_spd);
 
-    ULOG("min dist before branch: %dum\r\n", min_dist_before_branch);
-
-    track_node *branch_node = NULL;
-    int8_t branch_dir;
-    int32_t dist_before_branch = 0;
+    // queueing branch nodes
+    deque branches;
+    deque_init(&branches, 5);
 
     routing_action action; // used for pushing back actions
 
@@ -188,18 +155,10 @@ void plan_route(track_node *start_node, track_node *end_node,
     track_node *node = prev[HASH(end_node)];
 
     while (node != NULL) {
-        ULOG("checking node %s\r\n", node->name);
         if (node->type == NODE_BRANCH) {
-            // WHAT IF ALREADY A BRANCH NODE?? need a queue?
-            branch_node = node;
-            branch_dir = (node->edge[DIR_CURVED].dest == next) ? DIR_CURVED : DIR_STRAIGHT;
-
-            route_dist += node->edge[branch_dir].dist * MM_TO_UM;
-            dist_before_branch = node->edge[branch_dir].dist * MM_TO_UM;
-        } else {
-            route_dist += node->edge[DIR_AHEAD].dist * MM_TO_UM;
-            if (dist_before_branch > 0)
-                dist_before_branch += node->edge[DIR_AHEAD].dist * MM_TO_UM;
+            deque_push_back(&branches, HASH(node)); // node
+            deque_push_back(&branches,
+                (node->edge[DIR_CURVED].dest == next) ? DIR_CURVED : DIR_STRAIGHT); // branch_dir
         }
 
         if (node->type != NODE_SENSOR) { // go to prev node
@@ -208,33 +167,39 @@ void plan_route(track_node *start_node, track_node *end_node,
             continue;
         }
 
-        if (stopping_dist != -1 && route_dist > stopping_dist) {
+        int32_t dist_travelled = DIST_TRAVELLED(HASH(node),
+            HASH(end_node)) + offset;
+
+        if (stopping_dist != -1 && dist_travelled > stopping_dist) {
             // no delay if we will do any deaccel to speed 7
             action.sensor_num = (stopping_prep_dist == -1) ? node->num : SENSOR_NONE;
             action.action_type = SPD_CHANGE;
             action.action.spd = SPD_STP;
             action.delay_ticks = (stopping_prep_dist == -1) ?
-                calculate_stopping_delay(trn, stopping_dist, route_dist, target_spd) : 0;
+                calculate_stopping_delay(trn, stopping_dist, dist_travelled, target_spd) : 0;
 
             routing_action_queue_push_front(speed_changes, &action);
 
             stopping_dist = -1; // don't need to check anymore
         }
 
-        if (stopping_prep_dist != -1 && route_dist > stopping_prep_dist + stopping_dist) {
+        if (stopping_prep_dist != -1 && dist_travelled > stopping_prep_dist + stopping_dist) {
             // if deaccel always need to delay
             action.sensor_num = node->num;
             action.action_type = SPD_CHANGE;
             action.action.spd = SPD_LO;
-            action.delay_ticks = calculate_stopping_delay(trn, stopping_prep_dist + stopping_dist, route_dist, target_spd);
+            action.delay_ticks = calculate_stopping_delay(trn, stopping_prep_dist + stopping_dist, dist_travelled, target_spd);
 
             routing_action_queue_push_front(speed_changes, &action);
 
             stopping_prep_dist = -1; // stop checking
         }
 
-        if (branch_node && dist_before_branch > min_dist_before_branch) {
-            // add switch throw
+        while (!deque_empty(&branches) &&
+            DIST_TRAVELLED(HASH(node), deque_front(&branches)) > min_dist_before_branch) {
+            track_node *branch_node = &track[deque_pop_front(&branches)];
+            int8_t branch_dir = deque_pop_front(&branches);
+
             action.sensor_num = node->num;
             action.action_type = SWITCH;
             action.action.sw.num = branch_node->num;
@@ -242,9 +207,6 @@ void plan_route(track_node *start_node, track_node *end_node,
             action.delay_ticks = 0;
 
             routing_action_queue_push_front(path, &action);
-
-            branch_node = NULL;
-            dist_before_branch = 0;
         }
 
         next = node;
@@ -253,7 +215,6 @@ void plan_route(track_node *start_node, track_node *end_node,
 
     // add start up acceleration data
     // next holds first node
-
     if (target_spd == start_spd) return; // no need to get to speed
 
     int32_t initial_start_time = get_time_from_acceleration(&spd_data, trn, SPD_STP, SPD_LO);
