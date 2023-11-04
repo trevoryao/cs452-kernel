@@ -13,7 +13,33 @@
 
 #include "control-msgs.h"
 #include "program-tasks.h"
+#include "speed-data.h"
 #include "track.h"
+#include "track-data.h"
+
+speed_data spd_data;
+track_node track[TRACK_MAX];
+
+void init_track_data(uint16_t console) {
+    for (;;) {
+        Printf(console, "\r\nPlease Enter Track (A/B): ");
+        char c = Getc(console);
+        Printf(console, "%c\r\n", c);
+
+        switch (c) {
+            case 'a':
+            case 'A':
+                init_track_a(track);
+                return;
+            case 'b':
+            case 'B':
+                init_track_b(track);
+                return;
+            default:
+                Printf(console, "Invalid Track!\r\n");
+        }
+    }
+}
 
 void user_main(void) {
     // start up clock, uart servers
@@ -24,6 +50,8 @@ void user_main(void) {
     uint16_t tcc_tid = Create(P_SERVER_HI, track_control_coordinator_main);
 
     // initialisation commands
+    speed_data_init(&spd_data);
+    init_track_data(console_tid);
     init_monitor(console_tid);
     init_track(marklin_tid);
 
