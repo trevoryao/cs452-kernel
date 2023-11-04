@@ -13,6 +13,7 @@
 #include "speed.h"
 #include "track.h"
 #include "rpi.h"
+#include "speed-data.h"
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
@@ -92,6 +93,9 @@ void track_control_coordinator_main() {
     */
     struct speed_t spd_t;
     speed_t_init(&spd_t);
+
+    struct speed_data spd_data;
+    speed_data_init(&spd_data);
 
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_tc_server));

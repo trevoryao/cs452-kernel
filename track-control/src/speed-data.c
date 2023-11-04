@@ -2,6 +2,7 @@
 
 #include "util.h"
 
+
 inline static uint8_t spd_hash(enum SPEEDS s) {
     if (s == 0) return 0;
     return (s - 5) >> 1; // div 2
