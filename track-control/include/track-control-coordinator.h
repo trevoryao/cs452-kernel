@@ -11,6 +11,8 @@
 #define TC_SERVER_NAME "tc-server"
 
 enum TC_MSG_TYPE {
+    MSG_TC_TRAIN_REGISTER,
+    MSG_TC_TRAIN_DONE,
     MSG_TC_TRAIN_PUT,
     MSG_TC_TRAIN_GET,
     MSG_TC_SWITCH_PUT,
@@ -19,6 +21,12 @@ enum TC_MSG_TYPE {
     MSG_TC_ERROR,
     MSG_TC_MAX
 };
+
+typedef struct trn_data {
+    uint16_t tid;
+    uint16_t trn_no;
+    sensor sensor;
+} trn_data;
 
 typedef struct msg_tc_server {
     enum TC_MSG_TYPE type;
@@ -36,6 +44,8 @@ typedef struct msg_tc_server {
             uint16_t sw_no;
             enum SWITCH_DIR sw_dir;
         } sw_cmd;
+
+        trn_data trn_register;
     } data;
 } msg_tc_server;
 

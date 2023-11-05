@@ -7,6 +7,5 @@
 
 void time_task_main(void);
 void cmd_task_main(void);
-void sensor_task_main(void);
 
 #endif

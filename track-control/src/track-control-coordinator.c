@@ -25,7 +25,7 @@ void replyError(int senderTid) {
     msg_reply.type = MSG_TC_ERROR;
 
     Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-} 
+}
 
 void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no) {
     struct msg_tc_server msg_reply;
@@ -36,33 +36,32 @@ void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod,
         msg_reply.requesterTid = tid;
         Reply(tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
     }
-} 
+}
 
 void replyTrainSpeed(struct speed_t *spd_t, uint16_t trainNo, uint16_t senderTid) {
     struct msg_tc_server msg_reply;
     msg_reply.type = MSG_TC_TRAIN_GET;
-    
+
     msg_reply.data.trn_cmd.trn_no = trainNo;
     msg_reply.data.trn_cmd.spd = speed_get(spd_t, trainNo);
 
     Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-} 
+}
 
 void replySwitchPosition(uint16_t senderTid, uint16_t sw_no, enum SWITCH_DIR sw_dir) {
     struct msg_tc_server msg_reply;
     msg_reply.type = MSG_TC_SENSOR_PUT;
-    
+
     msg_reply.data.sw_cmd.sw_no = sw_no;
     msg_reply.data.sw_cmd.sw_dir = sw_dir;
 
     Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-} 
+}
 
 void track_control_coordinator_main() {
     // structs for reading & writing
     int senderTid;
     struct msg_tc_server msg_received;
-
 
     // Data structure to keep latest sensor activations
     struct sensor_queue sensor_queue;
@@ -75,6 +74,10 @@ void track_control_coordinator_main() {
     // Structure for UI sensor
     struct deque ui_sensor_queue;
     deque_init(&ui_sensor_queue, 4);
+
+    // Data structure for registered trains
+    trn_data registered_trns[N_TRNS];
+    memset(registered_trns, 0, N_TRNS * sizeof(trn_data));
 
     // Register at Nameserver
     RegisterAs(TC_SERVER_NAME);
@@ -89,7 +92,7 @@ void track_control_coordinator_main() {
     /*
     *
     *   Structures to save track & train state
-    * 
+    *
     */
     struct speed_t spd_t;
     speed_t_init(&spd_t);
@@ -101,7 +104,33 @@ void track_control_coordinator_main() {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_tc_server));
 
 
-        switch (msg_received.type) {            
+        switch (msg_received.type) {
+            case MSG_TC_TRAIN_REGISTER: {
+                int8_t trn_idx = trn_hash(msg_received.data.trn_register.trn_no);
+
+                if (trn_idx < 0 || registered_trns[trn_idx].tid > 0) {
+                    replyError(senderTid);
+                } else {
+                    memcpy(&registered_trns[trn_idx], &msg_received.data.trn_register, sizeof(trn_data));
+                    Reply(senderTid, (char *)&msg_received, sizeof(msg_tc_server)); // echo
+                }
+
+                break;
+            }
+
+            case MSG_TC_TRAIN_DONE: {
+                int8_t trn_idx = trn_hash(msg_received.data.trn_register.trn_no);
+
+                if (trn_idx < 0 || registered_trns[trn_idx].tid == 0) {
+                    replyError(senderTid);
+                } else {
+                    memset(&registered_trns[trn_idx], 0, sizeof(trn_data));
+                    Reply(senderTid, (char *)&msg_received, sizeof(msg_tc_server)); // echo
+                }
+
+                break;
+            }
+
             case MSG_TC_TRAIN_GET: {
                 /* code */
                 replyTrainSpeed(&spd_t, msg_received.data.trn_cmd.trn_no, senderTid);
@@ -118,7 +147,7 @@ void track_control_coordinator_main() {
 
             case MSG_TC_SENSOR_PUT: {
                 Reply(senderTid, NULL, 0);
-                
+
                 uint16_t sensor_mod = msg_received.data.sensor.mod_sensor;
                 uint16_t sensor_no = msg_received.data.sensor.mod_num;
                 int current_Timestamp = Time(clockTid);
@@ -137,7 +166,7 @@ void track_control_coordinator_main() {
 
                     // inform UI about sensor update
                     update_triggered_sensor(consoleTid, &ui_sensor_queue, sensor_mod, sensor_no);
-                    
+
                 }
 
                 break;

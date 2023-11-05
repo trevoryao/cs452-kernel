@@ -11,9 +11,6 @@
 speed_data spd_data;
 track_node track[TRACK_MAX];
 
-#define SENSOR_MOD(num) ((num) / 16) + 'A'
-#define SENSOR_NO(num) ((num) % 16) + 1
-
 void user_main(void) {
     speed_data_init(&spd_data);
     init_track_b(track);
@@ -42,10 +39,10 @@ void user_main(void) {
             uassert(action.info.delay_ticks == 0);
             uart_printf(CONSOLE, "Switch %d to %c (at Sensor %c%d)\r\n",
                 action.action.sw.num, (action.action.sw.dir == STRT) ? 'S' : 'C',
-                SENSOR_MOD(action.sensor_num), SENSOR_NO(action.sensor_num));
+                SENSOR_MOD(action.sensor_num) + 'A' - 1, SENSOR_NO(action.sensor_num));
         } else if (action.action_type == SENSOR) {
             uart_printf(CONSOLE, "Sensor %c%d -- dist to next: %d mm\r\n",
-                SENSOR_MOD(action.sensor_num), SENSOR_NO(action.sensor_num),
+                SENSOR_MOD(action.sensor_num) + 'A' - 1, SENSOR_NO(action.sensor_num),
                 action.info.dist);
         } else {
             upanic("Incorrect Action Type: %s\r\n", action);
@@ -63,7 +60,7 @@ void user_main(void) {
 
         if (action.sensor_num != SENSOR_NONE) {
             uart_printf(CONSOLE, "(after Sensor %c%d)",
-                SENSOR_MOD(action.sensor_num), SENSOR_NO(action.sensor_num));
+                SENSOR_MOD(action.sensor_num) + 'A' - 1, SENSOR_NO(action.sensor_num));
         }
 
         uart_puts(CONSOLE, "\r\n");

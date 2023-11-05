@@ -27,6 +27,11 @@ struct track_edge {
 // converting sensor module/number to num
 // (mod - 1) * 16 + (num - 1)
 
+// conversions
+#define SENSOR_MOD(num) (((num) >> 4) + 1) // div 16
+#define SENSOR_NO(num) (((num) & 15) + 1) // mod 16
+#define TRACK_NUM_FROM_SENSOR(mod, no) (((mod - 1) << 4) + (no - 1)) // mult 16
+
 struct track_node {
   const char *name;
   node_type type;

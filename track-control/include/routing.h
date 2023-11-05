@@ -6,6 +6,7 @@
 
 #include "deque.h"
 
+#include "controller-consts.h"
 #include "speed.h"
 
 typedef struct track_node track_node;
@@ -36,7 +37,7 @@ typedef struct routing_action {
     union {
         struct {
             uint8_t num;
-            uint8_t dir;
+            enum SWITCH_DIR dir;
         } sw;
         uint8_t spd;
         uint16_t total; // only for copying
