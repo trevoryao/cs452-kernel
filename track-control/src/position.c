@@ -20,10 +20,10 @@ int trn_calculate_next_expected_time(trn_position *trn_pos, int8_t trainNo, int8
 
     int expected_arrival = 0;
 
-   
+
     if (trn_pos->last_train_speed[train_hash] == newSpeed) {
         // Case 0: constant speed -> no speed change
-        
+
         // returns time in clock_ticks
         int time_to_arrival = get_time_from_velocity(&spd_data, trainNo, dist, newSpeed);
 
@@ -36,25 +36,25 @@ int trn_calculate_next_expected_time(trn_position *trn_pos, int8_t trainNo, int8
     } else {
         int dist_travelled_since_last_sensor = 0;
 
-        int constant_time = (trn_pos->constant_speed_clock_tick[train_hash] == 0) ? 
+        int constant_time = (trn_pos->constant_speed_clock_tick[train_hash] == 0) ?
             trn_pos->last_seen_clock_tick[train_hash] : trn_pos->constant_speed_clock_tick[train_hash];
 
         // first assuming constant speed from last clock tick to now
         constant_time = timestamp - constant_time;
         if (constant_time != 0) {
             dist_travelled_since_last_sensor = get_distance_from_velocity(&spd_data, trainNo, constant_time, trn_pos->last_train_speed[train_hash]);
-        } 
+        }
 
-        // Calculate the next time step when achieving constant speed 
+        // Calculate the next time step when achieving constant speed
         int next_constant_time = get_time_from_acceleration(&spd_data, trainNo, trn_pos->last_train_speed[train_hash], newSpeed);
         next_constant_time += timestamp;
-        
+
         // Calculate distance traveled till then
         int offset_to_next_constant_speed = get_distance_from_acceleration(&spd_data, trainNo, trn_pos->last_train_speed[train_hash], newSpeed);
         offset_to_next_constant_speed += dist_travelled_since_last_sensor;
 
 
-        
+
 
         // Use the data to calculate next sensor activation
 
@@ -82,7 +82,7 @@ int trn_calculate_next_expected_time(trn_position *trn_pos, int8_t trainNo, int8
 void trn_position_init(trn_position *trn_pos) {
     for (int i = 0; i < N_TRNS; i++){
         trn_pos->last_train_speed[i] = 0;
-        
+
         trn_pos->last_seen_clock_tick[i] = 0;
         trn_pos->next_expected_clock_tick[i] = 0;
 
@@ -95,13 +95,13 @@ void trn_position_init(trn_position *trn_pos) {
     trn_pos->monitor_tid = WhoIs(CONSOLE_SERVER_NAME);
 }
 
-//  Called on sensor trip -> updates the time 
+//  Called on sensor trip -> updates the time
 void trn_position_update_train_pos(trn_position *trn_pos, int8_t trainNo, int8_t sensor_mod, int8_t sensor_no, uint32_t timestamp) {
     int train_hash = trn_hash(trainNo);
     if (trn_pos->distance_to_next_sensor[train_hash] != 0) {
-        // calculate the difference 
+        // calculate the difference
         int32_t diff = trn_pos->next_expected_clock_tick[train_hash] - timestamp;
-        print_train_time(trn_pos->monitor_tid, trainNo, diff, sensor_mod, sensor_no);
+        // print_train_time(trn_pos->monitor_tid, trainNo, diff, sensor_mod, sensor_no);
     }
 
     // update the position of the train
