@@ -6,7 +6,7 @@
 #include "uart-server.h"
 #include "track.h"
 #include "track-node.h"
-
+#include "rpi.h"
 
 extern speed_data spd_data;
 extern track_node track[];
@@ -17,6 +17,10 @@ int trn_calculate_next_expected_time(trn_position *trn_pos, int8_t trainNo, int8
 
     // distance in mm
     int dist = trn_pos->distance_to_next_sensor[train_hash];
+
+    if (dist == 0) {
+        return 0;
+    }
 
     int expected_arrival = 0;
 
@@ -77,6 +81,7 @@ int trn_calculate_next_expected_time(trn_position *trn_pos, int8_t trainNo, int8
     }
     // add possible time from previous acceleration
     trn_pos->next_expected_clock_tick[train_hash] = expected_arrival;
+    return expected_arrival;
 }
 
 void trn_position_init(trn_position *trn_pos) {
@@ -108,6 +113,25 @@ void trn_position_update_train_pos(trn_position *trn_pos, int8_t trainNo, int8_t
 
     trn_pos->last_seen_clock_tick[train_hash] = timestamp;
 }
+
+void trn_position_update_train_speed(trn_position *trn_pos, int8_t trainNo, int8_t newSpeed, uint32_t timestamp) {
+    int train_hash = trn_hash(trainNo);
+
+    trn_calculate_next_expected_time(trn_pos, trainNo, newSpeed, timestamp);
+
+    trn_pos->last_train_speed[train_hash] = newSpeed;
+
+}
+
+void trn_position_update_next_expected_pos(trn_position *trn_pos, int8_t trainNo, uint32_t next_distance, uint32_t timestamp) {
+    int train_hash = trn_hash(trainNo);
+
+    trn_pos->distance_to_next_sensor[train_hash] = next_distance;
+    int new_expected_time = trn_calculate_next_expected_time(trn_pos, trainNo, trn_pos->last_train_speed[train_hash], timestamp);
+    uart_print(CONSOLE, "Calculated new Time %d", new_expected_time);
+}
+
+
 
 
 
