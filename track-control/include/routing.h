@@ -29,7 +29,8 @@ typedef struct routing_action {
     enum {
         SWITCH,
         SPD_CHANGE,
-        SPD_REACHED
+        SPD_REACHED,
+        SENSOR
     } action_type;
 
     union {
@@ -41,7 +42,11 @@ typedef struct routing_action {
         uint16_t total; // only for copying
     } action;
 
-    uint32_t delay_ticks;
+    union {
+        uint32_t delay_ticks;
+        int32_t dist; // mm
+    } info;
+
 } routing_action;
 
 /* Queue for holding Routing Actions */
