@@ -44,6 +44,9 @@ static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 #define SPD_START_X SEN_START_X
 
+static const uint16_t IDLE_START_Y = SPD_START_Y + N_TRNS + 3;
+#define IDLE_START_X 7
+
 #define SW_TAB 10 // tab distance
 
 static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir) {
@@ -131,6 +134,9 @@ void init_monitor(uint16_t tid) {
         update_speed(tid, &spd_t, ALL_TRNS[i]);
     }
 
+    // idle
+    Printf(tid, CURS_MOV "Idle:", IDLE_START_Y, IDLE_START_X - 6);
+
     // no triggered sensors
     print_prompt(tid);
 
@@ -151,8 +157,25 @@ void update_time(uint16_t tid, time_t *t) {
     (void)t;
     #else
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE BLD
-        "%u:%u:%u" COL_RST CURS_UNSAVE CURS_SHOW,
+        "%u:%u.%u" COL_RST CURS_UNSAVE CURS_SHOW,
         TIME_START_Y, TIME_START_X, t->min, t->sec, t->tsec);
+    #endif
+}
+
+void update_idle(uint16_t tid, uint64_t idle_sys_ticks, uint64_t user_sys_ticks) {
+    time_t idle_time;
+    time_from_sys_ticks(&idle_time, idle_sys_ticks);
+    int idle_prop = (idle_sys_ticks * 100) / (idle_sys_ticks + user_sys_ticks);
+    int idle_prop_dec = (idle_sys_ticks * 100) % (idle_sys_ticks + user_sys_ticks);
+
+    #if LOGGING
+    Printf(tid, "Total idle time: %u:%u.%u (%d.%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop, idle_prop_dec);
+    #else
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE BLD
+        "%u:%u.%u (%d.%d%%)"
+        COL_RST CURS_UNSAVE CURS_SHOW,
+        IDLE_START_Y, IDLE_START_X, idle_time.min, idle_time.sec,
+        idle_time.tsec, idle_prop, idle_prop_dec);
     #endif
 }
 

@@ -21,6 +21,7 @@
 // usr
 #include "k4/controller-consts.h"
 #include "k4/speed.h"
+#include "monitor.h"
 
 // starting coordinates for various ui elements
 

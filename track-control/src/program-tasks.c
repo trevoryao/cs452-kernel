@@ -48,6 +48,24 @@ void time_task_main(void) {
     }
 }
 
+void idle_time_task_main(void) {
+    uint16_t clock_tid = WhoIs(CLOCK_SERVER_NAME);
+    uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
+
+    uint32_t real_time = Time(clock_tid);
+    uint32_t target = real_time;
+
+    uint64_t idle_sys_ticks, user_sys_ticks;
+
+    for (;;) {
+        GetIdleStatus(&idle_sys_ticks, &user_sys_ticks);
+        update_idle(console_tid, idle_sys_ticks, user_sys_ticks);
+
+        target += IDLE_REFRESH_TIME;
+        real_time = DelayUntil(clock_tid, target);
+    }
+}
+
 static void reverse_task_main(void) {
     msg_rv params;
     int ptid;

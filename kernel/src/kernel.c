@@ -126,8 +126,9 @@ CURR_TASK_KILLED:
 
     time_from_sys_ticks(&idle_time, idle_ticks);
     int idle_prop = (idle_ticks * 100) / (idle_ticks + user_ticks);
+    int idle_prop_dec = (idle_ticks * 100) % (idle_ticks + user_ticks);
 
-    uart_printf(CONSOLE, "Total idle time: %u:%u.%u (%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop);
+    uart_printf(CONSOLE, "Total idle time: %u:%u.%u (%d.%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop, idle_prop_dec);
 
     return 0;
 }

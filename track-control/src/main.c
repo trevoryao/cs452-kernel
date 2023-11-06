@@ -60,6 +60,7 @@ void user_main(void) {
 
     // start all tasks
     Create(P_HIGH, time_task_main);
+    Create(P_LOW, idle_time_task_main);
     Create(P_MED, cmd_task_main);
 
     // wait for quit control msg from cmd_task

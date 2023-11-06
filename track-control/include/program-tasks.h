@@ -6,6 +6,7 @@
  */
 
 void time_task_main(void);
+void idle_time_task_main(void);
 void cmd_task_main(void);
 
 #endif

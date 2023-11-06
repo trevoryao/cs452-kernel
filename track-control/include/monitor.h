@@ -36,6 +36,7 @@ void shutdown_monitor(uint16_t tid);
 // pretty self-explanatory
 void print_prompt(uint16_t tid);
 void update_time(uint16_t tid, time_t *t);
+void update_idle(uint16_t tid, uint64_t idle_sys_ticks, uint64_t user_sys_ticks);
 void update_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir);
 void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr);
 
