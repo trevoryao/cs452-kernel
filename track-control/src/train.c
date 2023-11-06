@@ -268,6 +268,21 @@ static void train_tc(void) {
 
     int rcv_tid;
     routing_action routing_action;
+
+    // throw any initial non-sensor dependent switches
+    // before we start rolling
+    while (!routing_action_queue_empty(&path)) {
+        routing_action_queue_front(&path, &routing_action);
+        if (routing_action.info.delay_ticks == 0 &&
+            routing_action.sensor_num == SENSOR_NONE) {
+            // pre-start switch?
+            do_action(tc_server_tid, params.trn, &routing_action);
+            routing_action_queue_pop_front(&path, NULL);
+        } else {
+            break; // no more
+        }
+    }
+
     for (;;) {
         // do actions until we can't anymore
         while (!waiting_spd && !routing_action_queue_empty(&spd_changes)) {
@@ -284,17 +299,12 @@ static void train_tc(void) {
         }
 
         while (!waiting_route && !routing_action_queue_empty(&path)) {
+            // guarantee that all wait on a sensor (implicit/explicit)
             routing_action_queue_front(&path, &routing_action);
-            if (routing_action.info.delay_ticks == 0 &&
-                routing_action.sensor_num == SENSOR_NONE) {
-                // no delay or notif, can just do it
-                do_action(tc_server_tid, params.trn, &routing_action);
-                routing_action_queue_pop_front(&path, NULL);
-            } else {
-                wait_action(route_notifier, &msg, params.trn, &routing_action);
-                waiting_route = true;
-            }
+            wait_action(route_notifier, &msg, params.trn, &routing_action);
+            waiting_route = true;
         }
+
 
         // recalculate based on closest node that we are waiting on
         // if any
