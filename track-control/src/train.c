@@ -34,39 +34,62 @@ typedef struct train_params {
     int32_t offset;
 } train_params;
 
-typedef struct notif_action {
+typedef struct route_notif_action {
     int16_t sensor_num; // could be SENSOR_NONE
     int32_t sensor_dist; // only valid if sensor_num != SENSOR_NONE
     uint32_t delay; // ticks (could be 0)
-} notif_action;
+} route_notif_action;
+
+typedef struct spd_notif_action {
+    int16_t sensor_num; // could be SENSOR_NONE
+    int32_t sensor_dist; // only valid if sensor_num != SENSOR_NONE
+    uint32_t delay; // ticks (could be 0)
+
+    uint8_t trn;
+    routing_action routing_action;
+} spd_notif_action;
 
 typedef struct train_msg {
     enum TRAIN_MSG_TYPE type;
 
     union {
         train_params params;
-        notif_action action; // a request is either a sensor or a timestamp or both (but never neither)
+        // a request is either a sensor or a timestamp or both (but never neither)
+        route_notif_action route_action;
+        spd_notif_action spd_action;
     } payload;
 } train_msg;
+
+static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
+    switch (action->action_type) {
+        case SWITCH:
+            ULOG("[train] Switch %d to %c\r\n",
+                action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
+            track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
+            break;
+        case SPD_CHANGE:
+            // ULOG("[train] Set Speed to %d\r\n", action->action.spd);
+            track_control_set_train_speed(tc_tid, trn, action->action.spd);
+            break;
+        default:
+            break; // none needed for any other actions
+    }
+}
 
 #ifdef USERLOG
 #define NOTIF_TYPE(type) ((type == 2) ? "route" : "spd")
 #endif
 
-static void train_tc_notifier(void) {
+static void train_speed_notifier(void) {
     int ptid;
     train_msg msg;
 
-    enum TRAIN_MSG_TYPE type;
+    enum TRAIN_MSG_TYPE type = MSG_TRAIN_NOTIFY_SPD;
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
     int clock_tid = WhoIs(CLOCK_SERVER_NAME);
 
-    uassert(Receive(&ptid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
-    type = msg.type; // use as type when notifying
-    Reply(ptid, NULL, 0);
-
-    notif_action action;
+    spd_notif_action action;
 
     for (;;) {
         uassert(Receive(&ptid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
@@ -75,7 +98,70 @@ static void train_tc_notifier(void) {
 
         switch (rcvd_type) {
             case MSG_TRAIN_ACTION:
-                memcpy(&action, &msg.payload.action, sizeof(notif_action));
+                memcpy(&action, &msg.payload.spd_action, sizeof(spd_notif_action));
+                // fallthrough
+            case MSG_TRAIN_QUIT:
+                // valid
+                msg.type = MSG_TRAIN_ACK;
+                break;
+            default:
+                // invalid
+                msg.type = MSG_TRAIN_ERROR;
+                break;
+        }
+
+        Reply(ptid, (char *)&msg, sizeof(train_msg)); // ACK/ERROR
+
+        if (rcvd_type == MSG_TRAIN_QUIT) break; // EXIT: quit
+
+        // uint32_t delay_until_ticks = Time(clock_tid) + action.delay;
+
+        // wait for sensor activation
+        if (action.sensor_num != SENSOR_NONE) {
+            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
+            //     NOTIF_TYPE(type),
+            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
+            //     SENSOR_NO(action.sensor_num));
+            // Delay(clock_tid, 10);
+            track_control_wait_sensor(tc_server_tid,
+                SENSOR_MOD(action.sensor_num),
+                SENSOR_NO(action.sensor_num));
+        }
+
+        if (action.delay != 0) {
+            // ULOG("[train-notifier %s] delay %d ms\r\n",
+            //     NOTIF_TYPE(type), action.delay * 10);
+            Delay(clock_tid, action.delay);
+        }
+
+        // perform action immediately
+        do_action(tc_server_tid, action.trn, &action.routing_action);
+
+        // finished, let server perform action
+        msg.type = type;
+        Send(ptid, (char *)&msg, sizeof(train_msg), NULL, 0);
+    }
+}
+
+static void train_route_notifier(void) {
+    int ptid;
+    train_msg msg;
+
+    enum TRAIN_MSG_TYPE type = MSG_TRAIN_NOTIFY_ROUTE;
+
+    int tc_server_tid = WhoIs(TC_SERVER_NAME);
+    int clock_tid = WhoIs(CLOCK_SERVER_NAME);
+
+    route_notif_action action;
+
+    for (;;) {
+        uassert(Receive(&ptid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
+
+        enum TRAIN_MSG_TYPE rcvd_type = msg.type;
+
+        switch (rcvd_type) {
+            case MSG_TRAIN_ACTION:
+                memcpy(&action, &msg.payload.route_action, sizeof(route_notif_action));
                 // fallthrough
             case MSG_TRAIN_QUIT:
                 // valid
@@ -117,35 +203,23 @@ static void train_tc_notifier(void) {
     }
 }
 
-static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
-    switch (action->action_type) {
-        case SWITCH:
-            ULOG("[train] Switch %d to %c\r\n",
-                action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
-            track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
-            break;
-        case SPD_CHANGE:
-            // ULOG("[train] Set Speed to %d\r\n", action->action.spd);
-            track_control_set_train_speed(tc_tid, trn, action->action.spd);
-            break;
-        default:
-            break; // none needed for any other actions
-    }
-}
-
 static void
-wait_action(int notif_tid, train_msg *msg, routing_action *action) {
+wait_action(int notif_tid, train_msg *msg, uint8_t trn, routing_action *action) {
     // assume at least one wait needed
     msg->type = MSG_TRAIN_ACTION;
 
     if (action->action_type == SENSOR) {
-        msg->payload.action.sensor_dist = action->info.dist;
-        msg->payload.action.sensor_num = action->sensor_num;
-        msg->payload.action.delay = 0;
+        msg->payload.route_action.sensor_dist = action->info.dist;
+        msg->payload.route_action.sensor_num = action->sensor_num;
+        msg->payload.route_action.delay = 0;
     } else {
-        msg->payload.action.sensor_dist = 0;
-        msg->payload.action.sensor_num = action->sensor_num;
-        msg->payload.action.delay = action->info.delay_ticks;
+        msg->payload.spd_action.sensor_dist = 0;
+        msg->payload.spd_action.sensor_num = action->sensor_num;
+        msg->payload.spd_action.delay = action->info.delay_ticks;
+
+        // for action execution
+        msg->payload.spd_action.trn = trn;
+        memcpy(&msg->payload.spd_action.routing_action, action, sizeof(routing_action));
     }
 
     Send(notif_tid, (char *)msg, sizeof(train_msg), (char *)msg, sizeof(train_msg));
@@ -179,13 +253,8 @@ static void train_tc(void) {
     // create notifiers
     int route_notifier, spd_notifier;
 
-    msg.type = MSG_TRAIN_NOTIFY_ROUTE;
-    route_notifier = Create(P_HIGH, train_tc_notifier);
-    Send(route_notifier, (char *)&msg, sizeof(train_msg), NULL, 0);
-
-    msg.type = MSG_TRAIN_NOTIFY_SPD;
-    spd_notifier = Create(P_VHIGH, train_tc_notifier);
-    Send(spd_notifier, (char *)&msg, sizeof(train_msg), NULL, 0);
+    route_notifier = Create(P_MED, train_route_notifier);
+    spd_notifier = Create(P_VHIGH, train_speed_notifier);
 
     // plan route
     routing_action_queue path, spd_changes;
@@ -202,23 +271,29 @@ static void train_tc(void) {
     for (;;) {
         // do actions until we can't anymore
         while (!waiting_spd && !routing_action_queue_empty(&spd_changes)) {
-            routing_action_queue_front(&spd_changes, &routing_action);
+            routing_action_queue_pop_front(&spd_changes, &routing_action);
             if (routing_action.info.delay_ticks == 0 &&
                 routing_action.sensor_num == SENSOR_NONE) {
                 // no delay or notif, can just do it
                 do_action(tc_server_tid, params.trn, &routing_action);
-                routing_action_queue_pop_front(&spd_changes, NULL);
             } else {
-                wait_action(spd_notifier, &msg, &routing_action);
+                // will do action for us
+                wait_action(spd_notifier, &msg, params.trn, &routing_action);
                 waiting_spd = true;
             }
         }
 
         while (!waiting_route && !routing_action_queue_empty(&path)) {
-            // guarantee that all wait on a sensor (implicit/explicit)
             routing_action_queue_front(&path, &routing_action);
-            wait_action(route_notifier, &msg, &routing_action);
-            waiting_route = true;
+            if (routing_action.info.delay_ticks == 0 &&
+                routing_action.sensor_num == SENSOR_NONE) {
+                // no delay or notif, can just do it
+                do_action(tc_server_tid, params.trn, &routing_action);
+                routing_action_queue_pop_front(&path, NULL);
+            } else {
+                wait_action(route_notifier, &msg, params.trn, &routing_action);
+                waiting_route = true;
+            }
         }
 
         // recalculate based on closest node that we are waiting on
@@ -233,7 +308,7 @@ static void train_tc(void) {
                 waiting_route = false;
                 // do all actions waiting on activated sensor
                 routing_action_queue_front(&path, &routing_action);
-                while (routing_action.sensor_num == msg.payload.action.sensor_num) {
+                while (routing_action.sensor_num == msg.payload.route_action.sensor_num) {
                     // only pop off if actually equal
                     routing_action_queue_pop_front(&path, NULL);
 
@@ -247,18 +322,7 @@ static void train_tc(void) {
             }
             case MSG_TRAIN_NOTIFY_SPD: {
                 waiting_spd = false;
-                // do all actions waiting on activated sensor
-                routing_action_queue_front(&spd_changes, &routing_action);
-                while (routing_action.sensor_num == msg.payload.action.sensor_num) {
-                    // only pop off if actually equal
-                    routing_action_queue_pop_front(&spd_changes, NULL);
-
-                    do_action(tc_server_tid, params.trn, &routing_action);
-
-                    // prime for next iteration
-                    routing_action_queue_front(&spd_changes, &routing_action);
-                }
-
+                // notifier executes action for us
                 break;
             }
             default: {

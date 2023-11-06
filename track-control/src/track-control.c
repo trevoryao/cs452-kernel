@@ -104,7 +104,7 @@ void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no) 
 
 int track_control_set_switch(int tid, uint16_t switch_no, enum SWITCH_DIR switch_dir) {
     uint16_t my_tid = MyTid();
-    
+
     struct msg_tc_server msg;
     msg.type = MSG_TC_SWITCH_PUT;
     msg.requesterTid = my_tid;

@@ -89,7 +89,7 @@ void routing_action_queue_front(routing_action_queue *raq, routing_action *actio
 #define HASH(node) ((node) - track)
 #define DIST_TRAVELLED(h1, h2) ((dist[(h2)] - dist[(h1)]) * MM_TO_UM)
 
-#define SW_DELAY_TICKS 75 // 750ms
+#define SW_DELAY_TICKS 150 // 1.5s
 
 static inline uint8_t calculate_nbhd_size(node_type type) {
     switch (type) {
@@ -249,6 +249,19 @@ void plan_route(track_node *start_node, track_node *end_node,
         next = node;
         next_sensor = next;
         node = prev[HASH(next)];
+    }
+
+    // throw any leftover switches immediately without any time delay
+    while (!deque_empty(&branches)) {
+        track_node *branch_node = &track[deque_pop_front(&branches)];
+        int8_t branch_dir = deque_pop_front(&branches);
+
+        action.sensor_num = SENSOR_NONE;
+        action.action_type = SWITCH;
+        action.action.sw.num = branch_node->num;
+        action.action.sw.dir = (branch_dir == DIR_CURVED) ? CRV : STRT;
+        action.info.delay_ticks = 0;
+        routing_action_queue_push_front(path, &action);
     }
 
     // add start up acceleration data
