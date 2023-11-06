@@ -12,7 +12,7 @@
 #include "monitor.h"
 #include "speed.h"
 #include "track.h"
-#include "rpi.h"
+#include "uassert.h"
 #include "speed-data.h"
 
 #define N_SENSOR_MODULES 5
@@ -35,7 +35,7 @@ void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod,
         uint16_t tid = sensor_queue_get_waiting_tid(sensor_queue, sensor_mod, sensor_no);
         msg_reply.requesterTid = tid;
         Reply(tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-        uart_printf(CONSOLE, "Replying to tid %d for sensor mod %d and sensor no %d\r\n", tid, sensor_mod, sensor_no);
+        ULOG("Replying to tid %d for sensor mod %d and sensor no %d\r\n", tid, sensor_mod, sensor_no);
     }
 }
 
@@ -142,7 +142,7 @@ void track_control_coordinator_main() {
                 // TODO: fix when better structure
                 sensor received_sensor = msg_received.data.sensor;
                 sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_num, received_sensor.mod_sensor, msg_received.requesterTid);
-                uart_printf(CONSOLE, "Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
+                ULOG("Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
                 break;
             }
 
@@ -194,6 +194,4 @@ void track_control_coordinator_main() {
                 break;
         }
     }
-
-
 }

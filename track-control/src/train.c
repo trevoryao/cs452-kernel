@@ -49,6 +49,10 @@ typedef struct train_msg {
     } payload;
 } train_msg;
 
+#ifdef USERLOG
+#define NOTIF_TYPE(type) ((type == 2) ? "route" : "spd")
+#endif
+
 static void train_tc_notifier(void) {
     int ptid;
     train_msg msg;
@@ -88,14 +92,21 @@ static void train_tc_notifier(void) {
         if (rcvd_type == MSG_TRAIN_QUIT) break; // EXIT: quit
 
         // wait for sensor activation
-        if (msg.payload.action.sensor_num != SENSOR_NONE) {
+        if (action.sensor_num != SENSOR_NONE) {
+            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
+            //     NOTIF_TYPE(type),
+            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
+            //     SENSOR_NO(action.sensor_num));
+            // Delay(clock_tid, 10);
             track_control_wait_sensor(tc_server_tid,
-                SENSOR_MOD(msg.payload.action.sensor_num),
-                SENSOR_NO(msg.payload.action.sensor_num));
+                SENSOR_MOD(action.sensor_num),
+                SENSOR_NO(action.sensor_num));
         }
 
-        if (msg.payload.action.delay != 0) {
-            Delay(clock_tid, msg.payload.action.delay);
+        if (action.delay != 0) {
+            // ULOG("[train-notifier %s] delay %d ms\r\n",
+            //     NOTIF_TYPE(type), action.delay * 10);
+            Delay(clock_tid, action.delay);
         }
 
         // finished, let server perform action
@@ -107,9 +118,12 @@ static void train_tc_notifier(void) {
 static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
     switch (action->action_type) {
         case SWITCH:
+            // ULOG("[train] Switch %d to %c\r\n",
+            //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
             track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
             break;
         case SPD_CHANGE:
+            // ULOG("[train] Set Speed to %d\r\n", action->action.spd);
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         default:
@@ -200,6 +214,7 @@ static void train_tc(void) {
 
         while (!waiting_route && !routing_action_queue_empty(&path)) {
             // guarantee that all wait on a sensor (implicit/explicit)
+            routing_action_queue_front(&path, &routing_action);
             wait_action(route_notifier, &msg, &routing_action);
             waiting_route = true;
         }
@@ -210,9 +225,6 @@ static void train_tc(void) {
         // wait for a notifier
         uassert(Receive(&rcv_tid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
         Reply(rcv_tid, NULL, 0);
-
-        uart_printf(CONSOLE, "\r\n\r\nNotifier received (%s)\r\n",
-            msg.type == MSG_TRAIN_NOTIFY_ROUTE ? "route" : "sensor");
 
         switch (msg.type) {
             case MSG_TRAIN_NOTIFY_ROUTE: {

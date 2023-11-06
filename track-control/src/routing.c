@@ -238,6 +238,7 @@ void plan_route(track_node *start_node, track_node *end_node,
             action.sensor_num = node->num;
             action.action_type = SENSOR;
             action.action.total = 0;
+            action.info.delay_ticks = 0;
             action.info.dist = DIST_TRAVELLED(HASH(node), HASH(next_sensor)) / MM_TO_UM;
             routing_action_queue_push_front(path, &action);
         }
