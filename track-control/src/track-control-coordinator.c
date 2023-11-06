@@ -141,8 +141,8 @@ void track_control_coordinator_main() {
                 // enqueue to sensor
                 // TODO: fix when better structure
                 sensor received_sensor = msg_received.data.sensor;
-                sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_num, received_sensor.mod_sensor, msg_received.requesterTid);
                 uart_printf(CONSOLE, "Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
+                sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_num, received_sensor.mod_sensor, msg_received.requesterTid);
                 break;
             }
 
@@ -151,6 +151,8 @@ void track_control_coordinator_main() {
 
                 uint16_t sensor_module_number = msg_received.data.sensor.mod_num;
                 uint16_t sensor_number = msg_received.data.sensor.mod_sensor;
+                //uart_printf(CONSOLE, "Received sensor_module_number %u  sensor_number %u \r\n", msg_received.data.sensor.mod_num, msg_received.data.sensor.mod_sensor);
+
                 int current_Timestamp = Time(clockTid);
 
                 if (latestSensorMod == sensor_module_number && latestSensorNo == sensor_number
@@ -166,7 +168,7 @@ void track_control_coordinator_main() {
                     replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number);
 
                     // inform UI about sensor update
-                    update_triggered_sensor(consoleTid, &ui_sensor_queue, sensor_module_number, sensor_number);
+                    update_triggered_sensor(consoleTid, &ui_sensor_queue, (sensor_module_number - 1), sensor_number);
 
                 }
 

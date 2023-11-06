@@ -94,8 +94,8 @@ void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no) 
     struct msg_tc_server msg;
     msg.type = MSG_TC_SENSOR_PUT;
     msg.requesterTid = my_tid;
-    msg.data.sensor.mod_sensor = sensor_mod;
-    msg.data.sensor.mod_num = sensor_no;
+    msg.data.sensor.mod_num = sensor_mod;
+    msg.data.sensor.mod_sensor = sensor_no;
 
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_tc_server), (char *)&msg, sizeof(struct msg_tc_server));
 }

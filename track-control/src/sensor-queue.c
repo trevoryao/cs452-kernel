@@ -56,6 +56,13 @@ uint16_t sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod, uin
 void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod, uint16_t sensor_no, uint16_t tid) {
     int act_sensor_mod = sensor_mod - 1;
     int act_sensor_no = sensor_no - 1;
+
+    if (act_sensor_mod >= N_SENSOR_MODULES  || act_sensor_no >= N_SENSORS) {
+        uart_printf(CONSOLE, "Out of bound - wrong sensor number\r\n");
+        return;
+
+    }
+
     
     if (sq->freelist == NULL) {
         // TODO: error message
@@ -63,7 +70,7 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod, uint16_
         return;
     } else {
         // get new element
-        uart_printf(CONSOLE, "Enqueue in queue to tid %d sensor_module %d sensor_no %d\r\n", tid, sensor_mod, sensor_no);
+        //uart_printf(CONSOLE, "Enqueue in queue to tid %d sensor_module %d sensor_no %d\r\n", tid, sensor_mod, sensor_no);
         struct sensor_queue_entry *element = sq->freelist;
         sq->freelist = sq->freelist->next;
 

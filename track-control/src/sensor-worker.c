@@ -12,7 +12,7 @@
 #define N_SENSOR 8
 
 void parseAndReply(char data, int no_of_byte, int tcTid, int ownTid) {
-    int sensor_mod = no_of_byte / 2;
+    int sensor_mod = (no_of_byte / 2) + 1;
     int mod_round = no_of_byte % 2;
 
     for (uint8_t sen_bit = 1; sen_bit <= N_SENSOR; ++sen_bit) {
