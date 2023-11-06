@@ -1,6 +1,7 @@
 #include "speed-data.h"
 
 #include "util.h"
+#include "rpi.h" 
 
 
 inline static uint8_t spd_hash(enum SPEEDS s) {
@@ -98,13 +99,14 @@ int32_t get_distance_from_acceleration(speed_data *data, uint16_t trn, uint16_t 
     // in um/s2
     int64_t acceleration = get_acceleration(data, trn, speed1, speed2);
     // velocity in um/s
-    int32_t v1 = get_velocity(data, trn, speed1);
-    int32_t v2 = get_velocity(data, trn, speed2);
+    uint64_t v1 = get_velocity(data, trn, speed1);
+    uint64_t v2 = get_velocity(data, trn, speed2);
+    
 
-    int64_t v1_squared = v1 * v1;
-    int64_t v2_squared = v2 * v2;
+    uint64_t v1_squared = v1 * v1;
+    uint64_t v2_squared = v2 * v2;
 
-    int64_t distance = (v2_squared - v1_squared) / (2 * acceleration);
+    uint64_t distance = (v2_squared - v1_squared) / (2 * acceleration);
 
     return (int32_t) distance;
 }
@@ -136,6 +138,7 @@ int32_t get_time_from_acceleration(speed_data *data, uint16_t trn, uint16_t spee
     return t_clock_ticks / acceleration;
 }
 
+// expects distance in um
 uint32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
     /*
     *
@@ -147,6 +150,18 @@ uint32_t get_time_from_velocity(speed_data *data, uint16_t trn, int32_t dist, ui
 
    return 100 * distance_in_um / velocity;
 }
+
+uint32_t get_time_from_velocity_um(speed_data *data, uint16_t trn, int32_t dist, uint16_t s) {
+    /*
+    *
+    *   Formula: t_clock_ticks = 100 * d / v
+    *
+    */
+   int32_t velocity = get_velocity(data, trn, s);
+
+   return 100 * dist / velocity;
+}
+
 
 int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, uint32_t ticks, uint16_t s) {
     /*

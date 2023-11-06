@@ -9,6 +9,9 @@ void user_main(void) {
 
     speed_t_init(&speed_test);
 
+    int32_t dist_from_zero = get_distance_from_acceleration(&speed_test, 77, 0, 7);
+    uart_printf(CONSOLE, "Train 77 takes %d um while acceleration from 0 to 7\r\n", dist_from_zero);
+
     int32_t dist_from_acc = get_distance_from_acceleration(&speed_test, 77, 7, 9);
     uart_printf(CONSOLE, "Train 77 takes %d um while acceleration from 7 to 9\r\n", dist_from_acc);
     dist_from_acc = get_distance_from_acceleration(&speed_test, 77, 9, 7);

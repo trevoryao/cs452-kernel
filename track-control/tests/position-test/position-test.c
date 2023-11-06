@@ -17,22 +17,35 @@ track_node track[TRACK_MAX];
 
 
 void user_main(void) {
-    int clockTid = Create(P_SERVER_HI, console_server_main);
+    int clockTid = Create(P_SERVER_HI, clockserver_main);
     speed_data_init(&spd_data);
     init_track_b(track);
 
     int trainNo = 77;
-    int distance = 800;
+    int distance = 350000;
     trn_position trn_pos;
     
+    uart_printf(CONSOLE, "Starting Position Testing\r\n");
+
     trn_position_init(&trn_pos);
 
     uint32_t time = Time(clockTid);
-
-    trn_position_update_next_expected_pos(&trn_pos, trainNo, distance, time);
-    trn_position_update_train_speed(&trn_pos, trainNo, 0, 10, time);
-
     
+    trn_position_update_train_speed(&trn_pos, trainNo, 7, time);
+
+    trn_position_update_next_expected_pos(&trn_pos, trainNo, distance);
+    trn_position_reached_next_sensor(&trn_pos, trainNo, time+310);
+    trn_position_update_train_speed(&trn_pos, trainNo, 9, time+310);
+    
+    trn_position_update_next_expected_pos(&trn_pos, trainNo, distance+100);
+
+    trn_position_reached_next_sensor(&trn_pos, trainNo, time+1000);
+    //trn_position_update_train_speed(&trn_pos, trainNo, 7, time+600);
+    //trn_position_update_train_speed(&trn_pos, trainNo, 9, time+600);
+
+
+
+
 
 
 
