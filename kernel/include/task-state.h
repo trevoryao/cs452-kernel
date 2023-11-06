@@ -8,6 +8,7 @@
 
 typedef struct event_queue event_queue;
 typedef struct stack_alloc stack_alloc;
+typedef struct stopwatch stopwatch;
 typedef struct task_alloc task_alloc;
 typedef struct task_queue task_queue;
 
@@ -86,14 +87,16 @@ typedef struct task_t {
     void *stack_base;
 } task_t;
 
-void task_init(task_t *t, void (*function)(void), task_t *parent, enum PRIORITY priority, stack_alloc *salloc);
+void task_init(task_t *t, void (*function)(void), task_t *parent,
+    enum PRIORITY priority, stack_alloc *salloc);
 
 // context switches to given task
 // returns the ESR
 uint8_t task_activate(task_t *t, kernel_state *k);
 
 // called after context return
-void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq, event_queue *eq);
+void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc,
+    task_queue *tq, event_queue *eq, stopwatch *stopwatch);
 
 void task_clear(task_t *t);
 

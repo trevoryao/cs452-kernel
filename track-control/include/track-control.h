@@ -6,6 +6,10 @@
 
 #include "controller-consts.h"
 
+// returns -1 if already registered (or any other error)
+int track_control_register_train(int tid, int task_tid, uint16_t trainNo, uint16_t sensor_mod, uint16_t sensor_no);
+int track_control_end_train(int tid, uint16_t trainNo);
+
 int16_t track_control_set_train_speed(int tid, uint16_t trainNo, uint16_t trainSpeed);
 int16_t track_control_get_train_speed(int tid, uint16_t trainNo);
 

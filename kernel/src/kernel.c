@@ -96,7 +96,8 @@ int kernel_main(void *kernel_end) {
         stopwatch_end(&stopwatch, stpw_t);
 
         if ((handler & SYNC_MSK) == SYNC_MSK) { // syscall?
-            task_svc_handle(curr_user_task, &talloc, &salloc, &tqueue, &equeue);
+            task_svc_handle(curr_user_task, &talloc, &salloc,
+                &tqueue, &equeue, &stopwatch);
         } else if ((handler & IRQ_MSK) == IRQ_MSK) { // interrupt?
             handle_interrupt(&equeue);
         } else {

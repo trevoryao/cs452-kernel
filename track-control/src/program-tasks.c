@@ -16,13 +16,15 @@
 #include "parsing.h"
 #include "sensors.h"
 #include "speed.h"
+#include "track.h"
 #include "track-control.h"
 #include "track-control-coordinator.h"
+#include "train.h"
 
 // pass to worker task to prevent perf hit of multiple syscalls
 typedef struct msg_rv {
     uint16_t clock_tid;
-    uint16_t marklin_tid;
+    uint16_t tcc_tid;
     uint16_t spd;
     uint16_t trn;
     uint32_t delay_until_time;
@@ -53,7 +55,9 @@ static void reverse_task_main(void) {
     Reply(ptid, NULL, 0);
 
     DelayUntil(params.clock_tid, params.delay_until_time);
-    train_reverse_end(params.marklin_tid, params.spd, params.trn);
+
+    track_control_set_train_speed(params.tcc_tid, params.trn, SP_REVERSE);
+    track_control_set_train_speed(params.tcc_tid, params.trn, params.spd);
 }
 
 void cmd_task_main(void) {
@@ -67,9 +71,6 @@ void cmd_task_main(void) {
 
     char c;
     cmd_s cmd; // for parsing
-
-    // speed_t spd_t;
-    // speed_t_init(&spd_t);
 
     for (;;) {
         c = Getc(console_tid);
@@ -86,24 +87,31 @@ void cmd_task_main(void) {
                 case CMD_TR:
                     track_control_set_train_speed(tcc_tid, cmd.params[0], cmd.params[1]);
                     break;
-                /*case CMD_RV:
-                    train_reverse_start(marklin_tid, &spd_t, cmd.args.params[0]);
+                case CMD_RV:
+                    track_control_set_train_speed(tcc_tid, cmd.params[0], SP_STOP);
                     int rev_time = Time(clock_tid) + RV_WAIT_TIME;
 
                     int rev_tid = Create(P_HIGH, reverse_task_main);
                     msg_rv params = {
                         clock_tid,
-                        marklin_tid,
-                        speed_get(&spd_t, cmd.params[0]),
+                        tcc_tid,
+                        track_control_get_train_speed(tcc_tid, cmd.params[0]),
                         cmd.params[0],
                         rev_time
                     };
                     Send(rev_tid, (char *)&params, sizeof(msg_rv), NULL, 0);
-
-                    update_speed(console_tid, &spd_t, cmd.args.params[0]);
-                    break;*/
+                    break;
                 case CMD_SW:
                     track_control_set_switch(tcc_tid, cmd.params[0], (enum SWITCH_DIR)cmd.params[1]);
+                    break;
+                case CMD_TC:
+                    CreateControlledTrain(
+                        cmd.params[1],
+                        cmd.params[2],
+                        cmd.path[0],
+                        cmd.path[1],
+                        cmd.params[0]
+                    );
                     break;
                 case CMD_GO:
                     track_go(marklin_tid);
@@ -112,7 +120,7 @@ void cmd_task_main(void) {
                     track_stop(marklin_tid);
                     break;
                 case CMD_Q: goto ProgramEnd;
-                default: 
+                default:
                     print_error_message(console_tid);
                     break; // error (do nothing)
             }
@@ -129,29 +137,4 @@ ProgramEnd:;
     msg_control msg = {MSG_CONTROL_QUIT};
     uassert(Send(ptid, (char *)&msg, sizeof(msg_control), (char *)&msg, sizeof(msg_control)) == sizeof(msg_control));
     uassert(msg.type == MSG_CONTROL_ACK);
-}
-
-void sensor_task_main(void) {
-    uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
-    uint16_t marklin_tid = WhoIs(MARKLIN_SERVER_NAME);
-
-    struct sensor sen_data;
-    sen_data_init(&sen_data);
-
-    deque triggered_sensors;
-    deque_init(&triggered_sensors, 4); // 16 (8 in total)
-
-    char sen_byte;
-
-    for (;;) {
-        WaitOutputEmpty(marklin_tid); // make sure no commands to send
-
-        sen_start_dump(marklin_tid); // queues sending commands
-        for (;;) {
-            sen_byte = Getc(marklin_tid);
-
-            if (rcv_sen_dump(&sen_data, sen_byte, console_tid, &triggered_sensors)) // finished?
-                break; // inner for loop
-        }
-    }
 }

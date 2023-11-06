@@ -46,17 +46,31 @@ void routing_action_queue_push_front(routing_action_queue *raq, routing_action *
 }
 
 void routing_action_queue_pop_front(routing_action_queue *raq, routing_action *action) {
-    action->sensor_num = (int16_t)deque_pop_front(&raq->q);
-    action->action_type = deque_pop_front(&raq->q);
-    action->action.total = (uint16_t)deque_pop_front(&raq->q);
-    action->info.delay_ticks = (uint32_t)deque_pop_front(&raq->q);
+    if (action) {
+        action->sensor_num = (int16_t)deque_pop_front(&raq->q);
+        action->action_type = deque_pop_front(&raq->q);
+        action->action.total = (uint16_t)deque_pop_front(&raq->q);
+        action->info.delay_ticks = (uint32_t)deque_pop_front(&raq->q);
+    } else {
+        deque_pop_front(&raq->q);
+        deque_pop_front(&raq->q);
+        deque_pop_front(&raq->q);
+        deque_pop_front(&raq->q);
+    }
 }
 
 void routing_action_queue_pop_back(routing_action_queue *raq, routing_action *action) {
-    action->info.delay_ticks = (uint32_t)deque_pop_back(&raq->q);
-    action->action.total = (uint16_t)deque_pop_back(&raq->q);
-    action->action_type = deque_pop_back(&raq->q);
-    action->sensor_num = (int16_t)deque_pop_back(&raq->q);
+    if (action) {
+        action->info.delay_ticks = (uint32_t)deque_pop_back(&raq->q);
+        action->action.total = (uint16_t)deque_pop_back(&raq->q);
+        action->action_type = deque_pop_back(&raq->q);
+        action->sensor_num = (int16_t)deque_pop_back(&raq->q);
+    } else {
+        deque_pop_back(&raq->q);
+        deque_pop_back(&raq->q);
+        deque_pop_back(&raq->q);
+        deque_pop_back(&raq->q);
+    }
 }
 
 void routing_action_queue_front(routing_action_queue *raq, routing_action *action) {
@@ -251,14 +265,14 @@ void plan_route(track_node *start_node, track_node *end_node,
             action.info.delay_ticks = secondary_start_time;
             routing_action_queue_push_front(speed_changes, &action);
 
-            action.sensor_num = start_node->num;
+            action.sensor_num = SENSOR_NONE;
             action.action_type = SPD_CHANGE;
             action.action.spd = target_spd;
             action.info.delay_ticks = initial_start_time;
             routing_action_queue_push_front(speed_changes, &action);
         }
 
-        action.sensor_num = start_node->num;
+        action.sensor_num = SENSOR_NONE;
         action.action_type = SPD_CHANGE;
         action.action.spd = SPD_LO;
         action.info.delay_ticks = 0;
@@ -271,7 +285,7 @@ void plan_route(track_node *start_node, track_node *end_node,
         action.info.delay_ticks = secondary_start_time;
         routing_action_queue_push_front(speed_changes, &action);
 
-        action.sensor_num = start_node->num;
+        action.sensor_num = SENSOR_NONE;
         action.action_type = SPD_CHANGE;
         action.action.spd = target_spd;
         action.info.delay_ticks = 0;

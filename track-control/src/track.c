@@ -18,7 +18,9 @@ static void train_mod_speed_unchecked(uint16_t tid, uint16_t n, uint16_t s) {
 }
 
 void train_mod_speed(uint16_t tid, struct speed_t *spd_t, uint16_t n, uint16_t s) {
-    if (s == SP_REVERSE || s == (SP_REVERSE + LIGHTS)) return; // prevent reverse
+    if (s == SP_REVERSE || s == (SP_REVERSE + LIGHTS)) {
+        speed_flip(spd_t, n); // assume we know what we're doing
+    }
 
     speed_set(spd_t, n, s); // store state
     train_mod_speed_unchecked(tid, n, s); // send lights
