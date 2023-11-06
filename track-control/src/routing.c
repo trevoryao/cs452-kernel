@@ -75,11 +75,15 @@ void routing_action_queue_pop_back(routing_action_queue *raq, routing_action *ac
 
 void routing_action_queue_front(routing_action_queue *raq, routing_action *action) {
     deque_itr itr = deque_begin(&raq->q);
-
     action->sensor_num = (int16_t)deque_itr_get(&raq->q, itr);
-    action->action_type = deque_itr_get(&raq->q, deque_itr_next(itr));
-    action->action.total = (uint16_t)deque_itr_get(&raq->q, deque_itr_next(itr));
-    action->info.delay_ticks = (uint32_t)deque_itr_get(&raq->q, deque_itr_next(itr));
+
+    itr = deque_itr_next(itr);
+    action->action_type = deque_itr_get(&raq->q, itr);
+
+    itr = deque_itr_next(itr);
+    action->action.total = (uint16_t)deque_itr_get(&raq->q, itr);
+    itr = deque_itr_next(itr);
+    action->info.delay_ticks = (uint32_t)deque_itr_get(&raq->q, itr);
 }
 
 #define HASH(node) ((node) - track)

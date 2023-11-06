@@ -22,9 +22,9 @@ void user_main(void) {
 
     uart_printf(CONSOLE, "Planning route...\r\n");
 
-    // D4 -> B8
+    // A1 -> C3
     uint64_t ticks = get_curr_ticks();
-    plan_route(&track[51], &track[23], -20, 77, SPD_STP, SPD_HI, &path, &speed_changes);
+    plan_route(&track[0], &track[34], 0, 77, SPD_STP, SPD_LO, &path, &speed_changes);
     ticks = get_curr_ticks() - ticks;
 
     uart_printf(CONSOLE, "Run Time (Ticks) %u\r\n", ticks);
