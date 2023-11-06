@@ -112,7 +112,8 @@ static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
         case SPD_CHANGE:
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
-        default: break; // none needed for any other actions
+        default:
+            break; // none needed for any other actions
     }
 }
 
@@ -150,8 +151,6 @@ static void train_tc(void) {
     memcpy(&params, &msg.payload.params, sizeof(train_params)); // copy over (before response!)
     msg.type = MSG_TRAIN_ACK;
     Reply(ptid, (char *)&msg, sizeof(train_msg));
-
-    // uart_printf(CONSOLE, "\r\noffset: %d trn: %d spd: %d\r\n", params.offset, params.trn, params.spd);
 
     // register with coordinator
     if (track_control_register_train(tc_server_tid, MyTid(), params.trn,
@@ -211,6 +210,9 @@ static void train_tc(void) {
         // wait for a notifier
         uassert(Receive(&rcv_tid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
         Reply(rcv_tid, NULL, 0);
+
+        uart_printf(CONSOLE, "\r\n\r\nNotifier received (%s)\r\n",
+            msg.type == MSG_TRAIN_NOTIFY_ROUTE ? "route" : "sensor");
 
         switch (msg.type) {
             case MSG_TRAIN_NOTIFY_ROUTE: {
