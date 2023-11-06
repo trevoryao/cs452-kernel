@@ -141,7 +141,7 @@ void track_control_coordinator_main() {
                 // enqueue to sensor
                 // TODO: fix when better structure
                 sensor received_sensor = msg_received.data.sensor;
-                sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_num, received_sensor.mod_sensor, msg_received.requesterTid);
+                sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_sensor, received_sensor.mod_num, msg_received.requesterTid);
                 ULOG("Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
                 break;
             }

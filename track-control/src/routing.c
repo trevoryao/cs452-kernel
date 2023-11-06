@@ -101,7 +101,11 @@ static inline uint8_t calculate_nbhd_size(node_type type) {
 
 static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_distance,
     int32_t sensor_distance, enum SPEEDS start_spd) {
-    return ((sensor_distance - stopping_distance) * 100) / get_velocity(&spd_data, trn, start_spd);
+
+    int64_t nominator = ((sensor_distance - stopping_distance) * 1000);
+    int64_t denominator = get_velocity(&spd_data, trn, start_spd);
+    int64_t result = nominator / denominator;
+    return (int32_t)(result / 10);
 }
 
 void plan_route(track_node *start_node, track_node *end_node,
@@ -193,7 +197,20 @@ void plan_route(track_node *start_node, track_node *end_node,
         }
 
         int32_t dist_travelled = DIST_TRAVELLED(HASH(node),
-            HASH(end_node)) + offset;
+            HASH(end_node)) + (offset * MM_TO_UM);
+
+        while (!deque_empty(&branches) &&
+            DIST_TRAVELLED(HASH(node), deque_front(&branches)) > min_dist_before_branch) {
+            track_node *branch_node = &track[deque_pop_front(&branches)];
+            int8_t branch_dir = deque_pop_front(&branches);
+
+            action.sensor_num = node->num;
+            action.action_type = SWITCH;
+            action.action.sw.num = branch_node->num;
+            action.action.sw.dir = (branch_dir == DIR_CURVED) ? CRV : STRT;
+            action.info.delay_ticks = 0;
+            routing_action_queue_push_front(path, &action);
+        }
 
         if (stopping_dist != -1 && dist_travelled > stopping_dist) {
             // no delay if we will do any deaccel to speed 7
@@ -220,25 +237,11 @@ void plan_route(track_node *start_node, track_node *end_node,
             stopping_prep_dist = -1; // stop checking
         }
 
-        while (!deque_empty(&branches) &&
-            DIST_TRAVELLED(HASH(node), deque_front(&branches)) > min_dist_before_branch) {
-            track_node *branch_node = &track[deque_pop_front(&branches)];
-            int8_t branch_dir = deque_pop_front(&branches);
-
-            action.sensor_num = node->num;
-            action.action_type = SWITCH;
-            action.action.sw.num = branch_node->num;
-            action.action.sw.dir = (branch_dir == DIR_CURVED) ? CRV : STRT;
-            action.info.delay_ticks = 0;
-            routing_action_queue_push_front(path, &action);
-        }
-
         if (next_sensor != NULL) {
             // add distance information
             action.sensor_num = node->num;
             action.action_type = SENSOR;
             action.action.total = 0;
-            action.info.delay_ticks = 0;
             action.info.dist = DIST_TRAVELLED(HASH(node), HASH(next_sensor)) / MM_TO_UM;
             routing_action_queue_push_front(path, &action);
         }

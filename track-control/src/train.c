@@ -91,6 +91,8 @@ static void train_tc_notifier(void) {
 
         if (rcvd_type == MSG_TRAIN_QUIT) break; // EXIT: quit
 
+        // uint32_t delay_until_ticks = Time(clock_tid) + action.delay;
+
         // wait for sensor activation
         if (action.sensor_num != SENSOR_NONE) {
             // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
@@ -118,8 +120,8 @@ static void train_tc_notifier(void) {
 static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
     switch (action->action_type) {
         case SWITCH:
-            // ULOG("[train] Switch %d to %c\r\n",
-            //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
+            ULOG("[train] Switch %d to %c\r\n",
+                action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
             track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
             break;
         case SPD_CHANGE:
@@ -178,7 +180,7 @@ static void train_tc(void) {
     int route_notifier, spd_notifier;
 
     msg.type = MSG_TRAIN_NOTIFY_ROUTE;
-    route_notifier = Create(P_VHIGH, train_tc_notifier);
+    route_notifier = Create(P_HIGH, train_tc_notifier);
     Send(route_notifier, (char *)&msg, sizeof(train_msg), NULL, 0);
 
     msg.type = MSG_TRAIN_NOTIFY_SPD;

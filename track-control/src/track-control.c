@@ -4,6 +4,8 @@
 #include "task.h"
 #include "track-control-coordinator.h"
 
+#include "rpi.h"
+
 int track_control_register_train(int tid, int task_tid, uint16_t trainNo,
     uint16_t sensor_mod, uint16_t sensor_no) {
     uint16_t my_tid = MyTid();
@@ -13,8 +15,8 @@ int track_control_register_train(int tid, int task_tid, uint16_t trainNo,
     msg.requesterTid = my_tid;
     msg.data.trn_register.tid = task_tid;
     msg.data.trn_register.trn_no = trainNo;
-    msg.data.trn_register.sensor.mod_sensor = sensor_mod;
-    msg.data.trn_register.sensor.mod_num = sensor_no;
+    msg.data.trn_register.sensor.mod_sensor = sensor_no;
+    msg.data.trn_register.sensor.mod_num = sensor_mod;
 
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_tc_server), (char *)&msg, sizeof(struct msg_tc_server));
 
@@ -102,7 +104,7 @@ void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no) 
 
 int track_control_set_switch(int tid, uint16_t switch_no, enum SWITCH_DIR switch_dir) {
     uint16_t my_tid = MyTid();
-
+    
     struct msg_tc_server msg;
     msg.type = MSG_TC_SWITCH_PUT;
     msg.requesterTid = my_tid;

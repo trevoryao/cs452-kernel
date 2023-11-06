@@ -41,8 +41,8 @@ void user_main(void) {
 
         if (action.action_type == SWITCH) {
             uassert(action.info.delay_ticks == 0);
-            uart_printf(CONSOLE, "Switch %d to %c (at Sensor %c%d)\r\n",
-                action.action.sw.num, (action.action.sw.dir == STRT) ? 'S' : 'C',
+            uart_printf(CONSOLE, "Switch %d to %d (at Sensor %c%d)\r\n",
+                action.action.sw.num, action.action.sw.dir,
                 SENSOR_MOD(action.sensor_num) + 'A' - 1, SENSOR_NO(action.sensor_num));
         } else if (action.action_type == SENSOR) {
             uart_printf(CONSOLE, "Sensor %c%d -- dist to next: %d mm\r\n",

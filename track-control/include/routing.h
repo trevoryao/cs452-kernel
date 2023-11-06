@@ -37,7 +37,7 @@ typedef struct routing_action {
     union {
         struct {
             uint8_t num;
-            enum SWITCH_DIR dir;
+            uint8_t dir;
         } sw;
         uint8_t spd;
         uint16_t total; // only for copying

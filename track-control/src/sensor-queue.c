@@ -63,7 +63,7 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod, uint16_
 
     }
 
-    
+
     if (sq->freelist == NULL) {
         // TODO: error message
         uart_printf(CONSOLE, "Cannot enqueu\r\n");
