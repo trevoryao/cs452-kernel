@@ -145,14 +145,13 @@ static void train_tc(void) {
         msg.type = MSG_TRAIN_ERROR;
         Reply(ptid, (char *)&msg, sizeof(train_msg));
         return;
-    } else {
-        msg.type = MSG_TRAIN_ACK;
-        Reply(ptid, (char *)&msg, sizeof(train_msg));
     }
 
-    memcpy(&params, &msg.payload.params, sizeof(train_params)); // copy over
+    memcpy(&params, &msg.payload.params, sizeof(train_params)); // copy over (before response!)
+    msg.type = MSG_TRAIN_ACK;
+    Reply(ptid, (char *)&msg, sizeof(train_msg));
 
-    uart_printf(CONSOLE, "offset: %d trn: %d spd: %d\r\n", params.offset, params.trn, params.spd);
+    // uart_printf(CONSOLE, "\r\noffset: %d trn: %d spd: %d\r\n", params.offset, params.trn, params.spd);
 
     // register with coordinator
     if (track_control_register_train(tc_server_tid, MyTid(), params.trn,
