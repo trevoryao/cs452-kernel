@@ -149,24 +149,24 @@ void track_control_coordinator_main() {
             case MSG_TC_SENSOR_PUT: {
                 Reply(senderTid, NULL, 0);
 
-                uint16_t sensor_mod = msg_received.data.sensor.mod_sensor;
-                uint16_t sensor_no = msg_received.data.sensor.mod_num;
+                uint16_t sensor_module_number = msg_received.data.sensor.mod_num;
+                uint16_t sensor_number = msg_received.data.sensor.mod_sensor;
                 int current_Timestamp = Time(clockTid);
 
-                if (latestSensorMod == sensor_mod && latestSensorNo == sensor_no
+                if (latestSensorMod == sensor_module_number && latestSensorNo == sensor_number
                     && ((latestSensorTimestamp + SENSOR_IGNORE_TIME) > current_Timestamp)) {
                     // ignore sensor message
                     break;
                 } else {
-                    latestSensorMod = sensor_mod;
-                    latestSensorNo = sensor_no;
+                    latestSensorMod = sensor_module_number;
+                    latestSensorNo = sensor_number;
                     latestSensorTimestamp = current_Timestamp;
 
                     // dequeue waiting processes
-                    replyWaitingProcess(&sensor_queue, sensor_mod, sensor_no);
+                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number);
 
                     // inform UI about sensor update
-                    update_triggered_sensor(consoleTid, &ui_sensor_queue, sensor_mod, sensor_no);
+                    update_triggered_sensor(consoleTid, &ui_sensor_queue, sensor_module_number, sensor_number);
 
                 }
 
