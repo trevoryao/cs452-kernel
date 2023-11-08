@@ -173,6 +173,7 @@ void task_queue_kill_children(task_queue *tq, uint16_t ptid) {
         while (cur) {
             if (cur->parent->tid == ptid) {
                 cur->ready_state = STATE_KILLED; // lazy kill, let scheduler determine if killed
+                task_queue_kill_children(tq, cur->tid);
             }
             cur = cur->next;
         }

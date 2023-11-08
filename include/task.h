@@ -1,6 +1,8 @@
 #ifndef __TASK_H__
 #define __TASK_H__
 
+#include "stdint.h"
+
 /*
  * Kernel Task Creation
  * All functions cause rescheduling
@@ -84,5 +86,17 @@ void Exit(void);
  * exit is called for all child tasks)
  */
 void KillAllChildren(void);
+
+/*
+ * causes specified child task (and all it's children) to cease execution immediately
+ * Returns 0 on success and -1 otherwise
+ */
+int KillChild(int tid);
+
+/*
+ * Returns the number of clock ticks spent idling and the total
+ * number of clock ticks the RPi has been running for
+ */
+void GetIdleStatus(uint64_t *idle_sys_ticks, uint64_t *total_sys_ticks);
 
 #endif

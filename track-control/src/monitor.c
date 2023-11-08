@@ -1,4 +1,4 @@
-#include "k4/monitor.h"
+#include "monitor.h"
 
 #if defined(LOG) || defined(USERLOG) || defined(KERNEL_LOG)
     #define LOGGING 1
@@ -19,9 +19,11 @@
 #endif
 
 // usr
-#include "k4/controller-consts.h"
-#include "k4/speed.h"
-#include "monitor.h"
+#include "controller-consts.h"
+#include "sensors.h"
+#include "speed.h"
+#include "speed-data.h"
+#include "track-data.h"
 
 // starting coordinates for various ui elements
 
@@ -38,14 +40,25 @@
 #define SEN_START_Y 6
 
 #define PRMT_START_X 1
-#define PRMT_START_Y 24
+#define PRMT_START_Y 30
+
+#define POS_START_X 1
+#define POS_START_Y 30
 
 static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 #define SPD_START_X SEN_START_X
 
+static const uint16_t IDLE_START_Y = SPD_START_Y + 3 * N_TRNS + 3;
+#define IDLE_START_X 7
+
+#define TC_START_Y SPD_START_Y
+static const uint16_t TC_START_X = SPD_START_X + 12;
+
 #define SW_TAB 10 // tab distance
+
+extern speed_data spd_data;
 
 static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir) {
     uint16_t x_off, y_off;
@@ -106,9 +119,12 @@ void init_monitor(uint16_t tid) {
     #if LOGGING
     (void)tid;
     #else
+    // assume screen cleared by the kernel
+    // paint initial structure
+    // let time task start painting, no point in an initial time
 
     // switch list header
-    Printf(tid, CLEAR CURS_MOV COL_YEL "Switches:" COL_RST, SW_START_Y - 1, SW_START_X);
+    Printf(tid, CURS_MOV COL_YEL "Switches:" COL_RST, SW_START_Y - 1, SW_START_X);
 
     for (uint16_t i = SW0_BASE; i < SW0_BASE + N_SW0; ++i) // SW0
         update_single_switch(tid, i, UNKNOWN);
@@ -117,17 +133,23 @@ void init_monitor(uint16_t tid) {
         update_single_switch(tid, i, GET_START_SW_STATE(i));
 
     // sensor list header
-    Printf(tid, CURS_MOV COL_YEL "Sensors:", SEN_START_Y - 1, SEN_START_X);
+    Printf(tid, CURS_MOV COL_YEL "Sensors:" COL_RST, SEN_START_Y - 1, SEN_START_X);
 
     // spd list header
     speed_t spd_t;
     speed_t_init(&spd_t);
 
-    Printf(tid, CURS_MOV "Speed:" COL_RST, SPD_START_Y - 1, SPD_START_X);
+    Printf(tid, CURS_MOV COL_YEL "Speed:" COL_RST, SPD_START_Y - 1, SPD_START_X);
 
     for (uint16_t i = 0; i < N_TRNS; ++i) {
         update_speed(tid, &spd_t, ALL_TRNS[i]);
     }
+
+    // train control
+    Printf(tid, CURS_MOV COL_YEL "Control/Predictions:" COL_RST, TC_START_Y - 1, TC_START_X);
+
+    // idle
+    Printf(tid, CURS_MOV COL_YEL "Idle:" COL_RST, IDLE_START_Y, IDLE_START_X - 6);
 
     // no triggered sensors
     print_prompt(tid);
@@ -149,8 +171,26 @@ void update_time(uint16_t tid, time_t *t) {
     (void)t;
     #else
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE BLD
-        "%u:%u:%u" COL_RST CURS_UNSAVE CURS_SHOW,
+        "%u:%u.%u" COL_RST CURS_UNSAVE CURS_SHOW,
         TIME_START_Y, TIME_START_X, t->min, t->sec, t->tsec);
+    #endif
+}
+
+void update_idle(uint16_t tid, uint64_t idle_sys_ticks, uint64_t user_sys_ticks) {
+    #if LOGGING
+    (void)tid;
+    (void)idle_sys_ticks;
+    (void)user_sys_ticks;
+    #else
+    time_t idle_time;
+    time_from_sys_ticks(&idle_time, idle_sys_ticks);
+    int idle_prop = (idle_sys_ticks * 100) / (idle_sys_ticks + user_sys_ticks);
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE BLD
+        "%u:%u.%u (%d%%)"
+        COL_RST CURS_UNSAVE CURS_SHOW,
+        IDLE_START_Y, IDLE_START_X, idle_time.min, idle_time.sec,
+        idle_time.tsec, idle_prop);
     #endif
 }
 
@@ -172,11 +212,81 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
         col = COL_GRN;
     }
 
-    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV "        " CURS_N_BWD
         "TR%d: %s%d"
         COL_RST CURS_UNSAVE CURS_SHOW,
-        SPD_START_Y + trn_hash_no, SPD_START_X,
+        SPD_START_Y + 3 * trn_hash_no, SPD_START_X, 8,
         tr, col, speed_display_get(spd_t, tr));
+
+    #endif
+}
+
+void print_tc_params(uint16_t tid, int sen_track_num_start, int sen_track_num_end, int16_t offset, uint16_t trn) {
+    #if LOGGING
+    (void)tid;
+    (void)sen_track_num_start;
+    (void)sen_track_num_end;
+    (void)offset;
+    (void)trn;
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%c%d -> %c%d (%dmm)"
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no, TC_START_X,
+        SENSOR_MOD(sen_track_num_start) - 1 + 'A',
+        SENSOR_NO(sen_track_num_start),
+        SENSOR_MOD(sen_track_num_end) - 1 + 'A',
+        SENSOR_NO(sen_track_num_end),
+        offset);
+#endif
+}
+
+void reset_tc_params(uint16_t tid, uint16_t trn) {
+    #if LOGGING
+    (void)tid;
+    (void)trn;
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        CURS_DOWN DEL_LINE
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no, TC_START_X);
+    #endif
+}
+
+void update_sensor_prediction(uint16_t tid, int8_t trainNo, int8_t spd, int32_t diff) {
+    // assume diff is in clock ticks (10ms)
+    int32_t diff_time = diff * TICK_MS;
+    int64_t diff_dist = get_distance_from_velocity(&spd_data, trainNo, diff, spd) / MM_TO_UM;
+
+    #if LOGGING
+    Printf(tid, "[Prediction] %dms / %dmm\r\n",
+        diff_time, diff_dist);
+    #else
+    int8_t trn_hash_no = trn_hash(trainNo);
+    if (trn_hash_no < 0) return;
+
+
+
+    char *col;
+    if (-5 <= diff && diff <= 5) {
+        col = COL_GRN;
+    } else if (-50 <= diff && diff <= 50) {
+        col = COL_YEL;
+    } else {
+        col = COL_RED;
+    }
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%s%d" COL_RST "ms / %s%d" COL_RST "mm"
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 1, TC_START_X,
+        col, diff_time, col, diff_dist);
 
     #endif
 }
@@ -233,4 +343,25 @@ void cmd_delete(uint16_t tid) {
 
 void cmd_out(uint16_t tid, char c) {
     Putc(tid, c);
+}
+
+void print_error_message(uint16_t tid) {
+    Printf(tid, CURS_SAVE CURS_HIDE COL_RED CURS_MOV DEL_LINE "Invalid Command" COL_RST CURS_UNSAVE CURS_SHOW,
+            PRMT_START_Y + 2, PRMT_START_X);
+}
+
+void print_in_progress_message(uint16_t tid) {
+    Printf(tid, CURS_SAVE CURS_HIDE COL_RED CURS_MOV DEL_LINE "Train already moving!" COL_RST CURS_UNSAVE CURS_SHOW,
+            PRMT_START_Y + 2, PRMT_START_X);
+
+}
+
+void reset_error_message(uint16_t tid) {
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE COL_RST CURS_UNSAVE CURS_SHOW,
+            PRMT_START_Y + 2, PRMT_START_X);
+}
+
+void print_train_time(uint16_t tid, int8_t trainNo, int32_t diff_time, int32_t diff_distance) {
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE "Train %d reached sensor with %d clock tick diff and %d um difference" CURS_UNSAVE CURS_SHOW,
+            POS_START_Y, POS_START_X, trainNo, diff_time, diff_distance);
 }

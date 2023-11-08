@@ -294,18 +294,21 @@ Deacceleration Data:
 ******************    Stopping Distance    *********************
 ****************************************************************
 
-Speed for all: 7 -> 0
-
 Train 24:
+Speed 7 -> 0:
 T_delay: 5200ms	d: 135168 um (135 mm)
 
 
 Train 58:
-T_delay: 5880 ms	d: 127966 um (127 mm)
+Speed 7 -> 0:   T_delay: 5890 ms	d: 127966 um (127 mm)
+Speed 9 -> 0:   T_delay: 2820 ms    d: 279043 um (279 mm)
+Speed 11 -> 0:  T_delay: 1180 ms    d: 545819 um (545 mm)
 
 
 Train 77:
-T_delay: 4140 ms	d: 226606 um (226 mm)
+Speed 7 -> 0:   T_delay: 4060 ms	d: 241126 um (241 mm)
+Speed 9 -> 0:   T_delay: 1920 ms    d: 438894 um (438 mm)
+Speed 11 -> 0:  T_delay: 520 ms     d: 768428 um (768 mm)
 
 
 ****************************************************************

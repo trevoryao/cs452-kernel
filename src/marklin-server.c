@@ -60,10 +60,6 @@ static void replyWaitingForEmtpy(struct deque *waiting_for_empty) {
 static void handleSending(struct deque *fifo_write, struct deque *waiting_for_empty, enum MARKLIN_STATE *state, int *outstanding_bytes) {
 
     if ((*state == MARKLIN_READY) & !deque_empty(fifo_write)) {
-        if (*outstanding_bytes > 0) {
-            ULOG("[Märklin-Server] Sensor data outstanding - no sending\r\n");
-        }
-        ULOG("[Märklin-Server] Writing to Marklin \r\n");
         char c = deque_pop_front(fifo_write);
         uart_putc(MARKLIN, c == ZERO_BYTE ? 0x0 : c);
         *state = MARKLIN_CMD_SENT;
@@ -80,8 +76,6 @@ static void handleSending(struct deque *fifo_write, struct deque *waiting_for_em
             replyWaitingForEmtpy(waiting_for_empty);
         }
 
-    } else {
-        ULOG("[Märklin-Server] Trying to sent to Marklin but not in ready \r\n");
     }
 }
 
@@ -94,9 +88,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_CMD_SENT: {
             if (cts_state == 0) {
                 *state = MARKLIN_SERVER_BUSY;
-                ULOG("[Märklin-Server] Transit to busy \r\n");
-            } else {
-                ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
             return;
         }
@@ -104,9 +95,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_SERVER_BUSY: {
             if (cts_state == 1) {
                 *state = MARKLIN_READY;
-                ULOG("[Märklin-Server] Transit to ready \r\n");
-            } else {
-                ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
             return;
         }
@@ -153,12 +141,8 @@ void marklin_server_main(void) {
     // set variables required for state
     enum MARKLIN_STATE marklin_state = MARKLIN_READY;
 
-    ULOG("[Märklin-Server] Init done & ready to receive\r\n");
-
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_uartserver));
-        ULOG("[Märklin-Server] Received Message \r\n");
-
 
         switch (msg_received.type) {
             case MSG_UART_GETC: {

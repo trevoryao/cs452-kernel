@@ -96,7 +96,8 @@ int kernel_main(void *kernel_end) {
         stopwatch_end(&stopwatch, stpw_t);
 
         if ((handler & SYNC_MSK) == SYNC_MSK) { // syscall?
-            task_svc_handle(curr_user_task, &talloc, &salloc, &tqueue, &equeue);
+            task_svc_handle(curr_user_task, &talloc, &salloc,
+                &tqueue, &equeue, &stopwatch);
         } else if ((handler & IRQ_MSK) == IRQ_MSK) { // interrupt?
             handle_interrupt(&equeue);
         } else {
@@ -126,7 +127,7 @@ CURR_TASK_KILLED:
     time_from_sys_ticks(&idle_time, idle_ticks);
     int idle_prop = (idle_ticks * 100) / (idle_ticks + user_ticks);
 
-    uart_printf(CONSOLE, "Total idle time: %u:%u.%u (%d%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop);
+    uart_printf(CONSOLE, "Total Lifetime Idle Time: %u:%u.%u (%d.%%)\r\n", idle_time.min, idle_time.sec, idle_time.tsec, idle_prop);
 
     return 0;
 }
