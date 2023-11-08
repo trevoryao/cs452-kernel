@@ -295,8 +295,9 @@ Deacceleration Data:
 ****************************************************************
 
 Train 24:
-Speed 7 -> 0:
-T_delay: 5200ms	d: 135168 um (135 mm)
+Speed 7 -> 0:   T_delay: 5100 ms	d: 151376 um (151 mm)
+Speed 9 -> 0:   T_delay: 2400 ms    d: 307080 um (307 mm)
+Speed 11 -> 0:  T_delay: 970 ms     d: 583030 um (583 mm)
 
 
 Train 58:
