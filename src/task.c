@@ -28,3 +28,11 @@ void Exit(void) {
 void KillAllChildren(void) {
     syscall(SYS_KILL_CHILD, 0, 0, 0, 0, 0, 0, 0);
 }
+
+int KillChild(int tid) {
+    return syscall(SYS_KILL, tid, 0, 0, 0, 0, 0, 0);
+}
+
+void GetIdleStatus(uint64_t *idle_sys_ticks, uint64_t *total_sys_ticks) {
+    syscall(SYS_IDLE_STATUS, (int64_t)idle_sys_ticks, (int64_t)total_sys_ticks, 0, 0, 0, 0, 0);
+}

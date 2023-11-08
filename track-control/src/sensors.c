@@ -1,9 +1,9 @@
-#include "k4/sensors.h"
+#include "sensors.h"
 
 #include "uart-server.h"
 
-#include "k4/controller-consts.h"
-#include "k4/monitor.h"
+#include "controller-consts.h"
+#include "monitor.h"
 
 #define N_SENSOR 8 // per dump round
 

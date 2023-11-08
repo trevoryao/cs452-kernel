@@ -13,8 +13,9 @@ typedef struct deque deque;
 
 // struct for counting rcv'd sensor data
 typedef struct sensor {
-    uint16_t mod_num; // which sensor to dump
-    uint16_t mod_sensor; // which sensor byte to process
+    uint16_t mod_num;   // which sensor to dump (1-5 for A to E)
+    uint16_t mod_sensor; // which sensor byte to process (1-16)
+    int num;            // for track-node data
 } sensor;
 
 void sen_data_init(sensor *d);
