@@ -8,6 +8,7 @@
 #include "task-alloc.h"
 #include "task-queue.h"
 #include "stack-alloc.h"
+#include "stopwatch.h"
 
 // lib
 #include "task.h"
@@ -72,8 +73,8 @@ uint8_t task_activate(task_t *t, kernel_state *k) {
     return context_switch_out(t, k);
 }
 
-void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_queue *tq,
-    event_queue *eq) {
+void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc,
+    task_queue *tq, event_queue *eq, stopwatch *stopwatch) {
     KLOG("task-%d SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
 
     switch (t->x0) {
@@ -117,6 +118,21 @@ void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc, task_qu
             break;
         case SYS_KILL_CHILD:
             task_queue_kill_children(tq, t->tid);
+            break;
+        case SYS_KILL: {
+            task_t *child = task_queue_get(tq, t->x1);
+            if (child && child->parent == t) {
+                child->ready_state = STATE_KILLED;
+                task_queue_kill_children(tq, child->tid);
+                t->x0 = 0;
+            } else {
+                t->x0 = -1; // error no such task;
+            }
+            break;
+        }
+        case SYS_IDLE_STATUS:
+            *(uint64_t *)t->x1 = stopwatch_get_total_ticks(stopwatch, STPW_IDLE_TASK);
+            *(uint64_t *)t->x2 = stopwatch_get_total_ticks(stopwatch, STPW_USER_TASK);
             break;
         case SYS_MSG_SEND: {
             task_t *rcv_t;

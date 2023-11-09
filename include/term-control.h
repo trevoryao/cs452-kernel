@@ -20,6 +20,8 @@
 #define CURS_BWD    "\033[D"    // move cursor backwards
 
 #define CURS_MOV    "\033[%u;%uH" // printf str format
+#define CURS_N_BWD  "\033[%uD"
+#define CURS_DOWN   "\033[B"    // move cursor down
 
 
 // Code Effects

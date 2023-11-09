@@ -58,11 +58,8 @@ static void replyWaitingForEmtpy(struct deque *waiting_for_empty) {
 }
 
 static void handleSending(struct deque *fifo_write, struct deque *waiting_for_empty, enum MARKLIN_STATE *state, int *outstanding_bytes) {
-    if ((*state == MARKLIN_READY) & !deque_empty(fifo_write)) {
-        if (*outstanding_bytes > 0) {
-            ULOG("[Märklin-Server] Sensor data outstanding - no sending\r\n");
-        }
 
+    if ((*state == MARKLIN_READY) & !deque_empty(fifo_write)) {
         char c = deque_pop_front(fifo_write);
         uart_putc(MARKLIN, c == ZERO_BYTE ? 0x0 : c);
         *state = MARKLIN_CMD_SENT;
@@ -91,8 +88,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_CMD_SENT: {
             if (cts_state == 0) {
                 *state = MARKLIN_SERVER_BUSY;
-            } else {
-                ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
             return;
         }
@@ -100,8 +95,6 @@ static void advanceState(enum MARKLIN_STATE *state, int cts_state) {
         case MARKLIN_SERVER_BUSY: {
             if (cts_state == 1) {
                 *state = MARKLIN_READY;
-            } else {
-                ULOG("[Marklin-Server] CTS has not expected state\r\n");
             }
             return;
         }
@@ -118,10 +111,10 @@ void marklin_server_main(void) {
 
     // Structures for storing characters to be read or written
     struct deque fifo_read, fifo_write, waiting_readers, waiting_for_empty;
-    deque_init(&fifo_read, 4);
-    deque_init(&fifo_write, 4);
-    deque_init(&waiting_readers, 3);
-    deque_init(&waiting_for_empty, 3);
+    deque_init(&fifo_read, 8);
+    deque_init(&fifo_write, 8);
+    deque_init(&waiting_readers, 5);
+    deque_init(&waiting_for_empty, 5);
 
     // variables needed for block sending bc of sensor data
     int outstanding_bytes = 0;
@@ -147,8 +140,6 @@ void marklin_server_main(void) {
 
     // set variables required for state
     enum MARKLIN_STATE marklin_state = MARKLIN_READY;
-
-    ULOG("[Märklin-Server] Init done & ready to receive\r\n");
 
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_uartserver));
