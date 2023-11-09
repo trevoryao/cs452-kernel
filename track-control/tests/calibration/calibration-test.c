@@ -123,7 +123,7 @@ void constant_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t
 
             // calculate individual velocities
             for (int j = 0; j < N_TESTS; ++j) {
-                v[j] = (dist_mm * 1000000000) / t[j];
+            v[j] = (dist_mm * 1000000000) / t[j];
             }
 
             Printf(console, "All recorded time deltas and velocities:\r\n");
