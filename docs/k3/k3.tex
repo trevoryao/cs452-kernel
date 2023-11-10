@@ -182,8 +182,8 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     Should the queue be empty or only comprise of non-ready tasks, the scheduler advances to the next lower priority queue in search of ready tasks.
     New tasks are always added to the end of their respective priority queue.
 
-    Long running server tasks which are started in the kernel initialisation have their own highest priority, in order to enable timely service to user tasks. These tasks are excluded when checking for active user tasks, and are user tasks with special treatment. 
-    
+    Long running server tasks which are started in the kernel initialisation have their own highest priority, in order to enable timely service to user tasks. These tasks are excluded when checking for active user tasks, and are user tasks with special treatment.
+
     If any of these server tasks require notifier task(s), they also can be run at a higher priority (under the server tasks), which are also excluded when checking for active user tasks. Finally, the idle task (Section \ref{sec:idle-task}) runs at the lowest priority without any other tasks, and is also ignored to allow for smooth exit. In essence, any server/kernel tasks are always ignored.
 
     \subsubsection{System Calls}
@@ -203,32 +203,32 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     Secondly, we will consider the case for when $T_r$ executes first, which the kernel can recognise if there are no waiting senders. In this case $T_r$ is blocked by the kernel moving it to the \verb`RCV_WAIT` state. Then, when $T_s$ sends, the kernel blocks it and transitions it to state \verb`RPLY_WAIT`, and moves the data as before. However, in this case, the kernel has to unblock $T_r$ (i.e. ready state to \verb`READY`) before returning the necessary parameters as previous. As mentioned previously, the kernel is able to check that $T_r$ executed first by verifying that $T_r$ is in \verb`RCV_WAIT` state.
 
     In either case, $T_r$ processes the sent message, and needs to \verb`Reply` to $T_s$. The kernel handles this by copying the appropriate number of bytes, and unblocks $T_s$ by returning it to the \verb`READY` state.
-    
+
     \subsubsection{Interrupts}
     \label{sec:interrupt}
     Interrupts are set-up and handled (i.e. acknowledgement, etc) as documented in the ARM GIC documentation, as the \verb`kernel/include/interrupts.h` interface. In terms of the kernel receiving the interrupts, a context-switch (Section \ref{sec:context-switch}) is performed, and the kernel executes the interrupt handler (rather than the system call handler) based on the return code of the context switch.
-    
+
     The interrupt handler itself is primarily driven by the event queue (Section \ref{sec:event-queue}), which keeps track of tasks blocked waiting various interrupts, separately from the task scheduler queue. This priority queue allows the interrupt handler to wake-up any blocked tasks waiting for the interrupt.
-    
+
     \subsubsection{Idle Task}
     \label{sec:idle-task}
     The idle task runs alone at the lowest priority, so that it is only ever scheduled if there are no other tasks. Timing is done with the help of the kernel, which creates the idle task and saves the TID of the idle task, and checks whenever a new task is being scheduled/unscheduled if it's TID matches that of the idle task, and if so, starts/stops a timer.
-    
-    The timer is an aggregate timer, and accumulates the total amount of time between all the starts/stops, implemented in \verb`kernel/include/stopwatch.h`.
-    
-    \subsubsection{Clock Server/Notifier}
-    The Clock Service is split into three parts: Clock Server, Clock Notifier and Clock Queue, located in \verb`include/clock-server.h`, and \verb`include/clock-queue.h`. 
-    The Clock Server handles the three main requests \verb`Time`, \verb`Delay`, and \verb`DelayUntil`, which are implemented in \verb`include/clock.h`.
-    The request \verb`Time` is directly answered, while the other two requests are blocking. 
-    To block the processes, the TID of the requester and absolute clock tick are added to the clock queue (described in more detail in Section \ref{sec:clock-queue}). 
-    Hence, \verb`Delay` works like \verb`DelayUntil`, but requires to get the current clock tick and adding the delay before queueing it. 
 
-    On the other hand, the clock notifier constantly calls \verb`Await`, and blocks until it gets the interrupt by the kernel, indicating that another clock tick has passed. 
-    After receiving the interrupt, it sends a 'notify' message to the clock server and waits again for the next clock tick. 
+    The timer is an aggregate timer, and accumulates the total amount of time between all the starts/stops, implemented in \verb`kernel/include/stopwatch.h`.
+
+    \subsubsection{Clock Server/Notifier}
+    The Clock Service is split into three parts: Clock Server, Clock Notifier and Clock Queue, located in \verb`include/clock-server.h`, and \verb`include/clock-queue.h`.
+    The Clock Server handles the three main requests \verb`Time`, \verb`Delay`, and \verb`DelayUntil`, which are implemented in \verb`include/clock.h`.
+    The request \verb`Time` is directly answered, while the other two requests are blocking.
+    To block the processes, the TID of the requester and absolute clock tick are added to the clock queue (described in more detail in Section \ref{sec:clock-queue}).
+    Hence, \verb`Delay` works like \verb`DelayUntil`, but requires to get the current clock tick and adding the delay before queueing it.
+
+    On the other hand, the clock notifier constantly calls \verb`Await`, and blocks until it gets the interrupt by the kernel, indicating that another clock tick has passed.
+    After receiving the interrupt, it sends a 'notify' message to the clock server and waits again for the next clock tick.
     On 'notify' the clock server dequeues all processes which had deque time prior to the time of the clock tick.
 
-    Through sending the replies, the processes get unblocked and the scheduler will schedule them according to their priority. 
-    The separation of clock Server and clock notifier is crucial, as otherwise the clock server would be blocked by waiting for the interrupt and could not receive or process any requests. 
+    Through sending the replies, the processes get unblocked and the scheduler will schedule them according to their priority.
+    The separation of clock Server and clock notifier is crucial, as otherwise the clock server would be blocked by waiting for the interrupt and could not receive or process any requests.
 
     \subsection{Data Structures}
 
@@ -274,18 +274,18 @@ void context_switch_out(task_t *curr_user_task, kernel_state *kernel_task);
     Each bucket contains a linked list of pointers (to the corresponding storage location in the storage array) of the entries hashed to this bucket. In most cases the algorithm only iterates a small number of entries, and if it finds an entry of the same name, it overwrites it. Otherwise, it adds it to the linked list.
 
     The \verb`WhoIs` method works similarly, by calculating the hash value of the given string and searching the list for a matching name.
-    
+
     \subsubsection{Event Queue}
     \label{sec:event-queue}
     The Event Queue is implemented in \verb`kernel/include/event-queue.h`, and enables the interrupt handler to keep track of blocked tasks waiting for an interrupt. It is ``priority'' queue implemented as an array of pointers to tasks (embedded links inside the task structure), with one entry per interrupt type. This is because there is never a need to access tasks on multiple priorities, and there is no actual ``priority'' between interrupts. It is the most efficient to just have multiple queues. The event-queue provides methods for unblocking all or one of the waiting tasks, depending on the interrupt type.
 
     \subsubsection{Clock Queue}
     \label{sec:clock-queue}
-    The Clock Queue is implemented in \verb`include/clock-queue.h`, and enables the clock server to keep track of waiting/delayed processes. 
-    It uses a freelist of empty entry structs, composed of the tid, the clock tick and a next pointer, which is similar to previous queues. 
-    The main difference is that the clock queues adds all entries in a sorted manner, resulting in a sorted list. 
-    Respectively, on every clock tick, the queue only has to compare the absolute time stamp of the first element to the current clock tick. 
-    This enables major performance advantages, as enqueueing a process will occur very rarely compared to the clock tick.   
+    The Clock Queue is implemented in \verb`include/clock-queue.h`, and enables the clock server to keep track of waiting/delayed processes.
+    It uses a freelist of empty entry structs, composed of the tid, the clock tick and a next pointer, which is similar to previous queues.
+    The main difference is that the clock queues adds all entries in a sorted manner, resulting in a sorted list.
+    Respectively, on every clock tick, the queue only has to compare the absolute time stamp of the first element to the current clock tick.
+    This enables major performance advantages, as enqueueing a process will occur very rarely compared to the clock tick.
 
     \subsubsection{Game Server}
     The Game Server is located in \verb`user/include/gameserver.h`.
@@ -370,7 +370,7 @@ Task 3 parent: 0
     Secondly, we can consistently see that when the receiver starts first, the execution time is slightly longer, and this appears to increase as the message size gets larger. Part of this is because there needs to be an extra context switch back to the receiver when the receiver sends first in order for the receiver to reply to the message.
 
     \subsection{Kernel Assignment 3}
-    The Console output of the program is as follows: 
+    The Console output of the program is as follows:
     \begin{verbatim}
 Client tid 55: delay interval 10 (1)
 Client tid 55: delay interval 10 (2)
@@ -420,15 +420,15 @@ Total idle time: 0:2.1 (98%)
         \item Client 4 (tid 58):    Delay 71,   No. of Delays: 3
     \end{itemize}
 
-    That the user output matches the expected output can be seen with the help of the illustration below. 
-    Client 1 is the first to start and wakes up twice before Client 2 wakes up the first time. 
-    This comparison holds for the entire output sequence. It also clearly shows why client 1 is the first one to terminate and client 4 the last one. 
+    That the user output matches the expected output can be seen with the help of the illustration below.
+    Client 1 is the first to start and wakes up twice before Client 2 wakes up the first time.
+    This comparison holds for the entire output sequence. It also clearly shows why client 1 is the first one to terminate and client 4 the last one.
 
-    The graphic further demonstrates that there is no clock tick where two clients wake up at the same time. 
-    Hence, the priority of the clients should have no impact in this test. 
-    However, it might have an impact if the clients would run for a longer time or if other processes are also running. 
+    The graphic further demonstrates that there is no clock tick where two clients wake up at the same time.
+    Hence, the priority of the clients should have no impact in this test.
+    However, it might have an impact if the clients would run for a longer time or if other processes are also running.
 
-    Finally the graphic shows that client 4 is finishing last. 
+    Finally the graphic shows that client 4 is finishing last.
 
     \begin{tikzpicture}[xscale=0.065]
         % Client 1
@@ -438,7 +438,7 @@ Total idle time: 0:2.1 (98%)
             \node[below] at (\x,4) {\small \x};
         }
         \node[anchor=east] at (-10,4) {Client 1};
-    
+
         % Client 2
         \draw[thick] (0,3) -- (207,3);
         \foreach \x in {0,23,...,207} {
@@ -446,7 +446,7 @@ Total idle time: 0:2.1 (98%)
             \node[below] at (\x,3) {\small \x};
         }
         \node[anchor=east] at (-10,3) {Client 2};
-    
+
         % Client 3
         \draw[thick] (0,2) -- (198,2);
         \foreach \x in {0,33,...,198} {
@@ -454,7 +454,7 @@ Total idle time: 0:2.1 (98%)
             \node[below] at (\x,2) {\small \x};
         }
         \node[anchor=east] at (-10,2) {Client 3};
-    
+
         % Client 4
         \draw[thick] (0,1) -- (213,1);
         \foreach \x in {0,71,...,213} {
@@ -463,7 +463,7 @@ Total idle time: 0:2.1 (98%)
         }
         \node[anchor=east] at (-10,1) {Client 4};
     \end{tikzpicture}
-    
+
 
 
     \end{document}
