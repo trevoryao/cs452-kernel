@@ -10,6 +10,12 @@ typedef enum {
   NODE_EXIT,
 } node_type;
 
+typedef enum {
+  DIR_A, // Clock wise
+  DIR_B, // Counter clock
+  DIR_NONE
+} direction;
+
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
 #define DIR_CURVED 1
@@ -21,6 +27,8 @@ typedef struct track_edge track_edge;
 struct track_edge {
   track_edge *reverse;
   track_node *src, *dest;
+  int segmentId;
+  direction dirSegment;
   int dist;             /* in millimetres */
 };
 
