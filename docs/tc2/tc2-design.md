@@ -33,3 +33,25 @@ of TCC to check if there is a collision between any two given trains on the trac
     - TCC has final authority to emergency-stop (i.e. SPD_REVERSE) train(s) if detecting VERY IMMINENT collision
 - mid-route reversing [Mon 20 Nov]
 - documentation [Tues 21 Nov]
+
+## Gameplan 2
+**As of [Tues 14 Nov]**
+- Non-constant speed position [Wed 15 Nov]
+    - Recalibrate to use SPD_MED/11 as our base speed, acceleration straight to SPD_MED
+        - change routing algorithm
+    - Test non-zero speed change by altering routing algorithm speed change time
+    - Merge and integrate with sensor timeout branch
+        - add ability to change sensor expectation to none on the fly (in case of sudden stopping, etc)
+        - Make sure TCC takes new predictions into account when made by positioning (i.e. change on the fly)
+- Integrating Locking into TC1 [Thurs 16 Nov]
+    - Add constant route re-computation
+        - Calibration for short moves?
+    - Random locking? start with a segment locked
+- Collision Avoidance [Sun 19 Nov]
+    - via Locking
+        - multiple sectors?
+    - via detecting different train sensor timeout overlap
+    - Add better mid-route stopping into routing algorithm
+    - Handling sensor robustness
+- Documentation [Mon 20 Nov]
+- Mid-route reversing [Tues 21 Nov]
