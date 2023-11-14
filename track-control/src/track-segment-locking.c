@@ -25,14 +25,13 @@ bool track_server_acquire_server_lock(int tid) {
     return (msg_reply.type == MSG_TS_REQUEST_SUCCESS);
 }
 
-int track_server_free_server_lock(int tid) {
+void track_server_free_server_lock(int tid) {
     struct msg_ts_server msg_request, msg_reply;
     msg_request.requesterTid = tid;
     msg_request.node = NULL;
     msg_request.type = MSG_TS_FREE_SERVER_LOCK;
 
-    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
-   
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server)); 
 }
 
 bool track_server_lock_segment(int tid, track_node *node, int direction) {
@@ -46,7 +45,7 @@ bool track_server_lock_segment(int tid, track_node *node, int direction) {
     return (msg_reply.type == MSG_TS_REQUEST_SUCCESS);
 }
 
-int track_server_free_segment(int tid, track_node *node) {
+void track_server_free_segment(int tid, track_node *node) {
     struct msg_ts_server msg_request, msg_reply;
     msg_request.requesterTid = tid;
     msg_request.node = node;

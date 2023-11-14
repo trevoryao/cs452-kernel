@@ -11,7 +11,7 @@ typedef enum {
 } node_type;
 
 enum direction_lock {
-  DIR_A, // Clock wise
+  DIR_A = 0, // Clock wise
   DIR_B, // Counter clock
   DIR_NONE, 
   DIR_EMPTY

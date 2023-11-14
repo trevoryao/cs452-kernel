@@ -8,6 +8,7 @@
 #include "track-data.h"
 #include "track-node.h"
 #include "util.h"
+#include "rpi.h"
 
 #include "deque.h"
 
@@ -60,6 +61,8 @@ void track_server_main() {
     deque waiting_tids;
     deque_init(&waiting_tids, 3);
 
+    uart_printf(CONSOLE, "Segment 21 has direction %d\r\n", direction_lock[21]);
+
 
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
@@ -80,6 +83,8 @@ void track_server_main() {
                 // put it into the waiting queue
                 deque_push_back(&waiting_tids, senderTid);
             }
+
+
         } else if (process_lock_server == senderTid) {
             // allowed to do operations
             switch (msg_received.type)  {
@@ -88,7 +93,17 @@ void track_server_main() {
                     enum direction_lock dirLock = msg_received.node->edge[msg_received.directionNode].dirSegment;
                     int segmentId = msg_received.node->edge[msg_received.directionNode].segmentId;
 
-                    if (direction_lock[segmentId] == DIR_EMPTY || direction_lock[segmentId] == dirLock) {
+                    // one train only segment
+                    if (dirLock == DIR_NONE) {
+                        if (amount_lock[segmentId] == senderTid || amount_lock[segmentId] == 0) {
+                            amount_lock[segmentId] = senderTid;
+                            direction_lock[segmentId] = DIR_NONE;
+                            replySuccess(senderTid, msg_received.node);
+                        } else {
+                            replyFail(senderTid, msg_received.node);
+                        }
+                        // normal locks
+                    } else if (direction_lock[segmentId] == DIR_EMPTY || direction_lock[segmentId] == dirLock) {
                         direction_lock[segmentId] = dirLock;
                         amount_lock[segmentId] += 1;
                         replySuccess(senderTid, msg_received.node);
@@ -100,9 +115,14 @@ void track_server_main() {
                 }
 
                 case MSG_TS_FREE_SEGMENT: {
+                    enum direction_lock dirLock = msg_received.node->edge[msg_received.directionNode].dirSegment;
                     int segmentId = msg_received.node->edge[msg_received.directionNode].segmentId;
                     // check if the lock is actually set
-                    if (amount_lock[segmentId] != 0) {
+                    if (dirLock == DIR_NONE) {
+                        amount_lock[segmentId] = 0;
+                        direction_lock[segmentId] = DIR_EMPTY;
+                        replySuccess(senderTid, msg_received.node);
+                    } else if (amount_lock[segmentId] != 0) {
                         // decrease lock and reply
                         amount_lock[segmentId] -= 1;
                         if (amount_lock[segmentId] == 0) {
