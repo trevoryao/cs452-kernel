@@ -630,6 +630,35 @@ void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, 
     }
 }
 
+void short_moves(int clock,  int console, int marklin) { 
+    speed_t speed;
+    speed_t_init(&speed);
+
+    uint8_t trainNo = 77;
+    uint8_t TARGET_SPD = 7;
+    uint8_t amount_delays = 15;
+    uint32_t TIME_DELAYS[15] = {150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500};
+    int i = 0;
+    while (i < 15) {
+        Printf(console, "Place Train %d at start - running with time %d\r\n", trainNo, TIME_DELAYS[i]);
+        Getc(console);
+        Puts(console, "\r\n");
+
+        int time = Time(clock);
+        train_mod_speed(marklin, &speed, trainNo, TARGET_SPD);
+
+        DelayUntil(clock, time + TIME_DELAYS[i]);
+
+        train_mod_speed(marklin, &speed, trainNo, 0);
+        Printf(console, "repeat or continue?\r\n", trainNo, TIME_DELAYS[i]);
+        char c = Getc(console);
+        if (c != 'r') {
+            i = i+1;
+        }
+    } 
+    
+}
+
 void user_main(void) {
     // start up clock, uart servers
     uint16_t clock = Create(P_SERVER_HI, clockserver_main);
@@ -671,7 +700,9 @@ void user_main(void) {
     // manual_testing(clock, console, marklin, dist_um, 520, 24);
     // stop_train_at_sensor(clock, console, marklin, 58);
     // acceleration_from_zero(clock, console, marklin, dist_um);
-    acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
+    //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
+
+    short_moves(clock, console, marklin);
 
     WaitOutputEmpty(marklin);
 }
