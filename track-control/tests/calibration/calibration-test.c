@@ -266,24 +266,24 @@ void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t mark
 
     const uint8_t BASE_SPD = base_speed;
     uint8_t START_SEN[2] = {'E' - 'A' + 1, 12};
-    uint8_t SPEED_SENS[N_SPDS][2] = {{0, 0}, {'C' - 'A' + 1, 16}, {'C' - 'A' + 1, 6}};
+    uint8_t SPEED_SENS[2] = {'C' - 'A' + 1, 6};
 
-    uint64_t dist1 = 0;
+    uint64_t dist = 0;
 
     // Compute the distance of measurement
     track_node *node = &track[75]; // E13
     while (node != &track[37]) { // C6
         if (node->type == NODE_BRANCH) {
-            dist1 += node->edge[DIR_STRAIGHT].dist;
+            dist += node->edge[DIR_STRAIGHT].dist;
             node = node->edge[DIR_STRAIGHT].dest;
         } else {
-            dist1 += node->edge[DIR_AHEAD].dist;
+            dist += node->edge[DIR_AHEAD].dist;
             node = node->edge[DIR_AHEAD].dest;
         }
     }
 
     // start throws all necessary switches
-    Printf(console, "Distance 1: %u mm Distance 2: %u mm\r\n", dist1, dist2);
+    Printf(console, "Distance 1: %u mm\r\n", dist);
 
     for (int i = 0; i < N_TRNS; ++i) {
         // train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
@@ -291,74 +291,72 @@ void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t mark
         Getc(console);
         Puts(console, "\r\n");
 
-        for (int k = 1; k < N_SPDS; ++k) {
-            Printf(console, "Speed: %d<->%d\r\n", BASE_SPD, SPEEDS[k]);
-            train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
-            sensor_discard_all(marklin);
+        Printf(console, "Speed: %d<->%d\r\n", BASE_SPD, goal_speed);
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
+        sensor_discard_all(marklin);
 
-            int64_t t[2][N_TESTS];
+        int64_t t[2][N_TESTS];
 
-            for (int j = 0; j < 2 * N_TESTS; ++j) {
-                wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
-                t[j % 2][j / 2] = get_curr_ticks();
-                train_mod_speed(marklin, &speed, ALL_TRNS[i], (j % 2 == 0) ? SPEEDS[k] : BASE_SPD);
-                Printf(console, COL_GRN "start sensor triggered (%d)\r\n" COL_RST, j);
-                sensor_discard(marklin, START_SEN[0]);
+        for (int j = 0; j < 2 * N_TESTS; ++j) {
+            // WTF?
+            wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+            t[j % 2][j / 2] = get_curr_ticks();
+            train_mod_speed(marklin, &speed, ALL_TRNS[i], (j % 2 == 0) ? goal_speed : BASE_SPD);
+            Printf(console, COL_GRN "start sensor triggered (%d)\r\n" COL_RST, j);
+            sensor_discard(marklin, START_SEN[0]);
 
-                wait_sensor_activate(marklin, SPEED_SENS[k][0], SPEED_SENS[k][1]);
-                t[j % 2][j / 2] = get_curr_ticks() - t[j % 2][j / 2]; // end - start
-                Printf(console, COL_GRN "end sensor triggered (%d)\r\n" COL_RST, j);
-                sensor_discard(marklin, SPEED_SENS[k][0]);
-            }
-
-            int64_t t_x[2][N_TESTS];
-            int64_t dist = ((k - 1) % 2 == 0) ? dist1 : dist2;
-
-            // acceleration
-            int32_t v1 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
-            int32_t v2 = get_velocity(&spd_data, ALL_TRNS[i], SPEEDS[k]);
-
-            int64_t a_avg = 0;
-            for (int j = 0; j < N_TESTS; ++j) {
-                t_x[0][j] = (2 * ((dist * 1000000000) - (v2 * t[0][j]))) / (v1 - v2);
-                a_avg += (1000000LL * (v2 - v1)) / t_x[0][j];
-            }
-
-            a_avg /= N_TESTS;
-            Printf(console, "Avg Acceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
-
-            // deacceleration
-            v1 = get_velocity(&spd_data, ALL_TRNS[i], SPEEDS[k]);
-            v2 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
-
-            a_avg = 0;
-            for (int j = 0; j < N_TESTS; ++j) {
-                t_x[1][j] = (2 * ((dist * 1000000000) - (v2 * t[1][j]))) / (v1 - v2);
-                a_avg += (1000000LL * (v2 - v1)) / t_x[1][j];
-            }
-
-            a_avg /= N_TESTS;
-            Printf(console, "Avg Deacceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
-
-            time_t t_t;
-            time_t tx_t;
-
-            Printf(console, "Acceleration Data:\r\n");
-            for (int j = 0; j < N_TESTS; ++j) {
-                time_from_sys_ticks(&t_t, t[0][j]);
-                time_from_sys_ticks(&tx_t, t_x[0][j]);
-                Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
-            }
-            Printf(console, "\r\n");
-
-            Printf(console, "Deacceleration Data:\r\n");
-            for (int j = 0; j < N_TESTS; ++j) {
-                time_from_sys_ticks(&t_t, t[1][j]);
-                time_from_sys_ticks(&tx_t, t_x[1][j]);
-                Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
-            }
-            Printf(console, "\r\n");
+            wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+            t[j % 2][j / 2] = get_curr_ticks() - t[j % 2][j / 2]; // end - start
+            Printf(console, COL_GRN "end sensor triggered (%d)\r\n" COL_RST, j);
+            sensor_discard(marklin, SPEED_SENS[0]);
         }
+
+        int64_t t_x[2][N_TESTS];
+
+        // acceleration
+        int32_t v1 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
+        int32_t v2 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+
+        int64_t a_avg = 0;
+        for (int j = 0; j < N_TESTS; ++j) {
+            t_x[0][j] = (2 * ((dist * 1000000000) - (v2 * t[0][j]))) / (v1 - v2);
+            a_avg += (1000000LL * (v2 - v1)) / t_x[0][j];
+        }
+
+        a_avg /= N_TESTS;
+        Printf(console, "Avg Acceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
+
+        // deacceleration
+        v1 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+        v2 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
+
+        a_avg = 0;
+        for (int j = 0; j < N_TESTS; ++j) {
+            t_x[1][j] = (2 * ((dist * 1000000000) - (v2 * t[1][j]))) / (v1 - v2);
+            a_avg += (1000000LL * (v2 - v1)) / t_x[1][j];
+        }
+
+        a_avg /= N_TESTS;
+        Printf(console, "Avg Deacceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
+
+        time_t t_t;
+        time_t tx_t;
+
+        Printf(console, "Acceleration Data:\r\n");
+        for (int j = 0; j < N_TESTS; ++j) {
+            time_from_sys_ticks(&t_t, t[0][j]);
+            time_from_sys_ticks(&tx_t, t_x[0][j]);
+            Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
+        }
+        Printf(console, "\r\n");
+
+        Printf(console, "Deacceleration Data:\r\n");
+        for (int j = 0; j < N_TESTS; ++j) {
+            time_from_sys_ticks(&t_t, t[1][j]);
+            time_from_sys_ticks(&tx_t, t_x[1][j]);
+            Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
+        }
+        Printf(console, "\r\n");
 
         train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
     }
@@ -644,10 +642,11 @@ void user_main(void) {
 
     // constant_speed(clock, console, marklin, dist_um);
     // acceleration_speed(clock, console, marklin, dist_um);
-    stopping_distance(clock, console, marklin, dist_um);
+    // stopping_distance(clock, console, marklin, dist_um);
     // manual_testing(clock, console, marklin, dist_um, 520, 24);
     // stop_train_at_sensor(clock, console, marklin, 58);
     // acceleration_from_zero(clock, console, marklin, dist_um);
+    acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
 
     WaitOutputEmpty(marklin);
 }
