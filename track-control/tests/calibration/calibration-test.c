@@ -268,10 +268,10 @@ void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t mark
     uint8_t START_SEN[2] = {'E' - 'A' + 1, 12};
     uint8_t SPEED_SENS[2] = {'C' - 'A' + 1, 6};
 
-    uint64_t dist = 0;
+    int64_t dist = 0;
 
     // Compute the distance of measurement
-    track_node *node = &track[75]; // E13
+    track_node *node = &track[75]; // E12
     while (node != &track[37]) { // C6
         if (node->type == NODE_BRANCH) {
             dist += node->edge[DIR_STRAIGHT].dist;
@@ -295,6 +295,27 @@ void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t mark
         train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
         sensor_discard_all(marklin);
 
+        // run it in a loop two times 1 loop acceleration, second deacceleration
+        wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+        Printf(console, "running train in a loop once\r\n");
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], goal_speed);
+        sensor_discard_all(marklin);
+
+        wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+        sensor_discard_all(marklin);
+
+        // second loop back to base speed
+        wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
+        sensor_discard_all(marklin);
+
+        wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+        sensor_discard_all(marklin);
+
+
+        Printf(console, "reached end sensor - discarding sensor data and starting measurements\r\n");
+
+
         int64_t t[2][N_TESTS];
 
         for (int j = 0; j < 2 * N_TESTS; ++j) {
@@ -314,13 +335,17 @@ void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t mark
         int64_t t_x[2][N_TESTS];
 
         // acceleration
-        int32_t v1 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
-        int32_t v2 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+        int64_t v1 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
+        int64_t v2 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+        Printf(console, "Got velocities v1 %d and v2 %d\r\n", v1, v2);
+
 
         int64_t a_avg = 0;
         for (int j = 0; j < N_TESTS; ++j) {
             t_x[0][j] = (2 * ((dist * 1000000000) - (v2 * t[0][j]))) / (v1 - v2);
             a_avg += (1000000LL * (v2 - v1)) / t_x[0][j];
+
+            Printf(console, "Measured time t: %d, t_x: %d, a_avg %d, dist %d\r\n", t[0][j], t_x[0][j], a_avg, dist);
         }
 
         a_avg /= N_TESTS;
