@@ -64,16 +64,17 @@ typedef struct train_msg {
 static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
     switch (action->action_type) {
         case SWITCH:
-            ULOG("[train] Switch %d to %c\r\n",
-                action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
+            // ULOG("[train] Switch %d to %c\r\n",
+            //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
             track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
             break;
         case SPD_CHANGE:
-            ULOG("[train] Set Speed to %d\r\n", action->action.spd);
+        case SPD_REACHED:
+            // ULOG("[train] Set Speed to %d\r\n", action->action.spd);
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         default:
-            ULOG("[train] no action (%d)\r\n", action->action_type);
+            // ULOG("[train] no action (%d)\r\n", action->action_type);
             break; // none needed for any other actions
     }
 }
@@ -118,10 +119,10 @@ static void train_speed_notifier(void) {
 
         // wait for sensor activation
         if (action.sensor_num != SENSOR_NONE) {
-            ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
-                NOTIF_TYPE(type),
-                SENSOR_MOD(action.sensor_num) - 1 + 'A',
-                SENSOR_NO(action.sensor_num));
+            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
+            //     NOTIF_TYPE(type),
+            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
+            //     SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
             track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
@@ -131,8 +132,8 @@ static void train_speed_notifier(void) {
         }
 
         if (action.delay != 0) {
-            ULOG("[train-notifier %s] delay %d ms\r\n",
-                NOTIF_TYPE(type), action.delay * 10);
+            // ULOG("[train-notifier %s] delay %d ms\r\n",
+            //     NOTIF_TYPE(type), action.delay * 10);
             Delay(clock_tid, action.delay);
         }
 
@@ -183,10 +184,10 @@ static void train_route_notifier(void) {
 
         // wait for sensor activation
         if (action.sensor_num != SENSOR_NONE) {
-            ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
-                NOTIF_TYPE(type),
-                SENSOR_MOD(action.sensor_num) - 1 + 'A',
-                SENSOR_NO(action.sensor_num));
+            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
+            //     NOTIF_TYPE(type),
+            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
+            //     SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
             track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
@@ -197,8 +198,8 @@ static void train_route_notifier(void) {
         }
 
         if (action.delay != 0) {
-            ULOG("[train-notifier %s] delay %d ms\r\n",
-                NOTIF_TYPE(type), action.delay * 10);
+            // ULOG("[train-notifier %s] delay %d ms\r\n",
+            //     NOTIF_TYPE(type), action.delay * 10);
             Delay(clock_tid, action.delay);
         }
 
@@ -251,7 +252,7 @@ static void train_tc(void) {
     // register with coordinator
     if (track_control_register_train(tc_server_tid, MyTid(), params.trn,
         SENSOR_MOD(params.start->num), SENSOR_NO(params.start->num)) == -1) {
-        ULOG("[train] unable to register with coordinator");
+        // ULOG("[train] unable to register with coordinator");
         print_in_progress_message(WhoIs(CONSOLE_SERVER_NAME));
         return;
     }

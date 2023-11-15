@@ -1,5 +1,3 @@
-#include "monitor.h"
-
 #include "clock-server.h"
 #include "console-server.h"
 #include "marklin-server.h"
@@ -9,12 +7,13 @@
 #include "time.h"
 #include "uart-server.h"
 #include "uassert.h"
-#include "track-control-coordinator.h"
 
 #include "control-msgs.h"
+#include "monitor.h"
 #include "program-tasks.h"
 #include "speed-data.h"
 #include "track.h"
+#include "track-control-coordinator.h"
 #include "track-data.h"
 
 speed_data spd_data;
@@ -55,8 +54,8 @@ void user_main(void) {
     Create(P_SERVER_HI, track_control_coordinator_main);
 
     // initialisation commands
-    init_monitor(console_tid);
     init_track(marklin_tid);
+    init_monitor(console_tid);
 
     // start all tasks
     Create(P_HIGH, time_task_main);

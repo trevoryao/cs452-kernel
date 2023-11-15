@@ -31,6 +31,8 @@ of TCC to check if there is a collision between any two given trains on the trac
     - collision detection is based on buffer window (example but adjustable 100mm) between trains
     - if there is a collision, notify trains to adjust speed, take different route
     - TCC has final authority to emergency-stop (i.e. SPD_REVERSE) train(s) if detecting VERY IMMINENT collision
+    - change TCC during sensor wait to detect if overlap in expected time
+        - reroute if this happens
 - mid-route reversing [Mon 20 Nov]
 - documentation [Tues 21 Nov]
 
