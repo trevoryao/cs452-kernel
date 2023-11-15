@@ -89,7 +89,8 @@ void routing_action_queue_front(routing_action_queue *raq, routing_action *actio
 #define HASH(node) ((node) - track)
 #define DIST_TRAVELLED(h1, h2) ((dist[(h2)] - dist[(h1)]) * MM_TO_UM)
 
-#define SW_DELAY_TICKS 300
+#define SW_DELAY_TICKS 75
+#define SPD_REACH_WINDOW 5
 
 static inline uint8_t calculate_nbhd_size(node_type type) {
     switch (type) {
@@ -108,7 +109,7 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
     return (int32_t)(result / 10);
 }
 
-static const int32_t MIN_ROLL_DIST = 500 * MM_TO_UM; // um (500)
+static const int32_t MIN_ROLL_DIST = 100 * MM_TO_UM; // um (100mm)
 // main method for path finding
 // assumes train server has found track node num in track[]
 // for start/finish nodes
@@ -280,7 +281,7 @@ static int32_t plan_direct_route(track_node *start_node, track_node *end_node,
     int32_t initial_start_time = get_time_from_acceleration(&spd_data, trn, SPD_STP, SPD_LO);
     int32_t secondary_start_time = get_time_from_acceleration(&spd_data, trn, SPD_LO, target_spd);
 
-    if (start_spd == 0) {
+    if (start_spd == SPD_STP) {
         // to go from 0 -> 7 -> spd
         if (secondary_start_time == 0) { // no extra acceleration to target spd? (target_spd == SPD_LO)
             action.sensor_num = SENSOR_NONE;
@@ -298,7 +299,13 @@ static int32_t plan_direct_route(track_node *start_node, track_node *end_node,
             action.sensor_num = SENSOR_NONE;
             action.action_type = SPD_CHANGE;
             action.action.spd = target_spd;
-            action.info.delay_ticks = initial_start_time;
+            action.info.delay_ticks = 0;
+            routing_action_queue_push_front(speed_changes, &action);
+
+            action.sensor_num = SENSOR_NONE;
+            action.action_type = SPD_CHANGE;
+            action.action.spd = SPD_LO;
+            action.info.delay_ticks = initial_start_time + SPD_REACH_WINDOW;
             routing_action_queue_push_front(speed_changes, &action);
         }
 

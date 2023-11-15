@@ -35,6 +35,25 @@ uint32_t get_time_from_velocity_um(speed_data *data, uint16_t trn, int32_t dist,
 // returns distance in um taken to travel t clock ticks at spd
 int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t ticks, uint16_t s);
 
-int64_t get_distance_acceleration_estimate(speed_data *data, uint16_t trn, uint16_t speed1, uint16_t speed2, int32_t short_time);
+// estimate functions for acceleration without initial/final
+// velocity over the distance/time between two sensors
+// NOTE: target_final_spd / original_init_spd refer to at origin/target pt, not
+// at short time/distance start point
+// all expect short_dist as um
+
+// get distance travelled during acceleration w/out final velocity over short_time
+int64_t
+estimate_initial_distance_acceleration(speed_data *data, uint16_t trn,
+    uint8_t init_spd, uint8_t target_final_spd, uint32_t short_time);
+
+// get time travelled during acceleration w/out final velocity over short_distance
+uint32_t
+estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
+    uint8_t init_spd, uint8_t target_final_spd, int32_t short_dist);
+
+// get time travelled during acceleration w/out initial velocity over short_distance
+uint32_t
+estimate_final_time_acceleration(speed_data *data, uint16_t trn,
+    uint8_t original_init_spd, uint8_t final_spd, int32_t short_dist);
 
 #endif

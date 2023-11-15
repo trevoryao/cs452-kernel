@@ -19,10 +19,7 @@ static void train_mod_speed_unchecked(uint16_t tid, uint16_t n, uint16_t s) {
 }
 
 void train_mod_speed(uint16_t tid, struct speed_t *spd_t, uint16_t n, uint16_t s) {
-    ULOG("setting to spd %d\r\n", s);
-
     if (s == SP_REVERSE || s == (SP_REVERSE + LIGHTS)) {
-        ULOG("reversing\r\n");
         speed_flip(spd_t, n); // assume we know what we're doing
     } else {
         speed_set(spd_t, n, s); // store state

@@ -259,14 +259,13 @@ void reset_tc_params(uint16_t tid, uint16_t trn) {
     #endif
 }
 
-void update_sensor_prediction(uint16_t tid, int8_t trainNo, int8_t spd, int32_t diff) {
+void update_sensor_prediction(uint16_t tid, int8_t trainNo, int32_t diff) {
     // assume diff is in clock ticks (10ms)
     int32_t diff_time = diff * TICK_MS;
-    int64_t diff_dist = get_distance_from_velocity(&spd_data, trainNo, diff, spd) / MM_TO_UM;
 
     #if LOGGING
-    Printf(tid, "[Prediction] %dms / %dmm\r\n",
-        diff_time, diff_dist);
+    Printf(tid, "[Prediction] train %d: %dms\r\n",
+        trainNo, diff_time);
     #else
     int8_t trn_hash_no = trn_hash(trainNo);
     if (trn_hash_no < 0) return;
@@ -283,10 +282,10 @@ void update_sensor_prediction(uint16_t tid, int8_t trainNo, int8_t spd, int32_t 
     }
 
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
-        "%s%d" COL_RST "ms / %s%d" COL_RST "mm"
+        "%s%d" COL_RST "ms"
         CURS_UNSAVE CURS_SHOW,
         TC_START_Y + 3 * trn_hash_no + 1, TC_START_X,
-        col, diff_time, col, diff_dist);
+        col, diff_time);
 
     #endif
 }

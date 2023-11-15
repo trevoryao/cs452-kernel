@@ -37,7 +37,7 @@ int8_t get_tid_for_trainNo(int tid, uint16_t tid_of_TrainNo[]) {
     return -1;
 }
 
-void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, trn_position *pos, uint16_t tid_of_TrainNo[]) {
+void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, trn_position *pos, uint32_t activation_time, uint16_t tid_of_TrainNo[]) {
     struct msg_tc_server msg_reply;
     msg_reply.type = MSG_TC_SENSOR_GET;
 
@@ -48,12 +48,13 @@ void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod,
         Reply(tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 
         int8_t trainNo = get_tid_for_trainNo(tid, tid_of_TrainNo);
-        
+
         if (trainNo != -1) {
-            trn_position_reached_next_sensor(pos, trainNo);
+            ULOG("[TCC] calling position_reached_sensor\r\n");
+            trn_position_reached_sensor(pos, trainNo, activation_time);
         }
 
-        ULOG("Replying to tid %d for sensor mod %d and sensor no %d\r\n", tid, sensor_mod, sensor_no);
+        // ULOG("Replying to tid %d for sensor mod %d and sensor no %d\r\n", tid, sensor_mod, sensor_no);
     }
 }
 
@@ -172,14 +173,13 @@ void track_control_coordinator_main() {
                 // TODO: fix when better structure
                 sensor received_sensor = msg_received.data.sensor;
                 sensor_queue_add_waiting_tid(&sensor_queue, received_sensor.mod_sensor, received_sensor.mod_num, msg_received.requesterTid);
-                ULOG("Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
+                // ULOG("Enqueueing tid %d for sensor mod %d and sensor no %d\r\n", msg_received.requesterTid, received_sensor.mod_num, received_sensor.mod_sensor);
 
                 if (msg_received.positionRequest) {
                     //uart_printf(CONSOLE, "Got position request for train %d", msg_received.trainNo);
                     // save trainNo
-                    trn_position_update_next_expected_pos(&pos, msg_received.trainNo, msg_received.distance_to_next_sensor_in_um);
-
                     tid_of_TrainNo[trn_hash(msg_received.trainNo)] = senderTid;
+                    trn_position_set_sensor(&pos, msg_received.trainNo, msg_received.distance_to_next_sensor);
                 }
                 break;
             }
@@ -203,11 +203,10 @@ void track_control_coordinator_main() {
                     latestSensorTimestamp = current_Timestamp;
 
                     // dequeue waiting processes
-                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, &pos, tid_of_TrainNo);
+                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, &pos, current_Timestamp, tid_of_TrainNo);
 
                     // inform UI about sensor update
                     update_triggered_sensor(consoleTid, &ui_sensor_queue, (sensor_module_number - 1), sensor_number);
-
                 }
 
                 break;
@@ -227,10 +226,11 @@ void track_control_coordinator_main() {
             case MSG_TC_TRAIN_PUT: {
                 /* code */
                 train_mod_speed(marklinTid, &spd_t, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd);
+                uint32_t speed_change_time = Time(clockTid);
                 replyTrainSpeed(&spd_t, msg_received.data.trn_cmd.trn_no, senderTid);
                 update_speed(consoleTid, &spd_t, msg_received.data.trn_cmd.trn_no);
 
-                trn_position_update_train_speed(&pos, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd);                
+                trn_position_update_speed(&pos, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd, speed_change_time);
                 break;
             }
 
