@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "uassert.h"
+#include "speed.h"
 
 inline static uint8_t spd_hash(enum SPEEDS s) {
     if (s == 0) return 0;
@@ -71,6 +72,23 @@ void speed_data_init(speed_data *data) {
     data->stopping_data[2][1] = 241126; // 7 -> 0
     data->stopping_data[2][2] = 438894; // 9 -> 0
     data->stopping_data[2][3] = 768428; // 11 -> 0
+
+
+    // short moves data
+    data->short_moves[2][0] = 185000;
+    data->short_moves[2][1] = 235000;
+    data->short_moves[2][2] = 270000;
+    data->short_moves[2][3] = 350000;
+    data->short_moves[2][4] = 390000;
+    data->short_moves[2][5] = 400000;
+    data->short_moves[2][6] = 440000;
+    data->short_moves[2][7] = 490000;
+    data->short_moves[2][8] = 520000;
+    data->short_moves[2][9] = 570000;
+    data->short_moves[2][10] = 620000;
+    data->short_moves[2][11] = 710000;
+    data->short_moves[2][12] = 750000;
+    data->short_moves[2][13] = 800000;
 }
 
 int32_t get_velocity(speed_data *data, uint16_t n, uint16_t s) {
@@ -203,4 +221,32 @@ int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t ticks
    int32_t velocity = get_velocity(data, trn, s);
 
    return (ticks * velocity) / 100;
+}
+
+
+int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal) {
+    int train_hash = trn_hash(trn);
+    // first get the right two time steps
+    int i = 0;
+    int32_t distance = data->short_moves[train_hash][i];
+    while ((i < N_SHORT_MOVES) && (dist_goal > distance)) {
+        i += 1;
+        distance = data->short_moves[train_hash][i];
+    }
+
+    // sanity check
+    if (i == 0 || dist_goal > data->short_moves[train_hash][i]) {
+        ULOG("Distance out of range for short distance");
+        return -1;
+    }
+
+    // interpolate between the two distances
+    int point1 = SHORT_MOVES_BASE + (i-1) * SHORT_MOVES_STEPS;
+    int point2 = SHORT_MOVES_BASE + i * SHORT_MOVES_STEPS;
+
+
+    // slope 
+    int slope = (dist_goal - data->short_moves[train_hash][i-1]) * 100 / (data->short_moves[train_hash][i] - data->short_moves[train_hash][i-1]);
+
+    return (SHORT_MOVES_STEPS * slope) / 100 + point1;
 }

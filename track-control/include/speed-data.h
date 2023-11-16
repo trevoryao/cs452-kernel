@@ -10,6 +10,7 @@ typedef struct speed_data {
     uint32_t velocity_data[N_TRNS][N_SPDS];
     int32_t acceleration_data[N_TRNS][N_SPDS][N_SPDS]; // start, stop speeds
     int32_t stopping_data[N_TRNS][N_SPDS]; // all from spd -> 0
+    int32_t short_moves[N_TRNS][N_SHORT_MOVES];
 } speed_data;
 
 void speed_data_init(speed_data *data);
@@ -36,5 +37,8 @@ uint32_t get_time_from_velocity_um(speed_data *data, uint16_t trn, int32_t dist,
 int32_t get_distance_from_velocity(speed_data *data, uint16_t trn, int32_t ticks, uint16_t s);
 
 int64_t get_distance_acceleration_estimate(speed_data *data, uint16_t trn, uint16_t speed1, uint16_t speed2, int32_t short_time);
+
+// takes um and returns clock_ticks
+int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal);
 
 #endif

@@ -541,11 +541,11 @@ void stop_train_at_sensor(uint16_t clock, uint16_t console, uint16_t marklin, sp
     sensor_discard(marklin, 4);
 }
 
-void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_um) {
+void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_um, uint8_t target_spd) {
     speed_t speed;
     speed_t_init(&speed);
 
-    const uint8_t TARGET_SPD = 7;
+    const uint8_t TARGET_SPD = target_spd;
 
     int64_t dist = 0;
     track_node *node = &track[58]; // D11
@@ -582,7 +582,7 @@ void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, 
         Getc(console);
         Puts(console, "\r\n");
 
-        Printf(console, "Speed: 0 -> 7\r\n");
+        Printf(console, "Speed: 0 -> %d\r\n", target_spd);
 
         int64_t t[N_TESTS];
 
@@ -659,6 +659,13 @@ void short_moves(int clock,  int console, int marklin) {
     
 }
 
+void short_move_test(int console) {
+    int distances[8] = {190000, 235000, 270000, 280000, 560000, 650000, 730000, 800000};
+    for (int i = 0; i < 8; i++) {
+        Printf(console, "distance %d, delay %d\r\n", distances[i], get_short_move_delay(&spd_data, 77, distances[i]));
+    }
+}
+
 void user_main(void) {
     // start up clock, uart servers
     uint16_t clock = Create(P_SERVER_HI, clockserver_main);
@@ -702,7 +709,8 @@ void user_main(void) {
     // acceleration_from_zero(clock, console, marklin, dist_um);
     //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
 
-    short_moves(clock, console, marklin);
+    //short_moves(clock, console, marklin);
+    acceleration_from_zero(clock, console, marklin, dist_um, 9);
 
     WaitOutputEmpty(marklin);
 }
