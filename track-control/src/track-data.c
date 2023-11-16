@@ -1365,8 +1365,7 @@ void init_track_b(track_node *track) {
   track[0].edge[DIR_AHEAD].src = &track[0];
   track[0].edge[DIR_AHEAD].dest = &track[103];
   track[0].edge[DIR_AHEAD].dist = 231;
-  track[0].edge[DIR_AHEAD].segmentId = 30;
-  track[0].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[0].segmentId = 11;
 
   track[1].name = "A2";
   track[1].type = NODE_SENSOR;
@@ -1376,8 +1375,7 @@ void init_track_b(track_node *track) {
   track[1].edge[DIR_AHEAD].src = &track[1];
   track[1].edge[DIR_AHEAD].dest = &track[133];
   track[1].edge[DIR_AHEAD].dist = 504;
-  track[1].edge[DIR_AHEAD].segmentId = 30;
-  track[1].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[1].segmentId = 28;
 
   track[2].name = "A3";
   track[2].type = NODE_SENSOR;
@@ -1387,8 +1385,7 @@ void init_track_b(track_node *track) {
   track[2].edge[DIR_AHEAD].src = &track[2];
   track[2].edge[DIR_AHEAD].dest = &track[106];
   track[2].edge[DIR_AHEAD].dist = 43;
-  track[2].edge[DIR_AHEAD].segmentId = 18;
-  track[2].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[2].segmentId = 11;
 
   track[3].name = "A4";
   track[3].type = NODE_SENSOR;
@@ -1398,8 +1395,7 @@ void init_track_b(track_node *track) {
   track[3].edge[DIR_AHEAD].src = &track[3];
   track[3].edge[DIR_AHEAD].dest = &track[31];
   track[3].edge[DIR_AHEAD].dist = 437;
-  track[3].edge[DIR_AHEAD].segmentId = 18;
-  track[3].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[3].segmentId = 10;
 
   track[4].name = "A5";
   track[4].type = NODE_SENSOR;
@@ -1409,8 +1405,7 @@ void init_track_b(track_node *track) {
   track[4].edge[DIR_AHEAD].src = &track[4];
   track[4].edge[DIR_AHEAD].dest = &track[85];
   track[4].edge[DIR_AHEAD].dist = 231;
-  track[4].edge[DIR_AHEAD].segmentId = 5;
-  track[4].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[4].segmentId = 4;
 
   track[5].name = "A6";
   track[5].type = NODE_SENSOR;
@@ -1420,8 +1415,7 @@ void init_track_b(track_node *track) {
   track[5].edge[DIR_AHEAD].src = &track[5];
   track[5].edge[DIR_AHEAD].dest = &track[25];
   track[5].edge[DIR_AHEAD].dist = 642;
-  track[5].edge[DIR_AHEAD].segmentId = 5;
-  track[5].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[5].segmentId = 3;
 
   track[6].name = "A7";
   track[6].type = NODE_SENSOR;
@@ -1431,8 +1425,8 @@ void init_track_b(track_node *track) {
   track[6].edge[DIR_AHEAD].src = &track[6];
   track[6].edge[DIR_AHEAD].dest = &track[27];
   track[6].edge[DIR_AHEAD].dist = 470;
-  track[6].edge[DIR_AHEAD].segmentId = 3;
-  track[6].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[6].segmentId = 2;
+
 
   track[7].name = "A8";
   track[7].type = NODE_SENSOR;
@@ -1442,8 +1436,7 @@ void init_track_b(track_node *track) {
   track[7].edge[DIR_AHEAD].src = &track[7];
   track[7].edge[DIR_AHEAD].dest = &track[83];
   track[7].edge[DIR_AHEAD].dist = 229;
-  track[7].edge[DIR_AHEAD].segmentId = 3;
-  track[7].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[7].segmentId = 4;
 
   track[8].name = "A9";
   track[8].type = NODE_SENSOR;
@@ -1453,8 +1446,8 @@ void init_track_b(track_node *track) {
   track[8].edge[DIR_AHEAD].src = &track[8];
   track[8].edge[DIR_AHEAD].dest = &track[23];
   track[8].edge[DIR_AHEAD].dist = 289;
-  track[8].edge[DIR_AHEAD].segmentId = 1;
-  track[8].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[8].segmentId = 1;
+
 
   track[9].name = "A10";
   track[9].type = NODE_SENSOR;
@@ -1464,8 +1457,7 @@ void init_track_b(track_node *track) {
   track[9].edge[DIR_AHEAD].src = &track[9];
   track[9].edge[DIR_AHEAD].dest = &track[81];
   track[9].edge[DIR_AHEAD].dist = 229;
-  track[9].edge[DIR_AHEAD].segmentId = 1;
-  track[9].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[9].segmentId = 4;
 
   track[10].name = "A11";
   track[10].type = NODE_SENSOR;
@@ -1475,8 +1467,7 @@ void init_track_b(track_node *track) {
   track[10].edge[DIR_AHEAD].src = &track[10];
   track[10].edge[DIR_AHEAD].dest = &track[81];
   track[10].edge[DIR_AHEAD].dist = 282;
-  track[10].edge[DIR_AHEAD].segmentId = 0;
-  track[10].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[10].segmentId = 4;
   
   track[11].name = "A12";
   track[11].type = NODE_SENSOR;
@@ -1486,8 +1477,7 @@ void init_track_b(track_node *track) {
   track[11].edge[DIR_AHEAD].src = &track[11];
   track[11].edge[DIR_AHEAD].dest = &track[15];
   track[11].edge[DIR_AHEAD].dist = 814;
-  track[11].edge[DIR_AHEAD].segmentId = 0;
-  track[11].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[11].segmentId = 0;
 
   track[12].name = "A13";
   track[12].type = NODE_SENSOR;
@@ -1497,8 +1487,7 @@ void init_track_b(track_node *track) {
   track[12].edge[DIR_AHEAD].src = &track[12];
   track[12].edge[DIR_AHEAD].dest = &track[87];
   track[12].edge[DIR_AHEAD].dist = 236;
-  track[12].edge[DIR_AHEAD].segmentId = 32;
-  track[12].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[12].segmentId = 11;
 
   track[13].name = "A14";
   track[13].type = NODE_SENSOR;
@@ -1508,8 +1497,7 @@ void init_track_b(track_node *track) {
   track[13].edge[DIR_AHEAD].src = &track[13];
   track[13].edge[DIR_AHEAD].dest = &track[131];
   track[13].edge[DIR_AHEAD].dist = 325;
-  track[13].edge[DIR_AHEAD].segmentId = 32;
-  track[13].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[13].segmentId = 29;
 
   track[14].name = "A15";
   track[14].type = NODE_SENSOR;
@@ -1519,8 +1507,7 @@ void init_track_b(track_node *track) {
   track[14].edge[DIR_AHEAD].src = &track[14];
   track[14].edge[DIR_AHEAD].dest = &track[10];
   track[14].edge[DIR_AHEAD].dist = 814;
-  track[14].edge[DIR_AHEAD].segmentId = 0;
-  track[14].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[14].segmentId = 0;
 
   track[15].name = "A16";
   track[15].type = NODE_SENSOR;
@@ -1530,8 +1517,7 @@ void init_track_b(track_node *track) {
   track[15].edge[DIR_AHEAD].src = &track[15];
   track[15].edge[DIR_AHEAD].dest = &track[87];
   track[15].edge[DIR_AHEAD].dist = 275;
-  track[15].edge[DIR_AHEAD].segmentId = 0;
-  track[15].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[15].segmentId = 11;
 
   track[16].name = "B1";
   track[16].type = NODE_SENSOR;
@@ -1541,8 +1527,7 @@ void init_track_b(track_node *track) {
   track[16].edge[DIR_AHEAD].src = &track[16];
   track[16].edge[DIR_AHEAD].dest = &track[61];
   track[16].edge[DIR_AHEAD].dist = 404;
-  track[16].edge[DIR_AHEAD].segmentId = 16;
-  track[16].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[16].segmentId = 17;
 
   track[17].name = "B2";
   track[17].type = NODE_SENSOR;
@@ -1552,8 +1537,7 @@ void init_track_b(track_node *track) {
   track[17].edge[DIR_AHEAD].src = &track[17];
   track[17].edge[DIR_AHEAD].dest = &track[111];
   track[17].edge[DIR_AHEAD].dist = 231;
-  track[17].edge[DIR_AHEAD].segmentId = 16;
-  track[17].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[17].segmentId = 18;
 
   track[18].name = "B3";
   track[18].type = NODE_SENSOR;
@@ -1563,8 +1547,7 @@ void init_track_b(track_node *track) {
   track[18].edge[DIR_AHEAD].src = &track[18];
   track[18].edge[DIR_AHEAD].dest = &track[33];
   track[18].edge[DIR_AHEAD].dist = 201;
-  track[18].edge[DIR_AHEAD].segmentId = 26;
-  track[18].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[18].segmentId = 26;
 
   track[19].name = "B4";
   track[19].type = NODE_SENSOR;
@@ -1574,8 +1557,7 @@ void init_track_b(track_node *track) {
   track[19].edge[DIR_AHEAD].src = &track[19];
   track[19].edge[DIR_AHEAD].dest = &track[111];
   track[19].edge[DIR_AHEAD].dist = 239;
-  track[19].edge[DIR_AHEAD].segmentId = 26;
-  track[19].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[19].segmentId = 18;
 
   track[20].name = "B5";
   track[20].type = NODE_SENSOR;
@@ -1585,8 +1567,7 @@ void init_track_b(track_node *track) {
   track[20].edge[DIR_AHEAD].src = &track[20];
   track[20].edge[DIR_AHEAD].dest = &track[50];
   track[20].edge[DIR_AHEAD].dist = 404;
-  track[20].edge[DIR_AHEAD].segmentId = 20;
-  track[20].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[20].segmentId = 20;
 
   track[21].name = "B6";
   track[21].type = NODE_SENSOR;
@@ -1596,8 +1577,7 @@ void init_track_b(track_node *track) {
   track[21].edge[DIR_AHEAD].src = &track[21];
   track[21].edge[DIR_AHEAD].dest = &track[105];
   track[21].edge[DIR_AHEAD].dist = 231;
-  track[21].edge[DIR_AHEAD].segmentId = 20;
-  track[21].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[21].segmentId = 19;
 
   track[22].name = "B7";
   track[22].type = NODE_SENSOR;
@@ -1607,8 +1587,8 @@ void init_track_b(track_node *track) {
   track[22].edge[DIR_AHEAD].src = &track[22];
   track[22].edge[DIR_AHEAD].dest = &track[9];
   track[22].edge[DIR_AHEAD].dist = 289;
-  track[22].edge[DIR_AHEAD].segmentId = 1;
-  track[22].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[22].segmentId = 1;
+
 
   track[23].name = "B8";
   track[23].type = NODE_SENSOR;
@@ -1618,8 +1598,7 @@ void init_track_b(track_node *track) {
   track[23].edge[DIR_AHEAD].src = &track[23];
   track[23].edge[DIR_AHEAD].dest = &track[135];
   track[23].edge[DIR_AHEAD].dist = 43;
-  track[23].edge[DIR_AHEAD].segmentId = 1;
-  track[23].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[23].segmentId = 1;
 
   track[24].name = "B9";
   track[24].type = NODE_SENSOR;
@@ -1629,8 +1608,7 @@ void init_track_b(track_node *track) {
   track[24].edge[DIR_AHEAD].src = &track[24];
   track[24].edge[DIR_AHEAD].dest = &track[4];
   track[24].edge[DIR_AHEAD].dist = 642;
-  track[24].edge[DIR_AHEAD].segmentId = 5;
-  track[24].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[24].segmentId = 3;
 
   track[25].name = "B10";
   track[25].type = NODE_SENSOR;
@@ -1640,8 +1618,7 @@ void init_track_b(track_node *track) {
   track[25].edge[DIR_AHEAD].src = &track[25];
   track[25].edge[DIR_AHEAD].dest = &track[137];
   track[25].edge[DIR_AHEAD].dist = 50;
-  track[25].edge[DIR_AHEAD].segmentId = 5;
-  track[25].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[25].segmentId = 3;
 
   track[26].name = "B11";
   track[26].type = NODE_SENSOR;
@@ -1651,8 +1628,7 @@ void init_track_b(track_node *track) {
   track[26].edge[DIR_AHEAD].src = &track[26];
   track[26].edge[DIR_AHEAD].dest = &track[7];
   track[26].edge[DIR_AHEAD].dist = 470;
-  track[26].edge[DIR_AHEAD].segmentId = 3;
-  track[26].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[26].segmentId = 2;
 
   track[27].name = "B12";
   track[27].type = NODE_SENSOR;
@@ -1662,8 +1638,7 @@ void init_track_b(track_node *track) {
   track[27].edge[DIR_AHEAD].src = &track[27];
   track[27].edge[DIR_AHEAD].dest = &track[139];
   track[27].edge[DIR_AHEAD].dist = 50;
-  track[27].edge[DIR_AHEAD].segmentId = 3;
-  track[27].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[27].segmentId = 2;
 
   track[28].name = "B13";
   track[28].type = NODE_SENSOR;
@@ -1673,8 +1648,7 @@ void init_track_b(track_node *track) {
   track[28].edge[DIR_AHEAD].src = &track[28];
   track[28].edge[DIR_AHEAD].dest = &track[119];
   track[28].edge[DIR_AHEAD].dist = 239;
-  track[28].edge[DIR_AHEAD].segmentId = 22;
-  track[28].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[28].segmentId = 24;
 
   track[29].name = "B14";
   track[29].type = NODE_SENSOR;
@@ -1684,8 +1658,7 @@ void init_track_b(track_node *track) {
   track[29].edge[DIR_AHEAD].src = &track[29];
   track[29].edge[DIR_AHEAD].dest = &track[63];
   track[29].edge[DIR_AHEAD].dist = 201;
-  track[29].edge[DIR_AHEAD].segmentId = 22;
-  track[29].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[29].segmentId = 23;
 
   track[30].name = "B15";
   track[30].type = NODE_SENSOR;
@@ -1695,8 +1668,7 @@ void init_track_b(track_node *track) {
   track[30].edge[DIR_AHEAD].src = &track[30];
   track[30].edge[DIR_AHEAD].dest = &track[2];
   track[30].edge[DIR_AHEAD].dist = 437;
-  track[30].edge[DIR_AHEAD].segmentId = 18;
-  track[30].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[30].segmentId = 10;
 
   track[31].name = "B16";
   track[31].type = NODE_SENSOR;
@@ -1706,8 +1678,7 @@ void init_track_b(track_node *track) {
   track[31].edge[DIR_AHEAD].src = &track[31];
   track[31].edge[DIR_AHEAD].dest = &track[108];
   track[31].edge[DIR_AHEAD].dist = 50;
-  track[31].edge[DIR_AHEAD].segmentId = 18;
-  track[31].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[31].segmentId = 9;
 
   track[32].name = "C1";
   track[32].type = NODE_SENSOR;
@@ -1717,8 +1688,7 @@ void init_track_b(track_node *track) {
   track[32].edge[DIR_AHEAD].src = &track[32];
   track[32].edge[DIR_AHEAD].dest = &track[19];
   track[32].edge[DIR_AHEAD].dist = 201;
-  track[32].edge[DIR_AHEAD].segmentId = 26;
-  track[32].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[32].segmentId = 26;
 
   track[33].name = "C2";
   track[33].type = NODE_SENSOR;
@@ -1728,8 +1698,7 @@ void init_track_b(track_node *track) {
   track[33].edge[DIR_AHEAD].src = &track[33];
   track[33].edge[DIR_AHEAD].dest = &track[117];
   track[33].edge[DIR_AHEAD].dist = 246;
-  track[33].edge[DIR_AHEAD].segmentId = 26;
-  track[33].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[33].segmentId = 24;
 
   track[34].name = "C3";
   track[34].type = NODE_SENSOR;
@@ -1739,8 +1708,7 @@ void init_track_b(track_node *track) {
   track[34].edge[DIR_AHEAD].src = &track[34];
   track[34].edge[DIR_AHEAD].dest = &track[129];
   track[34].edge[DIR_AHEAD].dist = 514;
-  track[34].edge[DIR_AHEAD].segmentId = 9;
-  track[34].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[34].segmentId = 6;
 
   track[35].name = "C4";
   track[35].type = NODE_SENSOR;
@@ -1750,8 +1718,7 @@ void init_track_b(track_node *track) {
   track[35].edge[DIR_AHEAD].src = &track[35];
   track[35].edge[DIR_AHEAD].dest = &track[89];
   track[35].edge[DIR_AHEAD].dist = 239;
-  track[35].edge[DIR_AHEAD].segmentId = 9;
-  track[35].edge[DIR_AHEAD].dirSegment = DIR_NONE;
+  track[35].segmentId = 5;
 
   track[36].name = "C5";
   track[36].type = NODE_SENSOR;
@@ -1761,8 +1728,7 @@ void init_track_b(track_node *track) {
   track[36].edge[DIR_AHEAD].src = &track[36];
   track[36].edge[DIR_AHEAD].dest = &track[90];
   track[36].edge[DIR_AHEAD].dist = 61;
-  track[36].edge[DIR_AHEAD].segmentId = 13;
-  track[36].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[36].segmentId = 5;
 
   track[37].name = "C6";
   track[37].type = NODE_SENSOR;
@@ -1772,8 +1738,7 @@ void init_track_b(track_node *track) {
   track[37].edge[DIR_AHEAD].src = &track[37];
   track[37].edge[DIR_AHEAD].dest = &track[109];
   track[37].edge[DIR_AHEAD].dist = 433;
-  track[37].edge[DIR_AHEAD].segmentId = 13;
-  track[37].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[37].segmentId = 9;
 
   track[38].name = "C7";
   track[38].type = NODE_SENSOR;
@@ -1783,8 +1748,7 @@ void init_track_b(track_node *track) {
   track[38].edge[DIR_AHEAD].src = &track[38];
   track[38].edge[DIR_AHEAD].dest = &track[115];
   track[38].edge[DIR_AHEAD].dist = 231;
-  track[38].edge[DIR_AHEAD].segmentId = 6;
-  track[38].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[38].segmentId = 5;
 
   track[39].name = "C8";
   track[39].type = NODE_SENSOR;
@@ -1794,8 +1758,7 @@ void init_track_b(track_node *track) {
   track[39].edge[DIR_AHEAD].src = &track[39];
   track[39].edge[DIR_AHEAD].dest = &track[84];
   track[39].edge[DIR_AHEAD].dist = 128;
-  track[39].edge[DIR_AHEAD].segmentId = 6;
-  track[39].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[39].segmentId = 4;
 
   track[40].name = "C9";
   track[40].type = NODE_SENSOR;
@@ -1805,8 +1768,8 @@ void init_track_b(track_node *track) {
   track[40].edge[DIR_AHEAD].src = &track[40];
   track[40].edge[DIR_AHEAD].dest = &track[109];
   track[40].edge[DIR_AHEAD].dist = 326;
-  track[40].edge[DIR_AHEAD].segmentId = 17;
-  track[40].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[40].segmentId = 9;
+
 
   track[41].name = "C10";
   track[41].type = NODE_SENSOR;
@@ -1816,8 +1779,7 @@ void init_track_b(track_node *track) {
   track[41].edge[DIR_AHEAD].src = &track[41];
   track[41].edge[DIR_AHEAD].dest = &track[110];
   track[41].edge[DIR_AHEAD].dist = 128;
-  track[41].edge[DIR_AHEAD].segmentId = 17;
-  track[41].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[41].segmentId = 18;
 
   track[42].name = "C11";
   track[42].type = NODE_SENSOR;
@@ -1827,8 +1789,7 @@ void init_track_b(track_node *track) {
   track[42].edge[DIR_AHEAD].src = &track[42];
   track[42].edge[DIR_AHEAD].dest = &track[104];
   track[42].edge[DIR_AHEAD].dist = 120;
-  track[42].edge[DIR_AHEAD].segmentId = 19;
-  track[42].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[42].segmentId = 19;
 
   track[43].name = "C12";
   track[43].type = NODE_SENSOR;
@@ -1838,8 +1799,7 @@ void init_track_b(track_node *track) {
   track[43].edge[DIR_AHEAD].src = &track[43];
   track[43].edge[DIR_AHEAD].dest = &track[107];
   track[43].edge[DIR_AHEAD].dist = 333;
-  track[43].edge[DIR_AHEAD].segmentId = 19;
-  track[43].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[43].segmentId = 11;
 
   track[44].name = "C13";
   track[44].type = NODE_SENSOR;
@@ -1849,8 +1809,7 @@ void init_track_b(track_node *track) {
   track[44].edge[DIR_AHEAD].src = &track[44];
   track[44].edge[DIR_AHEAD].dest = &track[70];
   track[44].edge[DIR_AHEAD].dist = 780;
-  track[44].edge[DIR_AHEAD].segmentId = 28;
-  track[44].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[44].segmentId = 12;
 
   track[45].name = "C14";
   track[45].type = NODE_SENSOR;
@@ -1860,8 +1819,7 @@ void init_track_b(track_node *track) {
   track[45].edge[DIR_AHEAD].src = &track[45];
   track[45].edge[DIR_AHEAD].dest = &track[100];
   track[45].edge[DIR_AHEAD].dist = 50;
-  track[45].edge[DIR_AHEAD].segmentId = 28;
-  track[45].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[45].segmentId = 11;
 
   track[46].name = "C15";
   track[46].type = NODE_SENSOR;
@@ -1871,8 +1829,7 @@ void init_track_b(track_node *track) {
   track[46].edge[DIR_AHEAD].src = &track[46];
   track[46].edge[DIR_AHEAD].dest = &track[59];
   track[46].edge[DIR_AHEAD].dist = 404;
-  track[46].edge[DIR_AHEAD].segmentId = 11;
-  track[46].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[46].segmentId = 8;
 
   track[47].name = "C16";
   track[47].type = NODE_SENSOR;
@@ -1882,8 +1839,7 @@ void init_track_b(track_node *track) {
   track[47].edge[DIR_AHEAD].src = &track[47];
   track[47].edge[DIR_AHEAD].dest = &track[91];
   track[47].edge[DIR_AHEAD].dist = 239;
-  track[47].edge[DIR_AHEAD].segmentId = 11;
-  track[47].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[47].segmentId = 5;
 
   track[48].name = "D1";
   track[48].type = NODE_SENSOR;
@@ -1893,8 +1849,7 @@ void init_track_b(track_node *track) {
   track[48].edge[DIR_AHEAD].src = &track[48];
   track[48].edge[DIR_AHEAD].dest = &track[121];
   track[48].edge[DIR_AHEAD].dist = 246;
-  track[48].edge[DIR_AHEAD].segmentId = 24;
-  track[48].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[48].segmentId = 24;
 
   track[49].name = "D2";
   track[49].type = NODE_SENSOR;
@@ -1904,8 +1859,7 @@ void init_track_b(track_node *track) {
   track[49].edge[DIR_AHEAD].src = &track[49];
   track[49].edge[DIR_AHEAD].dest = &track[67];
   track[49].edge[DIR_AHEAD].dist = 201;
-  track[49].edge[DIR_AHEAD].segmentId = 24;
-  track[49].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[49].segmentId = 25;
 
   track[50].name = "D3";
   track[50].type = NODE_SENSOR;
@@ -1915,8 +1869,7 @@ void init_track_b(track_node *track) {
   track[50].edge[DIR_AHEAD].src = &track[50];
   track[50].edge[DIR_AHEAD].dest = &track[99];
   track[50].edge[DIR_AHEAD].dist = 239;
-  track[50].edge[DIR_AHEAD].segmentId = 20;
-  track[50].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[50].segmentId = 21;
 
   track[51].name = "D4";
   track[51].type = NODE_SENSOR;
@@ -1926,8 +1879,7 @@ void init_track_b(track_node *track) {
   track[51].edge[DIR_AHEAD].src = &track[51];
   track[51].edge[DIR_AHEAD].dest = &track[21];
   track[51].edge[DIR_AHEAD].dist = 404;
-  track[51].edge[DIR_AHEAD].segmentId = 20;
-  track[51].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[51].segmentId = 20;
 
   track[52].name = "D5";
   track[52].type = NODE_SENSOR;
@@ -1937,8 +1889,7 @@ void init_track_b(track_node *track) {
   track[52].edge[DIR_AHEAD].src = &track[52];
   track[52].edge[DIR_AHEAD].dest = &track[69];
   track[52].edge[DIR_AHEAD].dist = 282;
-  track[52].edge[DIR_AHEAD].segmentId = 21;
-  track[52].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[52].segmentId = 22;
 
   track[53].name = "D6";
   track[53].type = NODE_SENSOR;
@@ -1948,8 +1899,7 @@ void init_track_b(track_node *track) {
   track[53].edge[DIR_AHEAD].src = &track[53];
   track[53].edge[DIR_AHEAD].dest = &track[97];
   track[53].edge[DIR_AHEAD].dist = 229;
-  track[53].edge[DIR_AHEAD].segmentId = 21;
-  track[53].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[53].segmentId = 14;
 
   track[54].name = "D7";
   track[54].type = NODE_SENSOR;
@@ -1959,8 +1909,7 @@ void init_track_b(track_node *track) {
   track[54].edge[DIR_AHEAD].src = &track[54];
   track[54].edge[DIR_AHEAD].dest = &track[97];
   track[54].edge[DIR_AHEAD].dist = 309;
-  track[54].edge[DIR_AHEAD].segmentId = 28;
-  track[54].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[54].segmentId = 14;
 
   track[55].name = "D8";
   track[55].type = NODE_SENSOR;
@@ -1970,8 +1919,7 @@ void init_track_b(track_node *track) {
   track[55].edge[DIR_AHEAD].src = &track[55];
   track[55].edge[DIR_AHEAD].dest = &track[71];
   track[55].edge[DIR_AHEAD].dist = 376;
-  track[55].edge[DIR_AHEAD].segmentId = 28;
-  track[55].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[55].segmentId = 13;
 
   track[56].name = "D9";
   track[56].type = NODE_SENSOR;
@@ -1981,8 +1929,7 @@ void init_track_b(track_node *track) {
   track[56].edge[DIR_AHEAD].src = &track[56];
   track[56].edge[DIR_AHEAD].dest = &track[75];
   track[56].edge[DIR_AHEAD].dist = 282;
-  track[56].edge[DIR_AHEAD].segmentId = 12;
-  track[56].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[56].segmentId = 7;
 
   track[57].name = "D10";
   track[57].type = NODE_SENSOR;
@@ -1992,8 +1939,7 @@ void init_track_b(track_node *track) {
   track[57].edge[DIR_AHEAD].src = &track[57];
   track[57].edge[DIR_AHEAD].dest = &track[95];
   track[57].edge[DIR_AHEAD].dist = 316;
-  track[57].edge[DIR_AHEAD].segmentId = 12;
-  track[57].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[57].segmentId = 14;
 
   track[58].name = "D11";
   track[58].type = NODE_SENSOR;
@@ -2003,8 +1949,7 @@ void init_track_b(track_node *track) {
   track[58].edge[DIR_AHEAD].src = &track[58];
   track[58].edge[DIR_AHEAD].dest = &track[47];
   track[58].edge[DIR_AHEAD].dist = 404;
-  track[58].edge[DIR_AHEAD].segmentId = 11;
-  track[58].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[58].segmentId = 8;
 
   track[59].name = "D12";
   track[59].type = NODE_SENSOR;
@@ -2014,8 +1959,7 @@ void init_track_b(track_node *track) {
   track[59].edge[DIR_AHEAD].src = &track[59];
   track[59].edge[DIR_AHEAD].dest = &track[93];
   track[59].edge[DIR_AHEAD].dist = 231;
-  track[59].edge[DIR_AHEAD].segmentId = 11;
-  track[59].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[59].segmentId = 5;
 
   track[60].name = "D13";
   track[60].type = NODE_SENSOR;
@@ -2025,8 +1969,7 @@ void init_track_b(track_node *track) {
   track[60].edge[DIR_AHEAD].src = &track[60];
   track[60].edge[DIR_AHEAD].dest = &track[17];
   track[60].edge[DIR_AHEAD].dist = 404;
-  track[60].edge[DIR_AHEAD].segmentId = 16;
-  track[60].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[60].segmentId = 17;
 
   track[61].name = "D14";
   track[61].type = NODE_SENSOR;
@@ -2036,8 +1979,7 @@ void init_track_b(track_node *track) {
   track[61].edge[DIR_AHEAD].src = &track[61];
   track[61].edge[DIR_AHEAD].dest = &track[113];
   track[61].edge[DIR_AHEAD].dist = 239;
-  track[61].edge[DIR_AHEAD].segmentId = 16;
-  track[61].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[61].segmentId = 16;
 
   track[62].name = "D15";
   track[62].type = NODE_SENSOR;
@@ -2047,8 +1989,7 @@ void init_track_b(track_node *track) {
   track[62].edge[DIR_AHEAD].src = &track[62];
   track[62].edge[DIR_AHEAD].dest = &track[28];
   track[62].edge[DIR_AHEAD].dist = 201;
-  track[62].edge[DIR_AHEAD].segmentId = 22;
-  track[62].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[62].segmentId = 23;
 
   track[63].name = "D16";
   track[63].type = NODE_SENSOR;
@@ -2058,8 +1999,7 @@ void init_track_b(track_node *track) {
   track[63].edge[DIR_AHEAD].src = &track[63];
   track[63].edge[DIR_AHEAD].dest = &track[113];
   track[63].edge[DIR_AHEAD].dist = 246;
-  track[63].edge[DIR_AHEAD].segmentId = 22;
-  track[63].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[63].segmentId = 16;
 
   track[64].name = "E1";
   track[64].type = NODE_SENSOR;
@@ -2069,8 +2009,7 @@ void init_track_b(track_node *track) {
   track[64].edge[DIR_AHEAD].src = &track[64];
   track[64].edge[DIR_AHEAD].dest = &track[123];
   track[64].edge[DIR_AHEAD].dist = 239;
-  track[64].edge[DIR_AHEAD].segmentId = 25;
-  track[64].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[64].segmentId = 24;
 
   track[65].name = "E2";
   track[65].type = NODE_SENSOR;
@@ -2080,8 +2019,7 @@ void init_track_b(track_node *track) {
   track[65].edge[DIR_AHEAD].src = &track[65];
   track[65].edge[DIR_AHEAD].dest = &track[78];
   track[65].edge[DIR_AHEAD].dist = 201;
-  track[65].edge[DIR_AHEAD].segmentId = 25;
-  track[65].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[65].segmentId = 27;
 
   track[66].name = "E3";
   track[66].type = NODE_SENSOR;
@@ -2091,8 +2029,7 @@ void init_track_b(track_node *track) {
   track[66].edge[DIR_AHEAD].src = &track[66];
   track[66].edge[DIR_AHEAD].dest = &track[48];
   track[66].edge[DIR_AHEAD].dist = 201;
-  track[66].edge[DIR_AHEAD].segmentId = 24;
-  track[66].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[66].segmentId = 25;
 
   track[67].name = "E4";
   track[67].type = NODE_SENSOR;
@@ -2102,8 +2039,7 @@ void init_track_b(track_node *track) {
   track[67].edge[DIR_AHEAD].src = &track[67];
   track[67].edge[DIR_AHEAD].dest = &track[99];
   track[67].edge[DIR_AHEAD].dist = 239;
-  track[67].edge[DIR_AHEAD].segmentId = 24;
-  track[67].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[67].segmentId = 21;
 
   track[68].name = "E5";
   track[68].type = NODE_SENSOR;
@@ -2113,8 +2049,7 @@ void init_track_b(track_node *track) {
   track[68].edge[DIR_AHEAD].src = &track[68];
   track[68].edge[DIR_AHEAD].dest = &track[53];
   track[68].edge[DIR_AHEAD].dist = 282;
-  track[68].edge[DIR_AHEAD].segmentId = 21;
-  track[68].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[68].segmentId = 22;
 
   track[69].name = "E6";
   track[69].type = NODE_SENSOR;
@@ -2124,8 +2059,7 @@ void init_track_b(track_node *track) {
   track[69].edge[DIR_AHEAD].src = &track[69];
   track[69].edge[DIR_AHEAD].dest = &track[98];
   track[69].edge[DIR_AHEAD].dist = 50;
-  track[69].edge[DIR_AHEAD].segmentId = 21;
-  track[69].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[69].segmentId = 21;
 
   track[70].name = "E7";
   track[70].type = NODE_SENSOR;
@@ -2135,8 +2069,7 @@ void init_track_b(track_node *track) {
   track[70].edge[DIR_AHEAD].src = &track[70];
   track[70].edge[DIR_AHEAD].dest = &track[54];
   track[70].edge[DIR_AHEAD].dist = 376;
-  track[70].edge[DIR_AHEAD].segmentId = 28;
-  track[70].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[70].segmentId = 13;
 
   track[71].name = "E8";
   track[71].type = NODE_SENSOR;
@@ -2146,8 +2079,7 @@ void init_track_b(track_node *track) {
   track[71].edge[DIR_AHEAD].src = &track[71];
   track[71].edge[DIR_AHEAD].dest = &track[45];
   track[71].edge[DIR_AHEAD].dist = 780;
-  track[71].edge[DIR_AHEAD].segmentId = 28;
-  track[71].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[71].segmentId = 12;
 
   track[72].name = "E9";
   track[72].type = NODE_SENSOR;
@@ -2157,8 +2089,7 @@ void init_track_b(track_node *track) {
   track[72].edge[DIR_AHEAD].src = &track[72];
   track[72].edge[DIR_AHEAD].dest = &track[95];
   track[72].edge[DIR_AHEAD].dist = 239;
-  track[72].edge[DIR_AHEAD].segmentId = 15;
-  track[72].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[72].segmentId = 14;
 
   track[73].name = "E10";
   track[73].type = NODE_SENSOR;
@@ -2168,8 +2099,7 @@ void init_track_b(track_node *track) {
   track[73].edge[DIR_AHEAD].src = &track[73];
   track[73].edge[DIR_AHEAD].dest = &track[76];
   track[73].edge[DIR_AHEAD].dist = 282;
-  track[73].edge[DIR_AHEAD].segmentId = 15;
-  track[73].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[73].segmentId = 15;
 
   track[74].name = "E11";
   track[74].type = NODE_SENSOR;
@@ -2179,8 +2109,8 @@ void init_track_b(track_node *track) {
   track[74].edge[DIR_AHEAD].src = &track[74];
   track[74].edge[DIR_AHEAD].dest = &track[57];
   track[74].edge[DIR_AHEAD].dist = 282;
-  track[74].edge[DIR_AHEAD].segmentId = 12;
-  track[74].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[74].segmentId = 7;
+
 
   track[75].name = "E12";
   track[75].type = NODE_SENSOR;
@@ -2190,8 +2120,7 @@ void init_track_b(track_node *track) {
   track[75].edge[DIR_AHEAD].src = &track[75];
   track[75].edge[DIR_AHEAD].dest = &track[92];
   track[75].edge[DIR_AHEAD].dist = 43;
-  track[75].edge[DIR_AHEAD].segmentId = 12;
-  track[75].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[75].segmentId = 5;
 
   track[76].name = "E13";
   track[76].type = NODE_SENSOR;
@@ -2201,8 +2130,7 @@ void init_track_b(track_node *track) {
   track[76].edge[DIR_AHEAD].src = &track[76];
   track[76].edge[DIR_AHEAD].dest = &track[112];
   track[76].edge[DIR_AHEAD].dist = 43;
-  track[76].edge[DIR_AHEAD].segmentId = 15;
-  track[76].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[76].segmentId = 16;
 
   track[77].name = "E14";
   track[77].type = NODE_SENSOR;
@@ -2212,8 +2140,7 @@ void init_track_b(track_node *track) {
   track[77].edge[DIR_AHEAD].src = &track[77];
   track[77].edge[DIR_AHEAD].dest = &track[72];
   track[77].edge[DIR_AHEAD].dist = 282;
-  track[77].edge[DIR_AHEAD].segmentId = 15;
-  track[77].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[77].segmentId = 15;
 
   track[78].name = "E15";
   track[78].type = NODE_SENSOR;
@@ -2223,8 +2150,7 @@ void init_track_b(track_node *track) {
   track[78].edge[DIR_AHEAD].src = &track[78];
   track[78].edge[DIR_AHEAD].dest = &track[105];
   track[78].edge[DIR_AHEAD].dist = 246;
-  track[78].edge[DIR_AHEAD].segmentId = 25;
-  track[78].edge[DIR_AHEAD].dirSegment = DIR_B;
+  track[78].segmentId = 19;
 
   track[79].name = "E16";
   track[79].type = NODE_SENSOR;
@@ -2234,10 +2160,9 @@ void init_track_b(track_node *track) {
   track[79].edge[DIR_AHEAD].src = &track[79];
   track[79].edge[DIR_AHEAD].dest = &track[64];
   track[79].edge[DIR_AHEAD].dist = 201;
-  track[79].edge[DIR_AHEAD].segmentId = 25;
-  track[79].edge[DIR_AHEAD].dirSegment = DIR_A;
+  track[79].segmentId = 27;
 
-    track[80].name = "BR1";
+  track[80].name = "BR1";
   track[80].type = NODE_BRANCH;
   track[80].num = 1;
   track[80].reverse = &track[81];
