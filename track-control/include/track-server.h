@@ -22,9 +22,9 @@ enum TS_MSG_TYPE {
 
 typedef struct msg_ts_server {
     enum TS_MSG_TYPE type;
+    uint16_t trainNo;
     uint16_t requesterTid;
     track_node *node;
-    int directionNode;
 } msg_ts_server;
 
 

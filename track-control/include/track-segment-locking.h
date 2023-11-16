@@ -7,13 +7,13 @@
 
 bool track_server_available(int tid);
 
-bool track_server_acquire_server_lock(int tid);
+bool track_server_acquire_server_lock(int tid, uint16_t trainNo);
 
-void track_server_free_server_lock(int tid);
+void track_server_free_server_lock(int tid, uint16_t trainNo);
 
-bool track_server_lock_segment(int tid, track_node *node, int direction);
+bool track_server_lock_segment(int tid, track_node *node, uint16_t trainNo);
 
-void track_server_free_segment(int tid, track_node *node);
+void track_server_free_segment(int tid, track_node *node, uint16_t trainNo);
 
 
 #endif
