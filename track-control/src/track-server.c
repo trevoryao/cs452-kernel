@@ -74,7 +74,7 @@ void track_server_main() {
             // You need to acquire lock before you can do any operations
 
             if (process_lock_server == 0) {
-                process_lock_server = msg_received.trainNo;
+                process_lock_server = senderTid;
                 replySuccess(senderTid, NULL, msg_received.trainNo);
             } else {
                 // put it into the waiting queue
@@ -98,6 +98,7 @@ void track_server_main() {
                     if (lock_sectors[segmentId] != 0 && lock_sectors[segmentId] != msg_received.trainNo) {
                         replyFail(senderTid, msg_received.node, msg_received.trainNo);
                     } else {
+                        lock_sectors[segmentId] = msg_received.trainNo;
                         replySuccess(senderTid, msg_received.node, msg_received.trainNo);
                     }
                     
