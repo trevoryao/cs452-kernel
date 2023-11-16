@@ -24,10 +24,12 @@ enum CMD_KIND {
     CMD_Q,
 };
 
+#define MAX_CMD_PARAMS 2
+
 // organised multi-value return struct
 typedef struct cmd_s {
     enum CMD_KIND kind;
-    int16_t params[3]; // args
+    int16_t params[MAX_CMD_PARAMS]; // args
     track_node *path[2]; // start and end
 } cmd_s;
 

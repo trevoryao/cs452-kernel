@@ -90,7 +90,7 @@ void routing_action_queue_front(routing_action_queue *raq, routing_action *actio
 #define DIST_TRAVELLED(h1, h2) ((dist[(h2)] - dist[(h1)]) * MM_TO_UM)
 
 #define SW_DELAY_TICKS 75
-#define SPD_REACH_WINDOW 5
+#define SPD_REACH_WINDOW 10
 
 static inline uint8_t calculate_nbhd_size(node_type type) {
     switch (type) {
@@ -278,56 +278,19 @@ static int32_t plan_direct_route(track_node *start_node, track_node *end_node,
     // next holds first node
     if (target_spd == start_spd) return dist[HASH(end_node)]; // no need to get to speed
 
-    int32_t initial_start_time = get_time_from_acceleration(&spd_data, trn, SPD_STP, SPD_LO);
-    int32_t secondary_start_time = get_time_from_acceleration(&spd_data, trn, SPD_LO, target_spd);
+    int32_t start_time = get_time_from_acceleration(&spd_data, trn, start_spd, target_spd);
 
-    if (start_spd == SPD_STP) {
-        // to go from 0 -> 7 -> spd
-        if (secondary_start_time == 0) { // no extra acceleration to target spd? (target_spd == SPD_LO)
-            action.sensor_num = SENSOR_NONE;
-            action.action_type = SPD_REACHED;
-            action.action.spd = target_spd;
-            action.info.delay_ticks = initial_start_time;
-            routing_action_queue_push_front(speed_changes, &action);
-        } else {
-            action.sensor_num = SENSOR_NONE;
-            action.action_type = SPD_REACHED;
-            action.action.spd = target_spd;
-            action.info.delay_ticks = secondary_start_time;
-            routing_action_queue_push_front(speed_changes, &action);
+    action.sensor_num = SENSOR_NONE;
+    action.action_type = SPD_REACHED;
+    action.action.spd = target_spd;
+    action.info.delay_ticks = start_time + SPD_REACH_WINDOW;
+    routing_action_queue_push_front(speed_changes, &action);
 
-            action.sensor_num = SENSOR_NONE;
-            action.action_type = SPD_CHANGE;
-            action.action.spd = target_spd;
-            action.info.delay_ticks = 0;
-            routing_action_queue_push_front(speed_changes, &action);
-
-            action.sensor_num = SENSOR_NONE;
-            action.action_type = SPD_CHANGE;
-            action.action.spd = SPD_LO;
-            action.info.delay_ticks = initial_start_time + SPD_REACH_WINDOW;
-            routing_action_queue_push_front(speed_changes, &action);
-        }
-
-        action.sensor_num = SENSOR_NONE;
-        action.action_type = SPD_CHANGE;
-        action.action.spd = SPD_LO;
-        action.info.delay_ticks = 0;
-        routing_action_queue_push_front(speed_changes, &action);
-    } else {
-        // only need to go from 7 -> spd
-        action.sensor_num = SENSOR_NONE;
-        action.action_type = SPD_REACHED;
-        action.action.spd = target_spd;
-        action.info.delay_ticks = secondary_start_time;
-        routing_action_queue_push_front(speed_changes, &action);
-
-        action.sensor_num = SENSOR_NONE;
-        action.action_type = SPD_CHANGE;
-        action.action.spd = target_spd;
-        action.info.delay_ticks = 0;
-        routing_action_queue_push_front(speed_changes, &action);
-    }
+    action.sensor_num = SENSOR_NONE;
+    action.action_type = SPD_CHANGE;
+    action.action.spd = target_spd;
+    action.info.delay_ticks = 0;
+    routing_action_queue_push_front(speed_changes, &action);
 
     return dist[HASH(end_node)];
 }

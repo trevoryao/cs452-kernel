@@ -1,5 +1,6 @@
 #include "train.h"
 
+#include "console-server.h"
 #include "clock.h"
 #include "msg.h"
 #include "nameserver.h"
@@ -91,6 +92,7 @@ static void train_speed_notifier(void) {
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
     int clock_tid = WhoIs(CLOCK_SERVER_NAME);
+    int console_tid = WhoIs(CONSOLE_SERVER_NAME);
 
     spd_notif_action action;
 
@@ -124,11 +126,18 @@ static void train_speed_notifier(void) {
             //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
             //     SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
-            track_control_wait_sensor(tc_server_tid,
+            int ret = track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
                 SENSOR_NO(action.sensor_num),
                 action.sensor_dist,
                 action.trn, false); // don't update position for speed
+            if (ret < 0) {
+                print_missed_sensor(console_tid, action.trn,
+                    SENSOR_MOD(action.sensor_num) - 1,
+                    SENSOR_NO(action.sensor_num) - 1);
+            } else {
+                clear_missed_sensor(console_tid, action.trn);
+            }
         }
 
         if (action.delay != 0) {
@@ -154,6 +163,7 @@ static void train_route_notifier(void) {
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
     int clock_tid = WhoIs(CLOCK_SERVER_NAME);
+    int console_tid = WhoIs(CONSOLE_SERVER_NAME);
 
     route_notif_action action;
 
@@ -189,12 +199,19 @@ static void train_route_notifier(void) {
             //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
             //     SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
-            track_control_wait_sensor(tc_server_tid,
+            int ret = track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
                 SENSOR_NO(action.sensor_num),
                 action.sensor_dist,
                 action.trn,
                 true); // update position for route
+            if (ret < 0) {
+                print_missed_sensor(console_tid, action.trn,
+                    SENSOR_MOD(action.sensor_num) - 1,
+                    SENSOR_NO(action.sensor_num) - 1);
+            } else {
+                clear_missed_sensor(console_tid, action.trn);
+            }
         }
 
         if (action.delay != 0) {
@@ -364,8 +381,8 @@ static void train_tc(void) {
     uassert(track_control_end_train(tc_server_tid, params.trn) == 0);
 }
 
-int CreateControlledTrain(uint8_t trn, enum SPEEDS spd,
-    track_node *start, track_node *end, int32_t offset) {
+int CreateControlledTrain(uint8_t trn, track_node *start,
+    track_node *end, int32_t offset) {
     uassert(trn_hash(trn) != -1);
     uassert(start && end);
     uassert(track <= start || start < track + TRACK_MAX);
@@ -376,7 +393,7 @@ int CreateControlledTrain(uint8_t trn, enum SPEEDS spd,
     train_msg msg;
     msg.type = MSG_TRAIN_PARAMS;
     msg.payload.params.trn = trn;
-    msg.payload.params.spd = spd;
+    msg.payload.params.spd = SPD_MED; // default spd, changed by TCC
     msg.payload.params.start = start;
     msg.payload.params.end = end;
     msg.payload.params.offset = offset;
