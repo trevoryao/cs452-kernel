@@ -28,8 +28,6 @@ typedef struct track_edge track_edge;
 struct track_edge {
   track_edge *reverse;
   track_node *src, *dest;
-  int segmentId;
-  enum direction_lock dirSegment;
   int dist;             /* in millimetres */
 };
 
@@ -47,6 +45,7 @@ struct track_node {
   int num;              /* sensor or switch number */
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
+  int segmentId;
 };
 
 #endif
