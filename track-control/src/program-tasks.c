@@ -131,7 +131,6 @@ void cmd_task_main(void) {
                 case CMD_TC:
                     trains[trn_hash(cmd.params[1])] = CreateControlledTrain(
                         cmd.params[1],
-                        cmd.params[2],
                         cmd.path[0],
                         cmd.path[1],
                         cmd.params[0]

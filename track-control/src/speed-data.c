@@ -44,6 +44,8 @@ void speed_data_init(speed_data *data) {
     data->acceleration_data[0][3][1] = -95610; // 11 -> 7
     data->acceleration_data[0][2][3] = 135447; // 9 -> 11
     data->acceleration_data[0][3][2] = -55904; // 11 -> 9
+    data->acceleration_data[0][0][2] = 99929;  // 0 -> 9
+
 
     // trn 58
     data->acceleration_data[1][0][1] = 82661;  // 0 -> 7
@@ -53,6 +55,8 @@ void speed_data_init(speed_data *data) {
     data->acceleration_data[1][3][1] = -80692; // 11 -> 7
     data->acceleration_data[1][2][3] = 107489; // 9 -> 11
     data->acceleration_data[1][3][2] = -44940; // 11 -> 9
+    data->acceleration_data[1][0][2] = 88112;  // 0 -> 9
+
 
     // trn 77
     data->acceleration_data[2][0][1] = 61097;  // 0 -> 7
@@ -62,6 +66,8 @@ void speed_data_init(speed_data *data) {
     data->acceleration_data[2][3][1] = -69310; // 11 -> 7
     data->acceleration_data[2][2][3] = 71978; // 9 -> 11
     data->acceleration_data[2][3][2] = -37873; // 11 -> 9
+    data->acceleration_data[2][0][2] = 72385;  // 0 -> 9
+
 
     // stopping data
     // velocity data

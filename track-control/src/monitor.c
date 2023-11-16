@@ -253,7 +253,7 @@ void reset_tc_params(uint16_t tid, uint16_t trn) {
     if (trn_hash_no < 0) return;
 
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
-        CURS_DOWN DEL_LINE
+        CURS_DOWN DEL_LINE CURS_DOWN DEL_LINE
         CURS_UNSAVE CURS_SHOW,
         TC_START_Y + 3 * trn_hash_no, TC_START_X);
     #endif
@@ -270,8 +270,6 @@ void update_sensor_prediction(uint16_t tid, int8_t trainNo, int32_t diff) {
     int8_t trn_hash_no = trn_hash(trainNo);
     if (trn_hash_no < 0) return;
 
-
-
     char *col;
     if (-5 <= diff && diff <= 5) {
         col = COL_GRN;
@@ -287,6 +285,36 @@ void update_sensor_prediction(uint16_t tid, int8_t trainNo, int32_t diff) {
         TC_START_Y + 3 * trn_hash_no + 1, TC_START_X,
         col, diff_time);
 
+    #endif
+}
+
+void print_missed_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no) {
+    #if LOGGING
+    Printf(tid, "[Prediction] train %d missed sensor %c%d\r\n",
+        trn, sen_mod + 'A', sen_no + 1);
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%c%d:" COL_RED "MISSED" COL_RST
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X,
+        sen_mod + 'A', sen_no + 1);
+    #endif
+}
+
+void clear_missed_sensor(uint16_t tid, uint16_t trn) {
+    #if LOGGING
+    (void)tid;
+    (void)trn;
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X);
     #endif
 }
 

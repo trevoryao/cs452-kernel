@@ -8,6 +8,7 @@
 
 #include "monitor.h"
 #include "track-data.h"
+#include "sensor-queue.h"
 
 extern speed_data spd_data;
 extern track_node track[];
@@ -23,25 +24,19 @@ static void trn_position_reset_hash(trn_position *pos, uint8_t i) {
     pos->data[i].old_estimated_time = TIME_NONE;
 }
 
-void trn_position_init(struct trn_position *pos) {
+void trn_position_init(struct trn_position *pos, sensor_queue *sq) {
     for (int i = 0; i < N_TRNS; i++)
         trn_position_reset_hash(pos, i);
 
     pos->monitor_tid = WhoIs(CONSOLE_SERVER_NAME);
     pos->clock_tid = WhoIs(CLOCK_SERVER_NAME);
+    pos->sq = sq;
 }
 
 void trn_position_reset(trn_position *pos, uint8_t trn) {
     int8_t trn_idx = trn_hash(trn);
     uassert(trn_idx >= 0);
     trn_position_reset_hash(pos, trn_idx);
-}
-
-uint32_t
-trn_position_get_last_estimated_time(trn_position *pos, uint8_t trn) {
-    int8_t trn_idx = trn_hash(trn);
-    uassert(trn_idx >= 0);
-    return pos->data[trn_idx].estimated_time;
 }
 
 static void
@@ -58,8 +53,12 @@ trn_position_end_accel(train_data_pos *trn_data, int const_spd) {
 }
 
 static void
-trn_position_recalculate_starting_estimate(train_data_pos *trn_data, uint8_t trn,
+trn_position_recalculate_starting_estimate(trn_position *pos, uint8_t trn,
     uint8_t spd, uint32_t update_spd_time) {
+    int8_t trn_idx = trn_hash(trn);
+    uassert(trn_idx >= 0);
+    train_data_pos *trn_data = &pos->data[trn_idx];
+
     if (trn_data->spd_init != trn_data->spd_final) {
         ULOG("***** WARNING: UNSAFE SPD PREDICTION *****\r\n");
     }
@@ -94,6 +93,10 @@ trn_position_recalculate_starting_estimate(train_data_pos *trn_data, uint8_t trn
     // want to overwrite estimated time
     trn_data->old_estimated_time = trn_data->old_estimated_time -
         post_spd_change_time + accel_time;
+
+    // adjust in sensor_queue
+    sensor_queue_adjust_waiting_tid(pos->sq, trn_data->last_waited_sensor_mod, trn_data->last_waited_sensor_no, trn_data->last_waited_trn_tid,
+        trn_data->last_timestamp + trn_data->old_estimated_time);
 
     // set dist/time accelerating
     trn_data->travelled_dist = accel_dist;
@@ -141,7 +144,7 @@ trn_position_update_speed(trn_position *pos, uint8_t trn, uint8_t spd,
             trn_data->queued_speed_change = spd;
             trn_data->queued_speed_change_time = update_spd_time;
         } else {
-            trn_position_recalculate_starting_estimate(trn_data, trn, spd, update_spd_time);
+            trn_position_recalculate_starting_estimate(pos, trn, spd, update_spd_time);
         }
     }
 }
@@ -162,14 +165,21 @@ trn_position_make_accel_prediction(trn_position *pos, uint8_t trn) {
 }
 
 // Called by TCC when sensor is waited on by a train
-void
-trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist) {
+int64_t
+trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist,
+    uint16_t sensor_mod, uint16_t sensor_no, uint16_t trn_tid) {
     int8_t trn_idx = trn_hash(trn);
     uassert(trn_idx >= 0);
     train_data_pos *trn_data = &pos->data[trn_idx];
 
     trn_data->state = POS_STATE_WAITING;
     trn_data->sensor_dist = dist; // save for later
+
+    // save sensor mod and number for inserting/updating later
+    // TCC inserts for us but we have to update it
+    trn_data->last_waited_sensor_mod = sensor_mod;
+    trn_data->last_waited_sensor_no = sensor_no;
+    trn_data->last_waited_trn_tid = trn_tid;
 
     if (trn_data->spd_init == trn_data->spd_final) {
         // constant spd?
@@ -180,7 +190,7 @@ trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist) {
     } else if (trn_data->startup) {
         // first sensor?
         // defer prediction to when we reach first sensor
-        return;
+        return trn_data->old_estimated_time;
     } else if (trn_data->travelled_dist + dist < trn_data->total_dist) {
         // middle sensors?
         trn_position_make_accel_prediction(pos, trn);
@@ -211,9 +221,12 @@ trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist) {
     }
 
     if (trn_data->queued_speed_change != NO_QUEUE) {
-        trn_position_recalculate_starting_estimate(trn_data, trn,
+        trn_position_recalculate_starting_estimate(pos, trn,
             trn_data->queued_speed_change, trn_data->queued_speed_change_time);
     }
+
+    return trn_data->last_timestamp +
+        trn_data->old_estimated_time;
 }
 
 // Called by TCC when waited on sensor is activated
@@ -249,6 +262,11 @@ void trn_position_reached_sensor(trn_position *pos, uint8_t trn,
 
         // make actual prediction
         trn_position_make_accel_prediction(pos, trn);
+
+        // adjust originally inserted sensor on wait
+        sensor_queue_adjust_waiting_tid(pos->sq, trn_data->last_waited_sensor_mod, trn_data->last_waited_sensor_no, trn_data->last_waited_trn_tid,
+            trn_data->last_timestamp + trn_data->estimated_time);
+        // ^ NOTE: using absolute time
 
         trn_data->last_timestamp = activation_time;
         trn_data->startup = false;

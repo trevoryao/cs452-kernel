@@ -6,6 +6,8 @@
 
 #include "speed-data.h"
 
+typedef struct sensor_queue sensor_queue;
+
 /*
  * This interface provides predictions on when the specified train
  * will reach the next sensor on the track.
@@ -32,13 +34,18 @@ typedef struct train_data_pos {
     int8_t queued_speed_change;
     uint32_t queued_speed_change_time;
 
+    // TCC inserts waiting sensors into queue for us
+    // however we may need to adjust our prediction before hitting
+    // the sensor
+    uint16_t last_waited_sensor_mod;
+    uint16_t last_waited_sensor_no;
+    uint16_t last_waited_trn_tid;
+
     /***** used in constant/non-constant *****/
 
     // distance from last sensor to prediction sensor
     // or DIST_NONE
     int32_t sensor_dist;
-
-    #define TIME_NONE -1
 
     // time at which the train crossed prev sensor (or start pt)
     // TIME_NONE if not set (i.e. train is stopped)
@@ -70,17 +77,14 @@ typedef struct train_data_pos {
 typedef struct trn_position {
     // current speed and the speed before
     struct train_data_pos data[N_TRNS];
+
     uint16_t monitor_tid;
     uint16_t clock_tid;
+    sensor_queue *sq; // for inserting/adjusting
 } trn_position;
 
-void trn_position_init(trn_position *pos);
+void trn_position_init(trn_position *pos, sensor_queue *sq);
 void trn_position_reset(trn_position *pos, uint8_t trn);
-
-// may be changed by update_speed or set_sensor f'ns
-// must verify change and possibly update sensor prediction
-uint32_t
-trn_position_get_last_estimated_time(trn_position *pos, uint8_t trn);
 
 // Called by TCC when speed change is requested
 void trn_position_update_speed(trn_position *pos, uint8_t trn, uint8_t spd,
@@ -88,7 +92,9 @@ void trn_position_update_speed(trn_position *pos, uint8_t trn, uint8_t spd,
 
 // Called by TCC when sensor is waited on by a train
 // Performs actual prediction calculation
-void trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist);
+// returns expected timeout or TIME_NONE if unknown
+int64_t trn_position_set_sensor(trn_position *pos, uint8_t trn, int32_t dist,
+    uint16_t sensor_mod, uint16_t sensor_no, uint16_t trn_tid);
 
 // Called by TCC when waited on sensor is activated
 // Prints difference between prediction and reality
