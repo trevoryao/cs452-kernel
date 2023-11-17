@@ -94,14 +94,12 @@ void track_server_main() {
                 case MSG_TS_REQUEST_SEGMENT: {
                     // check if the direction is available
                     int segmentId = msg_received.node->segmentId;
-
                     if (lock_sectors[segmentId] != 0 && lock_sectors[segmentId] != msg_received.trainNo) {
                         replyFail(senderTid, msg_received.node, msg_received.trainNo);
                     } else {
                         lock_sectors[segmentId] = msg_received.trainNo;
                         replySuccess(senderTid, msg_received.node, msg_received.trainNo);
                     }
-
                     break;
                 }
 

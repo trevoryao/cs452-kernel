@@ -824,6 +824,8 @@ void init_track_a(track_node *track) {
   track[80].edge[DIR_CURVED].src = &track[80];
   track[80].edge[DIR_CURVED].dest = &track[8];
   track[80].edge[DIR_CURVED].dist = 229;
+  track[80].segmentId = 4;
+
   track[81].name = "MR1";
   track[81].type = NODE_MERGE;
   track[81].num = 1;
@@ -832,6 +834,8 @@ void init_track_a(track_node *track) {
   track[81].edge[DIR_AHEAD].src = &track[81];
   track[81].edge[DIR_AHEAD].dest = &track[83];
   track[81].edge[DIR_AHEAD].dist = 188;
+  track[81].segmentId = 4;
+
   track[82].name = "BR2";
   track[82].type = NODE_BRANCH;
   track[82].num = 2;
@@ -844,6 +848,8 @@ void init_track_a(track_node *track) {
   track[82].edge[DIR_CURVED].src = &track[82];
   track[82].edge[DIR_CURVED].dest = &track[6];
   track[82].edge[DIR_CURVED].dist = 229;
+  track[82].segmentId = 4;
+
   track[83].name = "MR2";
   track[83].type = NODE_MERGE;
   track[83].num = 2;
@@ -852,6 +858,8 @@ void init_track_a(track_node *track) {
   track[83].edge[DIR_AHEAD].src = &track[83];
   track[83].edge[DIR_AHEAD].dest = &track[85];
   track[83].edge[DIR_AHEAD].dist = 185;
+  track[83].segmentId = 4;
+
   track[84].name = "BR3";
   track[84].type = NODE_BRANCH;
   track[84].num = 3;
@@ -864,6 +872,8 @@ void init_track_a(track_node *track) {
   track[84].edge[DIR_CURVED].src = &track[84];
   track[84].edge[DIR_CURVED].dest = &track[82];
   track[84].edge[DIR_CURVED].dist = 185;
+  track[84].segmentId = 4;
+
   track[85].name = "MR3";
   track[85].type = NODE_MERGE;
   track[85].num = 3;
@@ -872,6 +882,8 @@ void init_track_a(track_node *track) {
   track[85].edge[DIR_AHEAD].src = &track[85];
   track[85].edge[DIR_AHEAD].dest = &track[38];
   track[85].edge[DIR_AHEAD].dist = 128;
+  track[85].segmentId = 4;
+
   track[86].name = "BR4";
   track[86].type = NODE_BRANCH;
   track[86].num = 4;
@@ -884,6 +896,8 @@ void init_track_a(track_node *track) {
   track[86].edge[DIR_CURVED].src = &track[86];
   track[86].edge[DIR_CURVED].dest = &track[13];
   track[86].edge[DIR_CURVED].dist = 236;
+  track[86].segmentId = 11;
+
   track[87].name = "MR4";
   track[87].type = NODE_MERGE;
   track[87].num = 4;
@@ -892,6 +906,8 @@ void init_track_a(track_node *track) {
   track[87].edge[DIR_AHEAD].src = &track[87];
   track[87].edge[DIR_AHEAD].dest = &track[103];
   track[87].edge[DIR_AHEAD].dist = 185;
+  track[87].segmentId = 11;
+
   track[88].name = "BR5";
   track[88].type = NODE_BRANCH;
   track[88].num = 5;
@@ -904,6 +920,8 @@ void init_track_a(track_node *track) {
   track[88].edge[DIR_CURVED].src = &track[88];
   track[88].edge[DIR_CURVED].dest = &track[93];
   track[88].edge[DIR_CURVED].dist = 371;
+  track[88].segmentId = 5;
+
   track[89].name = "MR5";
   track[89].type = NODE_MERGE;
   track[89].num = 5;
@@ -912,6 +930,8 @@ void init_track_a(track_node *track) {
   track[89].edge[DIR_AHEAD].src = &track[89];
   track[89].edge[DIR_AHEAD].dest = &track[114];
   track[89].edge[DIR_AHEAD].dist = 155;
+  track[89].segmentId = 5;
+
   track[90].name = "BR6";
   track[90].type = NODE_BRANCH;
   track[90].num = 6;
@@ -924,6 +944,8 @@ void init_track_a(track_node *track) {
   track[90].edge[DIR_CURVED].src = &track[90];
   track[90].edge[DIR_CURVED].dest = &track[115];
   track[90].edge[DIR_CURVED].dist = 371;
+  track[90].segmentId = 5;
+
   track[91].name = "MR6";
   track[91].type = NODE_MERGE;
   track[91].num = 6;
@@ -932,6 +954,8 @@ void init_track_a(track_node *track) {
   track[91].edge[DIR_AHEAD].src = &track[91];
   track[91].edge[DIR_AHEAD].dest = &track[37];
   track[91].edge[DIR_AHEAD].dist = 61;
+  track[91].segmentId = 5;
+
   track[92].name = "BR7";
   track[92].type = NODE_BRANCH;
   track[92].num = 7;
@@ -944,6 +968,8 @@ void init_track_a(track_node *track) {
   track[92].edge[DIR_CURVED].src = &track[92];
   track[92].edge[DIR_CURVED].dest = &track[89];
   track[92].edge[DIR_CURVED].dist = 371;
+  track[92].segmentId = 5;
+
   track[93].name = "MR7";
   track[93].type = NODE_MERGE;
   track[93].num = 7;
@@ -952,6 +978,8 @@ void init_track_a(track_node *track) {
   track[93].edge[DIR_AHEAD].src = &track[93];
   track[93].edge[DIR_AHEAD].dest = &track[74];
   track[93].edge[DIR_AHEAD].dist = 50;
+  track[93].segmentId = 5;
+
   track[94].name = "BR8";
   track[94].type = NODE_BRANCH;
   track[94].num = 8;
@@ -964,6 +992,8 @@ void init_track_a(track_node *track) {
   track[94].edge[DIR_CURVED].src = &track[94];
   track[94].edge[DIR_CURVED].dest = &track[73];
   track[94].edge[DIR_CURVED].dist = 239;
+  track[94].segmentId = 14;
+
   track[95].name = "MR8";
   track[95].type = NODE_MERGE;
   track[95].num = 8;
@@ -972,6 +1002,8 @@ void init_track_a(track_node *track) {
   track[95].edge[DIR_AHEAD].src = &track[95];
   track[95].edge[DIR_AHEAD].dest = &track[96];
   track[95].edge[DIR_AHEAD].dist = 155;
+  track[95].segmentId = 14;
+
   track[96].name = "BR9";
   track[96].type = NODE_BRANCH;
   track[96].num = 9;
@@ -984,6 +1016,8 @@ void init_track_a(track_node *track) {
   track[96].edge[DIR_CURVED].src = &track[96];
   track[96].edge[DIR_CURVED].dest = &track[52];
   track[96].edge[DIR_CURVED].dist = 239;
+  track[96].segmentId = 14;
+
   track[97].name = "MR9";
   track[97].type = NODE_MERGE;
   track[97].num = 9;
@@ -992,6 +1026,8 @@ void init_track_a(track_node *track) {
   track[97].edge[DIR_AHEAD].src = &track[97];
   track[97].edge[DIR_AHEAD].dest = &track[94];
   track[97].edge[DIR_AHEAD].dist = 155;
+  track[97].segmentId = 14;
+
   track[98].name = "BR10";
   track[98].type = NODE_BRANCH;
   track[98].num = 10;
@@ -1004,6 +1040,8 @@ void init_track_a(track_node *track) {
   track[98].edge[DIR_CURVED].src = &track[98];
   track[98].edge[DIR_CURVED].dest = &track[66];
   track[98].edge[DIR_CURVED].dist = 239;
+  track[98].segmentId = 21;
+
   track[99].name = "MR10";
   track[99].type = NODE_MERGE;
   track[99].num = 10;
@@ -1012,6 +1050,8 @@ void init_track_a(track_node *track) {
   track[99].edge[DIR_AHEAD].src = &track[99];
   track[99].edge[DIR_AHEAD].dest = &track[68];
   track[99].edge[DIR_AHEAD].dist = 50;
+  track[99].segmentId = 21;
+
   track[100].name = "BR11";
   track[100].type = NODE_BRANCH;
   track[100].num = 11;
@@ -1024,6 +1064,8 @@ void init_track_a(track_node *track) {
   track[100].edge[DIR_CURVED].src = &track[100];
   track[100].edge[DIR_CURVED].dest = &track[107];
   track[100].edge[DIR_CURVED].dist = 495;
+  track[100].segmentId = 11;
+
   track[101].name = "MR11";
   track[101].type = NODE_MERGE;
   track[101].num = 11;
@@ -1032,6 +1074,8 @@ void init_track_a(track_node *track) {
   track[101].edge[DIR_AHEAD].src = &track[101];
   track[101].edge[DIR_AHEAD].dest = &track[44];
   track[101].edge[DIR_AHEAD].dist = 43;
+  track[101].segmentId = 11;
+
   track[102].name = "BR12";
   track[102].type = NODE_BRANCH;
   track[102].num = 12;
@@ -1044,6 +1088,8 @@ void init_track_a(track_node *track) {
   track[102].edge[DIR_CURVED].src = &track[102];
   track[102].edge[DIR_CURVED].dest = &track[86];
   track[102].edge[DIR_CURVED].dist = 185;
+  track[102].segmentId = 11;
+
   track[103].name = "MR12";
   track[103].type = NODE_MERGE;
   track[103].num = 12;
@@ -1052,6 +1098,8 @@ void init_track_a(track_node *track) {
   track[103].edge[DIR_AHEAD].src = &track[103];
   track[103].edge[DIR_AHEAD].dest = &track[101];
   track[103].edge[DIR_AHEAD].dist = 188;
+  track[103].segmentId = 11;
+
   track[104].name = "BR13";
   track[104].type = NODE_BRANCH;
   track[104].num = 13;
@@ -1064,6 +1112,8 @@ void init_track_a(track_node *track) {
   track[104].edge[DIR_CURVED].src = &track[104];
   track[104].edge[DIR_CURVED].dest = &track[79];
   track[104].edge[DIR_CURVED].dist = 246;
+  track[104].segmentId = 19;
+
   track[105].name = "MR13";
   track[105].type = NODE_MERGE;
   track[105].num = 13;
@@ -1072,6 +1122,8 @@ void init_track_a(track_node *track) {
   track[105].edge[DIR_AHEAD].src = &track[105];
   track[105].edge[DIR_AHEAD].dest = &track[43];
   track[105].edge[DIR_AHEAD].dist = 120;
+  track[105].segmentId = 19;
+
   track[106].name = "BR14";
   track[106].type = NODE_BRANCH;
   track[106].num = 14;
@@ -1084,6 +1136,8 @@ void init_track_a(track_node *track) {
   track[106].edge[DIR_CURVED].src = &track[106];
   track[106].edge[DIR_CURVED].dest = &track[42];
   track[106].edge[DIR_CURVED].dist = 333;
+  track[106].segmentId = 11;
+
   track[107].name = "MR14";
   track[107].type = NODE_MERGE;
   track[107].num = 14;
@@ -1092,6 +1146,8 @@ void init_track_a(track_node *track) {
   track[107].edge[DIR_AHEAD].src = &track[107];
   track[107].edge[DIR_AHEAD].dest = &track[3];
   track[107].edge[DIR_AHEAD].dist = 43;
+  track[107].segmentId = 11;
+
   track[108].name = "BR15";
   track[108].type = NODE_BRANCH;
   track[108].num = 15;
@@ -1104,6 +1160,8 @@ void init_track_a(track_node *track) {
   track[108].edge[DIR_CURVED].src = &track[108];
   track[108].edge[DIR_CURVED].dest = &track[41];
   track[108].edge[DIR_CURVED].dist = 326;
+  track[108].segmentId = 9;
+
   track[109].name = "MR15";
   track[109].type = NODE_MERGE;
   track[109].num = 15;
@@ -1112,6 +1170,8 @@ void init_track_a(track_node *track) {
   track[109].edge[DIR_AHEAD].src = &track[109];
   track[109].edge[DIR_AHEAD].dest = &track[30];
   track[109].edge[DIR_AHEAD].dist = 50;
+  track[109].segmentId = 9;
+
   track[110].name = "BR16";
   track[110].type = NODE_BRANCH;
   track[110].num = 16;
@@ -1124,6 +1184,8 @@ void init_track_a(track_node *track) {
   track[110].edge[DIR_CURVED].src = &track[110];
   track[110].edge[DIR_CURVED].dest = &track[18];
   track[110].edge[DIR_CURVED].dist = 239;
+  track[110].segmentId = 18;
+
   track[111].name = "MR16";
   track[111].type = NODE_MERGE;
   track[111].num = 16;
@@ -1132,6 +1194,8 @@ void init_track_a(track_node *track) {
   track[111].edge[DIR_AHEAD].src = &track[111];
   track[111].edge[DIR_AHEAD].dest = &track[40];
   track[111].edge[DIR_AHEAD].dist = 128;
+  track[111].segmentId = 18;
+
   track[112].name = "BR17";
   track[112].type = NODE_BRANCH;
   track[112].num = 17;
@@ -1144,6 +1208,8 @@ void init_track_a(track_node *track) {
   track[112].edge[DIR_CURVED].src = &track[112];
   track[112].edge[DIR_CURVED].dest = &track[62];
   track[112].edge[DIR_CURVED].dist = 246;
+  track[112].segmentId = 16;
+
   track[113].name = "MR17";
   track[113].type = NODE_MERGE;
   track[113].num = 17;
@@ -1152,6 +1218,8 @@ void init_track_a(track_node *track) {
   track[113].edge[DIR_AHEAD].src = &track[113];
   track[113].edge[DIR_AHEAD].dest = &track[77];
   track[113].edge[DIR_AHEAD].dist = 43;
+  track[113].segmentId = 16;
+
   track[114].name = "BR18";
   track[114].type = NODE_BRANCH;
   track[114].num = 18;
@@ -1164,6 +1232,8 @@ void init_track_a(track_node *track) {
   track[114].edge[DIR_CURVED].src = &track[114];
   track[114].edge[DIR_CURVED].dest = &track[91];
   track[114].edge[DIR_CURVED].dist = 371;
+  track[114].segmentId = 5;
+
   track[115].name = "MR18";
   track[115].type = NODE_MERGE;
   track[115].num = 18;
@@ -1172,6 +1242,8 @@ void init_track_a(track_node *track) {
   track[115].edge[DIR_AHEAD].src = &track[115];
   track[115].edge[DIR_AHEAD].dest = &track[88];
   track[115].edge[DIR_AHEAD].dist = 155;
+  track[115].segmentId = 5;
+
   track[116].name = "BR153";
   track[116].type = NODE_BRANCH;
   track[116].num = 153;
@@ -1184,6 +1256,8 @@ void init_track_a(track_node *track) {
   track[116].edge[DIR_CURVED].src = &track[116];
   track[116].edge[DIR_CURVED].dest = &track[32];
   track[116].edge[DIR_CURVED].dist = 246;
+  track[116].segmentId = 24;
+
   track[117].name = "MR153";
   track[117].type = NODE_MERGE;
   track[117].num = 153;
@@ -1192,6 +1266,8 @@ void init_track_a(track_node *track) {
   track[117].edge[DIR_AHEAD].src = &track[117];
   track[117].edge[DIR_AHEAD].dest = &track[119];
   track[117].edge[DIR_AHEAD].dist = 0;
+  track[117].segmentId = 24;
+
   track[118].name = "BR154";
   track[118].type = NODE_BRANCH;
   track[118].num = 154;
@@ -1204,6 +1280,8 @@ void init_track_a(track_node *track) {
   track[118].edge[DIR_CURVED].src = &track[118];
   track[118].edge[DIR_CURVED].dest = &track[29];
   track[118].edge[DIR_CURVED].dist = 239;
+  track[118].segmentId = 24;
+
   track[119].name = "MR154";
   track[119].type = NODE_MERGE;
   track[119].num = 154;
@@ -1212,6 +1290,8 @@ void init_track_a(track_node *track) {
   track[119].edge[DIR_AHEAD].src = &track[119];
   track[119].edge[DIR_AHEAD].dest = &track[122];
   track[119].edge[DIR_AHEAD].dist = 0;
+  track[119].segmentId = 24;
+
   track[120].name = "BR155";
   track[120].type = NODE_BRANCH;
   track[120].num = 155;
@@ -1224,6 +1304,8 @@ void init_track_a(track_node *track) {
   track[120].edge[DIR_CURVED].src = &track[120];
   track[120].edge[DIR_CURVED].dest = &track[49];
   track[120].edge[DIR_CURVED].dist = 246;
+  track[120].segmentId = 24;
+
   track[121].name = "MR155";
   track[121].type = NODE_MERGE;
   track[121].num = 155;
@@ -1232,6 +1314,8 @@ void init_track_a(track_node *track) {
   track[121].edge[DIR_AHEAD].src = &track[121];
   track[121].edge[DIR_AHEAD].dest = &track[123];
   track[121].edge[DIR_AHEAD].dist = 0;
+  track[121].segmentId = 24;
+
   track[122].name = "BR156";
   track[122].type = NODE_BRANCH;
   track[122].num = 156;
@@ -1244,6 +1328,8 @@ void init_track_a(track_node *track) {
   track[122].edge[DIR_CURVED].src = &track[122];
   track[122].edge[DIR_CURVED].dest = &track[65];
   track[122].edge[DIR_CURVED].dist = 239;
+  track[122].segmentId = 24;
+
   track[123].name = "MR156";
   track[123].type = NODE_MERGE;
   track[123].num = 156;
@@ -1252,6 +1338,8 @@ void init_track_a(track_node *track) {
   track[123].edge[DIR_AHEAD].src = &track[123];
   track[123].edge[DIR_AHEAD].dest = &track[118];
   track[123].edge[DIR_AHEAD].dist = 0;
+  track[123].segmentId = 24;
+
   track[124].name = "EN1";
   track[124].type = NODE_ENTER;
   track[124].reverse = &track[125];
@@ -1259,9 +1347,13 @@ void init_track_a(track_node *track) {
   track[124].edge[DIR_AHEAD].src = &track[124];
   track[124].edge[DIR_AHEAD].dest = &track[117];
   track[124].edge[DIR_AHEAD].dist = 253;
+  track[124].segmentId = 24;
+
   track[125].name = "EX1";
   track[125].type = NODE_EXIT;
   track[125].reverse = &track[124];
+  track[125].segmentId = 24;
+
   track[126].name = "EN2";
   track[126].type = NODE_ENTER;
   track[126].reverse = &track[127];
@@ -1269,9 +1361,13 @@ void init_track_a(track_node *track) {
   track[126].edge[DIR_AHEAD].src = &track[126];
   track[126].edge[DIR_AHEAD].dest = &track[121];
   track[126].edge[DIR_AHEAD].dist = 282;
+  track[126].segmentId = 24;
+
   track[127].name = "EX2";
   track[127].type = NODE_EXIT;
   track[127].reverse = &track[126];
+  track[127].segmentId = 24;
+
   track[128].name = "EN3";
   track[128].type = NODE_ENTER;
   track[128].reverse = &track[129];
@@ -1279,9 +1375,13 @@ void init_track_a(track_node *track) {
   track[128].edge[DIR_AHEAD].src = &track[128];
   track[128].edge[DIR_AHEAD].dest = &track[35];
   track[128].edge[DIR_AHEAD].dist = 514;
+  track[128].segmentId = 6;
+
   track[129].name = "EX3";
   track[129].type = NODE_EXIT;
   track[129].reverse = &track[128];
+  track[129].segmentId = 6;
+
   track[130].name = "EN4";
   track[130].type = NODE_ENTER;
   track[130].reverse = &track[131];
@@ -1289,9 +1389,13 @@ void init_track_a(track_node *track) {
   track[130].edge[DIR_AHEAD].src = &track[130];
   track[130].edge[DIR_AHEAD].dest = &track[12];
   track[130].edge[DIR_AHEAD].dist = 325;
+  track[130].segmentId = 29;
+
   track[131].name = "EX4";
   track[131].type = NODE_EXIT;
   track[131].reverse = &track[130];
+  track[131].segmentId = 29;
+
   track[132].name = "EN5";
   track[132].type = NODE_ENTER;
   track[132].reverse = &track[133];
@@ -1299,9 +1403,13 @@ void init_track_a(track_node *track) {
   track[132].edge[DIR_AHEAD].src = &track[132];
   track[132].edge[DIR_AHEAD].dest = &track[0];
   track[132].edge[DIR_AHEAD].dist = 504;
+  track[132].segmentId = 28;
+
   track[133].name = "EX5";
   track[133].type = NODE_EXIT;
   track[133].reverse = &track[132];
+  track[133].segmentId = 28;
+
   track[134].name = "EN6";
   track[134].type = NODE_ENTER;
   track[134].reverse = &track[135];
@@ -1309,9 +1417,13 @@ void init_track_a(track_node *track) {
   track[134].edge[DIR_AHEAD].src = &track[134];
   track[134].edge[DIR_AHEAD].dest = &track[15];
   track[134].edge[DIR_AHEAD].dist = 144;
+  track[134].segmentId = 30;
+
   track[135].name = "EX6";
   track[135].type = NODE_EXIT;
   track[135].reverse = &track[134];
+  track[135].segmentId = 30;
+
   track[136].name = "EN7";
   track[136].type = NODE_ENTER;
   track[136].reverse = &track[137];
@@ -1319,9 +1431,13 @@ void init_track_a(track_node *track) {
   track[136].edge[DIR_AHEAD].src = &track[136];
   track[136].edge[DIR_AHEAD].dest = &track[22];
   track[136].edge[DIR_AHEAD].dist = 43;
+  track[136].segmentId = 1;
+
   track[137].name = "EX7";
   track[137].type = NODE_EXIT;
   track[137].reverse = &track[136];
+  track[137].segmentId = 1;
+
   track[138].name = "EN8";
   track[138].type = NODE_ENTER;
   track[138].reverse = &track[139];
@@ -1329,9 +1445,13 @@ void init_track_a(track_node *track) {
   track[138].edge[DIR_AHEAD].src = &track[138];
   track[138].edge[DIR_AHEAD].dest = &track[10];
   track[138].edge[DIR_AHEAD].dist = 43;
+  track[138].segmentId = 0;
+
   track[139].name = "EX8";
   track[139].type = NODE_EXIT;
   track[139].reverse = &track[138];
+  track[139].segmentId = 0;
+
   track[140].name = "EN9";
   track[140].type = NODE_ENTER;
   track[140].reverse = &track[141];
@@ -1339,9 +1459,13 @@ void init_track_a(track_node *track) {
   track[140].edge[DIR_AHEAD].src = &track[140];
   track[140].edge[DIR_AHEAD].dest = &track[24];
   track[140].edge[DIR_AHEAD].dist = 50;
+  track[140].segmentId = 3;
+
   track[141].name = "EX9";
   track[141].type = NODE_EXIT;
   track[141].reverse = &track[140];
+  track[141].segmentId = 3;
+
   track[142].name = "EN10";
   track[142].type = NODE_ENTER;
   track[142].reverse = &track[143];
@@ -1349,10 +1473,12 @@ void init_track_a(track_node *track) {
   track[142].edge[DIR_AHEAD].src = &track[142];
   track[142].edge[DIR_AHEAD].dest = &track[26];
   track[142].edge[DIR_AHEAD].dist = 50;
+  track[142].segmentId = 2;
+
   track[143].name = "EX10";
   track[143].type = NODE_EXIT;
   track[143].reverse = &track[142];
-
+  track[143].segmentId = 2;
 }
 
 void init_track_b(track_node *track) {
@@ -1468,7 +1594,7 @@ void init_track_b(track_node *track) {
   track[10].edge[DIR_AHEAD].dest = &track[81];
   track[10].edge[DIR_AHEAD].dist = 282;
   track[10].segmentId = 4;
-  
+
   track[11].name = "A12";
   track[11].type = NODE_SENSOR;
   track[11].num = 11;
@@ -2174,6 +2300,8 @@ void init_track_b(track_node *track) {
   track[80].edge[DIR_CURVED].src = &track[80];
   track[80].edge[DIR_CURVED].dest = &track[8];
   track[80].edge[DIR_CURVED].dist = 229;
+  track[80].segmentId = 4;
+
   track[81].name = "MR1";
   track[81].type = NODE_MERGE;
   track[81].num = 1;
@@ -2182,6 +2310,8 @@ void init_track_b(track_node *track) {
   track[81].edge[DIR_AHEAD].src = &track[81];
   track[81].edge[DIR_AHEAD].dest = &track[83];
   track[81].edge[DIR_AHEAD].dist = 188;
+  track[81].segmentId = 4;
+
   track[82].name = "BR2";
   track[82].type = NODE_BRANCH;
   track[82].num = 2;
@@ -2194,6 +2324,8 @@ void init_track_b(track_node *track) {
   track[82].edge[DIR_CURVED].src = &track[82];
   track[82].edge[DIR_CURVED].dest = &track[6];
   track[82].edge[DIR_CURVED].dist = 229;
+  track[82].segmentId = 4;
+
   track[83].name = "MR2";
   track[83].type = NODE_MERGE;
   track[83].num = 2;
@@ -2202,6 +2334,8 @@ void init_track_b(track_node *track) {
   track[83].edge[DIR_AHEAD].src = &track[83];
   track[83].edge[DIR_AHEAD].dest = &track[85];
   track[83].edge[DIR_AHEAD].dist = 185;
+  track[83].segmentId = 4;
+
   track[84].name = "BR3";
   track[84].type = NODE_BRANCH;
   track[84].num = 3;
@@ -2214,6 +2348,8 @@ void init_track_b(track_node *track) {
   track[84].edge[DIR_CURVED].src = &track[84];
   track[84].edge[DIR_CURVED].dest = &track[82];
   track[84].edge[DIR_CURVED].dist = 185;
+  track[84].segmentId = 4;
+
   track[85].name = "MR3";
   track[85].type = NODE_MERGE;
   track[85].num = 3;
@@ -2222,6 +2358,8 @@ void init_track_b(track_node *track) {
   track[85].edge[DIR_AHEAD].src = &track[85];
   track[85].edge[DIR_AHEAD].dest = &track[38];
   track[85].edge[DIR_AHEAD].dist = 128;
+  track[85].segmentId = 4;
+
   track[86].name = "BR4";
   track[86].type = NODE_BRANCH;
   track[86].num = 4;
@@ -2234,6 +2372,8 @@ void init_track_b(track_node *track) {
   track[86].edge[DIR_CURVED].src = &track[86];
   track[86].edge[DIR_CURVED].dest = &track[13];
   track[86].edge[DIR_CURVED].dist = 236;
+  track[86].segmentId = 11;
+
   track[87].name = "MR4";
   track[87].type = NODE_MERGE;
   track[87].num = 4;
@@ -2242,6 +2382,8 @@ void init_track_b(track_node *track) {
   track[87].edge[DIR_AHEAD].src = &track[87];
   track[87].edge[DIR_AHEAD].dest = &track[103];
   track[87].edge[DIR_AHEAD].dist = 185;
+  track[87].segmentId = 11;
+
   track[88].name = "BR5";
   track[88].type = NODE_BRANCH;
   track[88].num = 5;
@@ -2254,6 +2396,8 @@ void init_track_b(track_node *track) {
   track[88].edge[DIR_CURVED].src = &track[88];
   track[88].edge[DIR_CURVED].dest = &track[93];
   track[88].edge[DIR_CURVED].dist = 371;
+  track[88].segmentId = 5;
+
   track[89].name = "MR5";
   track[89].type = NODE_MERGE;
   track[89].num = 5;
@@ -2262,6 +2406,8 @@ void init_track_b(track_node *track) {
   track[89].edge[DIR_AHEAD].src = &track[89];
   track[89].edge[DIR_AHEAD].dest = &track[114];
   track[89].edge[DIR_AHEAD].dist = 155;
+  track[89].segmentId = 5;
+
   track[90].name = "BR6";
   track[90].type = NODE_BRANCH;
   track[90].num = 6;
@@ -2274,6 +2420,8 @@ void init_track_b(track_node *track) {
   track[90].edge[DIR_CURVED].src = &track[90];
   track[90].edge[DIR_CURVED].dest = &track[115];
   track[90].edge[DIR_CURVED].dist = 371;
+  track[90].segmentId = 5;
+
   track[91].name = "MR6";
   track[91].type = NODE_MERGE;
   track[91].num = 6;
@@ -2282,6 +2430,8 @@ void init_track_b(track_node *track) {
   track[91].edge[DIR_AHEAD].src = &track[91];
   track[91].edge[DIR_AHEAD].dest = &track[37];
   track[91].edge[DIR_AHEAD].dist = 61;
+  track[91].segmentId = 5;
+
   track[92].name = "BR7";
   track[92].type = NODE_BRANCH;
   track[92].num = 7;
@@ -2294,6 +2444,8 @@ void init_track_b(track_node *track) {
   track[92].edge[DIR_CURVED].src = &track[92];
   track[92].edge[DIR_CURVED].dest = &track[89];
   track[92].edge[DIR_CURVED].dist = 371;
+  track[92].segmentId = 5;
+
   track[93].name = "MR7";
   track[93].type = NODE_MERGE;
   track[93].num = 7;
@@ -2302,6 +2454,8 @@ void init_track_b(track_node *track) {
   track[93].edge[DIR_AHEAD].src = &track[93];
   track[93].edge[DIR_AHEAD].dest = &track[74];
   track[93].edge[DIR_AHEAD].dist = 43;
+  track[93].segmentId = 5;
+
   track[94].name = "BR8";
   track[94].type = NODE_BRANCH;
   track[94].num = 8;
@@ -2314,6 +2468,8 @@ void init_track_b(track_node *track) {
   track[94].edge[DIR_CURVED].src = &track[94];
   track[94].edge[DIR_CURVED].dest = &track[73];
   track[94].edge[DIR_CURVED].dist = 239;
+  track[94].segmentId = 14;
+
   track[95].name = "MR8";
   track[95].type = NODE_MERGE;
   track[95].num = 8;
@@ -2322,6 +2478,8 @@ void init_track_b(track_node *track) {
   track[95].edge[DIR_AHEAD].src = &track[95];
   track[95].edge[DIR_AHEAD].dest = &track[96];
   track[95].edge[DIR_AHEAD].dist = 155;
+  track[95].segmentId = 14;
+
   track[96].name = "BR9";
   track[96].type = NODE_BRANCH;
   track[96].num = 9;
@@ -2334,6 +2492,8 @@ void init_track_b(track_node *track) {
   track[96].edge[DIR_CURVED].src = &track[96];
   track[96].edge[DIR_CURVED].dest = &track[52];
   track[96].edge[DIR_CURVED].dist = 229;
+  track[96].segmentId = 14;
+
   track[97].name = "MR9";
   track[97].type = NODE_MERGE;
   track[97].num = 9;
@@ -2342,6 +2502,8 @@ void init_track_b(track_node *track) {
   track[97].edge[DIR_AHEAD].src = &track[97];
   track[97].edge[DIR_AHEAD].dest = &track[94];
   track[97].edge[DIR_AHEAD].dist = 155;
+  track[97].segmentId = 14;
+
   track[98].name = "BR10";
   track[98].type = NODE_BRANCH;
   track[98].num = 10;
@@ -2354,6 +2516,8 @@ void init_track_b(track_node *track) {
   track[98].edge[DIR_CURVED].src = &track[98];
   track[98].edge[DIR_CURVED].dest = &track[66];
   track[98].edge[DIR_CURVED].dist = 239;
+  track[98].segmentId = 21;
+
   track[99].name = "MR10";
   track[99].type = NODE_MERGE;
   track[99].num = 10;
@@ -2362,6 +2526,8 @@ void init_track_b(track_node *track) {
   track[99].edge[DIR_AHEAD].src = &track[99];
   track[99].edge[DIR_AHEAD].dest = &track[68];
   track[99].edge[DIR_AHEAD].dist = 50;
+  track[99].segmentId = 21;
+
   track[100].name = "BR11";
   track[100].type = NODE_BRANCH;
   track[100].num = 11;
@@ -2374,6 +2540,8 @@ void init_track_b(track_node *track) {
   track[100].edge[DIR_CURVED].src = &track[100];
   track[100].edge[DIR_CURVED].dest = &track[107];
   track[100].edge[DIR_CURVED].dist = 495;
+  track[100].segmentId = 11;
+
   track[101].name = "MR11";
   track[101].type = NODE_MERGE;
   track[101].num = 11;
@@ -2382,6 +2550,8 @@ void init_track_b(track_node *track) {
   track[101].edge[DIR_AHEAD].src = &track[101];
   track[101].edge[DIR_AHEAD].dest = &track[44];
   track[101].edge[DIR_AHEAD].dist = 50;
+  track[101].segmentId = 11;
+
   track[102].name = "BR12";
   track[102].type = NODE_BRANCH;
   track[102].num = 12;
@@ -2394,6 +2564,8 @@ void init_track_b(track_node *track) {
   track[102].edge[DIR_CURVED].src = &track[102];
   track[102].edge[DIR_CURVED].dest = &track[86];
   track[102].edge[DIR_CURVED].dist = 185;
+  track[102].segmentId = 11;
+
   track[103].name = "MR12";
   track[103].type = NODE_MERGE;
   track[103].num = 12;
@@ -2402,6 +2574,8 @@ void init_track_b(track_node *track) {
   track[103].edge[DIR_AHEAD].src = &track[103];
   track[103].edge[DIR_AHEAD].dest = &track[101];
   track[103].edge[DIR_AHEAD].dist = 188;
+  track[103].segmentId = 11;
+
   track[104].name = "BR13";
   track[104].type = NODE_BRANCH;
   track[104].num = 13;
@@ -2414,6 +2588,8 @@ void init_track_b(track_node *track) {
   track[104].edge[DIR_CURVED].src = &track[104];
   track[104].edge[DIR_CURVED].dest = &track[79];
   track[104].edge[DIR_CURVED].dist = 246;
+  track[104].segmentId = 13;
+
   track[105].name = "MR13";
   track[105].type = NODE_MERGE;
   track[105].num = 13;
@@ -2422,6 +2598,8 @@ void init_track_b(track_node *track) {
   track[105].edge[DIR_AHEAD].src = &track[105];
   track[105].edge[DIR_AHEAD].dest = &track[43];
   track[105].edge[DIR_AHEAD].dist = 120;
+  track[105].segmentId = 13;
+
   track[106].name = "BR14";
   track[106].type = NODE_BRANCH;
   track[106].num = 14;
@@ -2434,6 +2612,8 @@ void init_track_b(track_node *track) {
   track[106].edge[DIR_CURVED].src = &track[106];
   track[106].edge[DIR_CURVED].dest = &track[42];
   track[106].edge[DIR_CURVED].dist = 333;
+  track[106].segmentId = 11;
+
   track[107].name = "MR14";
   track[107].type = NODE_MERGE;
   track[107].num = 14;
@@ -2442,6 +2622,8 @@ void init_track_b(track_node *track) {
   track[107].edge[DIR_AHEAD].src = &track[107];
   track[107].edge[DIR_AHEAD].dest = &track[3];
   track[107].edge[DIR_AHEAD].dist = 43;
+  track[107].segmentId = 11;
+
   track[108].name = "BR15";
   track[108].type = NODE_BRANCH;
   track[108].num = 15;
@@ -2454,6 +2636,8 @@ void init_track_b(track_node *track) {
   track[108].edge[DIR_CURVED].src = &track[108];
   track[108].edge[DIR_CURVED].dest = &track[41];
   track[108].edge[DIR_CURVED].dist = 326;
+  track[108].segmentId = 9;
+
   track[109].name = "MR15";
   track[109].type = NODE_MERGE;
   track[109].num = 15;
@@ -2462,6 +2646,8 @@ void init_track_b(track_node *track) {
   track[109].edge[DIR_AHEAD].src = &track[109];
   track[109].edge[DIR_AHEAD].dest = &track[30];
   track[109].edge[DIR_AHEAD].dist = 50;
+  track[109].segmentId = 9;
+
   track[110].name = "BR16";
   track[110].type = NODE_BRANCH;
   track[110].num = 16;
@@ -2474,6 +2660,8 @@ void init_track_b(track_node *track) {
   track[110].edge[DIR_CURVED].src = &track[110];
   track[110].edge[DIR_CURVED].dest = &track[18];
   track[110].edge[DIR_CURVED].dist = 239;
+  track[110].segmentId = 18;
+
   track[111].name = "MR16";
   track[111].type = NODE_MERGE;
   track[111].num = 16;
@@ -2482,6 +2670,8 @@ void init_track_b(track_node *track) {
   track[111].edge[DIR_AHEAD].src = &track[111];
   track[111].edge[DIR_AHEAD].dest = &track[40];
   track[111].edge[DIR_AHEAD].dist = 128;
+  track[111].segmentId = 18;
+
   track[112].name = "BR17";
   track[112].type = NODE_BRANCH;
   track[112].num = 17;
@@ -2494,6 +2684,8 @@ void init_track_b(track_node *track) {
   track[112].edge[DIR_CURVED].src = &track[112];
   track[112].edge[DIR_CURVED].dest = &track[62];
   track[112].edge[DIR_CURVED].dist = 246;
+  track[112].segmentId = 16;
+
   track[113].name = "MR17";
   track[113].type = NODE_MERGE;
   track[113].num = 17;
@@ -2502,6 +2694,8 @@ void init_track_b(track_node *track) {
   track[113].edge[DIR_AHEAD].src = &track[113];
   track[113].edge[DIR_AHEAD].dest = &track[77];
   track[113].edge[DIR_AHEAD].dist = 43;
+  track[113].segmentId = 16;
+
   track[114].name = "BR18";
   track[114].type = NODE_BRANCH;
   track[114].num = 18;
@@ -2514,6 +2708,8 @@ void init_track_b(track_node *track) {
   track[114].edge[DIR_CURVED].src = &track[114];
   track[114].edge[DIR_CURVED].dest = &track[91];
   track[114].edge[DIR_CURVED].dist = 371;
+  track[114].segmentId = 5;
+
   track[115].name = "MR18";
   track[115].type = NODE_MERGE;
   track[115].num = 18;
@@ -2522,6 +2718,8 @@ void init_track_b(track_node *track) {
   track[115].edge[DIR_AHEAD].src = &track[115];
   track[115].edge[DIR_AHEAD].dest = &track[88];
   track[115].edge[DIR_AHEAD].dist = 155;
+  track[115].segmentId = 5;
+
   track[116].name = "BR153";
   track[116].type = NODE_BRANCH;
   track[116].num = 153;
@@ -2534,6 +2732,8 @@ void init_track_b(track_node *track) {
   track[116].edge[DIR_CURVED].src = &track[116];
   track[116].edge[DIR_CURVED].dest = &track[32];
   track[116].edge[DIR_CURVED].dist = 246;
+  track[116].segmentId = 24;
+
   track[117].name = "MR153";
   track[117].type = NODE_MERGE;
   track[117].num = 153;
@@ -2542,6 +2742,8 @@ void init_track_b(track_node *track) {
   track[117].edge[DIR_AHEAD].src = &track[117];
   track[117].edge[DIR_AHEAD].dest = &track[119];
   track[117].edge[DIR_AHEAD].dist = 0;
+  track[117].segmentId = 24;
+
   track[118].name = "BR154";
   track[118].type = NODE_BRANCH;
   track[118].num = 154;
@@ -2554,6 +2756,8 @@ void init_track_b(track_node *track) {
   track[118].edge[DIR_CURVED].src = &track[118];
   track[118].edge[DIR_CURVED].dest = &track[29];
   track[118].edge[DIR_CURVED].dist = 239;
+  track[118].segmentId = 24;
+
   track[119].name = "MR154";
   track[119].type = NODE_MERGE;
   track[119].num = 154;
@@ -2562,6 +2766,8 @@ void init_track_b(track_node *track) {
   track[119].edge[DIR_AHEAD].src = &track[119];
   track[119].edge[DIR_AHEAD].dest = &track[122];
   track[119].edge[DIR_AHEAD].dist = 0;
+  track[119].segmentId = 24;
+
   track[120].name = "BR155";
   track[120].type = NODE_BRANCH;
   track[120].num = 155;
@@ -2574,6 +2780,8 @@ void init_track_b(track_node *track) {
   track[120].edge[DIR_CURVED].src = &track[120];
   track[120].edge[DIR_CURVED].dest = &track[49];
   track[120].edge[DIR_CURVED].dist = 246;
+  track[120].segmentId = 24;
+
   track[121].name = "MR155";
   track[121].type = NODE_MERGE;
   track[121].num = 155;
@@ -2582,6 +2790,8 @@ void init_track_b(track_node *track) {
   track[121].edge[DIR_AHEAD].src = &track[121];
   track[121].edge[DIR_AHEAD].dest = &track[123];
   track[121].edge[DIR_AHEAD].dist = 0;
+  track[121].segmentId = 24;
+
   track[122].name = "BR156";
   track[122].type = NODE_BRANCH;
   track[122].num = 156;
@@ -2594,6 +2804,8 @@ void init_track_b(track_node *track) {
   track[122].edge[DIR_CURVED].src = &track[122];
   track[122].edge[DIR_CURVED].dest = &track[65];
   track[122].edge[DIR_CURVED].dist = 239;
+  track[122].segmentId = 24;
+
   track[123].name = "MR156";
   track[123].type = NODE_MERGE;
   track[123].num = 156;
@@ -2602,6 +2814,8 @@ void init_track_b(track_node *track) {
   track[123].edge[DIR_AHEAD].src = &track[123];
   track[123].edge[DIR_AHEAD].dest = &track[118];
   track[123].edge[DIR_AHEAD].dist = 0;
+  track[123].segmentId = 24;
+
   track[124].name = "EN1";
   track[124].type = NODE_ENTER;
   track[124].reverse = &track[125];
@@ -2609,9 +2823,13 @@ void init_track_b(track_node *track) {
   track[124].edge[DIR_AHEAD].src = &track[124];
   track[124].edge[DIR_AHEAD].dest = &track[117];
   track[124].edge[DIR_AHEAD].dist = 253;
+  track[124].segmentId = 24;
+
   track[125].name = "EX1";
   track[125].type = NODE_EXIT;
   track[125].reverse = &track[124];
+  track[125].segmentId = 24;
+
   track[126].name = "EN2";
   track[126].type = NODE_ENTER;
   track[126].reverse = &track[127];
@@ -2619,9 +2837,13 @@ void init_track_b(track_node *track) {
   track[126].edge[DIR_AHEAD].src = &track[126];
   track[126].edge[DIR_AHEAD].dest = &track[121];
   track[126].edge[DIR_AHEAD].dist = 282;
+  track[126].segmentId = 24;
+
   track[127].name = "EX2";
   track[127].type = NODE_EXIT;
   track[127].reverse = &track[126];
+  track[127].segmentId = 24;
+
   track[128].name = "EN3";
   track[128].type = NODE_ENTER;
   track[128].reverse = &track[129];
@@ -2629,9 +2851,13 @@ void init_track_b(track_node *track) {
   track[128].edge[DIR_AHEAD].src = &track[128];
   track[128].edge[DIR_AHEAD].dest = &track[35];
   track[128].edge[DIR_AHEAD].dist = 514;
+  track[128].segmentId = 6;
+
   track[129].name = "EX3";
   track[129].type = NODE_EXIT;
   track[129].reverse = &track[128];
+  track[129].segmentId = 6;
+
   track[130].name = "EN4";
   track[130].type = NODE_ENTER;
   track[130].reverse = &track[131];
@@ -2639,9 +2865,13 @@ void init_track_b(track_node *track) {
   track[130].edge[DIR_AHEAD].src = &track[130];
   track[130].edge[DIR_AHEAD].dest = &track[12];
   track[130].edge[DIR_AHEAD].dist = 325;
+  track[130].segmentId = 29;
+
   track[131].name = "EX4";
   track[131].type = NODE_EXIT;
   track[131].reverse = &track[130];
+  track[131].segmentId = 29;
+
   track[132].name = "EN5";
   track[132].type = NODE_ENTER;
   track[132].reverse = &track[133];
@@ -2649,9 +2879,13 @@ void init_track_b(track_node *track) {
   track[132].edge[DIR_AHEAD].src = &track[132];
   track[132].edge[DIR_AHEAD].dest = &track[0];
   track[132].edge[DIR_AHEAD].dist = 504;
+  track[132].segmentId = 28;
+
   track[133].name = "EX5";
   track[133].type = NODE_EXIT;
   track[133].reverse = &track[132];
+  track[133].segmentId = 28;
+
   track[134].name = "EN7";
   track[134].type = NODE_ENTER;
   track[134].reverse = &track[135];
@@ -2659,9 +2893,13 @@ void init_track_b(track_node *track) {
   track[134].edge[DIR_AHEAD].src = &track[134];
   track[134].edge[DIR_AHEAD].dest = &track[22];
   track[134].edge[DIR_AHEAD].dist = 43;
+  track[134].segmentId = 1;
+
   track[135].name = "EX7";
   track[135].type = NODE_EXIT;
   track[135].reverse = &track[134];
+  track[135].segmentId = 1;
+
   track[136].name = "EN9";
   track[136].type = NODE_ENTER;
   track[136].reverse = &track[137];
@@ -2669,9 +2907,13 @@ void init_track_b(track_node *track) {
   track[136].edge[DIR_AHEAD].src = &track[136];
   track[136].edge[DIR_AHEAD].dest = &track[24];
   track[136].edge[DIR_AHEAD].dist = 50;
+  track[136].segmentId = 3;
+
   track[137].name = "EX9";
   track[137].type = NODE_EXIT;
   track[137].reverse = &track[136];
+  track[137].segmentId = 3;
+
   track[138].name = "EN10";
   track[138].type = NODE_ENTER;
   track[138].reverse = &track[139];
@@ -2679,7 +2921,10 @@ void init_track_b(track_node *track) {
   track[138].edge[DIR_AHEAD].src = &track[138];
   track[138].edge[DIR_AHEAD].dest = &track[26];
   track[138].edge[DIR_AHEAD].dist = 50;
+  track[138].segmentId = 2;
+
   track[139].name = "EX10";
   track[139].type = NODE_EXIT;
   track[139].reverse = &track[138];
+  track[139].segmentId = 2;
 }
