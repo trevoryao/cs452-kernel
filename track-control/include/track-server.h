@@ -6,13 +6,16 @@
 #include "track-data.h"
 #include "track-node.h"
 
+#define N_SEGMENTS 31
+#define MAX_SEGMENTS_MSG 8
+
 enum TS_MSG_TYPE {
-    MSG_TS_REQUEST_SEGMENT,
-    MSG_TS_FREE_SEGMENT,
-    MSG_TS_CHECK_SEGMENT,
-    MSG_TS_SERVER_AVAILABLE,
-    MSG_TS_ACQUIRE_SERVER_LOCK,
-    MSG_TS_FREE_SERVER_LOCK,
+    MSG_TS_REQUEST_SEGMENTS_ALL_TIMEOUT,
+    MSG_TS_REQUEST_SEGMENTS_ONE_TIMEOUT,
+    MSG_TS_REQUEST_SEGMENTS_ALL_NO_TIMEOUT,
+    MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT,
+    MSG_TS_FREE_SEGMENTS,
+    MSG_TS_ASK_SEGMENT_FREE,
     MSG_TS_REQUEST_SUCCESS,
     MSG_TS_REQUEST_FAIL,
     MSG_TS_ERROR,
@@ -22,11 +25,11 @@ enum TS_MSG_TYPE {
 typedef struct msg_ts_server {
     enum TS_MSG_TYPE type;
     uint16_t trainNo;
-    uint16_t requesterTid;
-    track_node *node;
+    uint16_t segmentIDs[MAX_SEGMENTS_MSG];
+    uint8_t no_segments;
+    uint32_t timeout;
 } msg_ts_server;
 
-#define N_SEGMENTS 31
 
 void track_server_main();
 
