@@ -1,5 +1,6 @@
 #include "track-server.h"
 
+#include "deque.h"
 #include "msg.h"
 #include "task.h"
 #include "nameserver.h"
@@ -7,10 +8,9 @@
 #include "track.h"
 #include "track-data.h"
 #include "track-node.h"
+#include "track-segment-locking.h"
 #include "util.h"
 #include "rpi.h"
-
-#include "deque.h"
 
 extern track_node track[];
 #define N_SEGMENTS 31
@@ -94,14 +94,14 @@ void track_server_main() {
                 case MSG_TS_REQUEST_SEGMENT: {
                     // check if the direction is available
                     int segmentId = msg_received.node->segmentId;
-                    
+
                     if (lock_sectors[segmentId] != 0 && lock_sectors[segmentId] != msg_received.trainNo) {
                         replyFail(senderTid, msg_received.node, msg_received.trainNo);
                     } else {
                         lock_sectors[segmentId] = msg_received.trainNo;
                         replySuccess(senderTid, msg_received.node, msg_received.trainNo);
                     }
-                    
+
                     break;
                 }
 
@@ -117,22 +117,33 @@ void track_server_main() {
 
                     break;
                 }
-                
+
+                case MSG_TS_CHECK_SEGMENT: {
+                    int segmentId = msg_received.node->segmentId;
+                    if (lock_sectors[segmentId] != 0 && lock_sectors[segmentId] != msg_received.trainNo) {
+                        replySuccess(senderTid, msg_received.node, msg_received.trainNo);
+                    } else {
+                        replyFail(senderTid, msg_received.node, msg_received.trainNo);
+                    }
+
+                    break;
+                }
+
                 case MSG_TS_FREE_SERVER_LOCK: {
                     replySuccess(senderTid, NULL, 0);
-                    
+
                     // check if deque is empty
                     if (deque_empty(&waiting_tid)) {
                         process_lock_server = 0;
                     } else {
                         process_lock_server = deque_pop_front(&waiting_tid);
                         replySuccess(process_lock_server, NULL, 0);
-                    }                    
+                    }
                 }
-        
+
                 default:
                     break;
-            }   
+            }
         } else {
             replyFail(senderTid, NULL, 0);
         }
