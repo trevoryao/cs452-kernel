@@ -6,7 +6,7 @@
 #include "track-server.h"
 #include "deque.h"
 
-
+// TODO -> sanity check if segment is in allowed range!!!!
 void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->no_segments = 0;
 
@@ -52,10 +52,14 @@ int track_server_lock_one_segment_timeout(int tid, deque *segmentIDs, uint16_t t
 
    
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
-    return (msg_reply.type == MSG_TS_REQUEST_SUCCESS);
+    if (msg_reply.type == MSG_TS_REQUEST_SUCCESS) {
+        return msg_reply.segmentIDs[0];
+    } else {
+        return -1;
+    }
 }
 
-void track_server_lock_one_segment(int tid, deque *segmentIDs, uint16_t trainNo) {
+int track_server_lock_one_segment(int tid, deque *segmentIDs, uint16_t trainNo) {
     struct msg_ts_server msg_request, msg_reply;
     msg_request.type = MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT;
     msg_request.timeout = 0;
@@ -64,6 +68,11 @@ void track_server_lock_one_segment(int tid, deque *segmentIDs, uint16_t trainNo)
     copySegmentIDs(&msg_request, segmentIDs);
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+    if (msg_reply.type == MSG_TS_REQUEST_SUCCESS) {
+        return msg_reply.segmentIDs[0];
+    } else {
+        return -1;
+    }
 }
 
 void track_server_free_segments(int tid, deque *segmentIDs, uint16_t trainNo) {
