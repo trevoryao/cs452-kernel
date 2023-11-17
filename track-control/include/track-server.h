@@ -26,6 +26,7 @@ typedef struct msg_ts_server {
     track_node *node;
 } msg_ts_server;
 
+#define N_SEGMENTS 31
 
 void track_server_main();
 

@@ -13,8 +13,6 @@
 #include "rpi.h"
 
 extern track_node track[];
-#define N_SEGMENTS 31
-
 
 void replySuccess(int tid, track_node *node, uint16_t trainNo) {
     struct msg_ts_server msg_reply;
