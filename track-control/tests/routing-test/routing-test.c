@@ -14,6 +14,69 @@
 speed_data spd_data;
 track_node track[TRACK_MAX];
 
+static track_node *print_segment_route(routing_actions *route);
+
+void user_main(void) {
+    speed_data_init(&spd_data);
+    init_track_b(track);
+
+    int track_server_tid = 1; // Create(P_SERVER_HI, track_server_main);
+
+    routing_actions fwd_route;
+    routing_actions_init(&fwd_route);
+
+    routing_actions rv_route;
+    routing_actions_init(&rv_route);
+
+    routing_actions *chosen_route;
+
+    track_node *start = &track[65];
+    track_node *end = &track[32];
+    uint8_t trn = 77;
+    uint8_t spd = SPD_MED;
+
+    uart_printf(CONSOLE, "Planning route %s -> %s\r\n", start->name, end->name);
+
+    track_node *next_segment = start;
+
+    // edge case => from stationary
+    uint64_t ticks = get_curr_ticks();
+    plan_stopped_route(start, end, 0, trn, spd, track_server_tid, &fwd_route, &rv_route);
+    ticks = get_curr_ticks() - ticks;
+
+    uart_printf(CONSOLE, "From Stationary (Computation time %d.%dms)\r\n", ticks / 1000, ticks % 1000);
+
+    uart_printf(CONSOLE, "Forward:\r\n");
+    track_node *fwd_next_segment = print_segment_route(&fwd_route);
+
+    uart_printf(CONSOLE, "Backward:\r\n");
+    track_node *rv_next_segment = print_segment_route(&rv_route);
+
+    // determine which route to take
+    if (fwd_next_segment != NULL) {
+        uart_printf(CONSOLE, "Taking Forward Route\r\n");
+        next_segment = fwd_next_segment;
+        chosen_route = &fwd_route;
+    } else if (rv_next_segment != NULL) {
+        uart_printf(CONSOLE, "Taking Reverse Route\r\n");
+        next_segment = rv_next_segment;
+        chosen_route = &rv_route;
+    } else {
+        upanic("ERROR: no route found!");
+    }
+
+    // now to arbitrary case
+    while (chosen_route->state != FINAL_SEGMENT) {
+        uassert(chosen_route->state != ERR_NO_ROUTE);
+        uart_printf(CONSOLE, "Planning from %s\r\n", next_segment->name);
+        ticks = get_curr_ticks();
+        plan_in_progress_route(next_segment, end, 0, trn, spd, track_server_tid, chosen_route);
+        ticks = get_curr_ticks() - ticks;
+        uart_printf(CONSOLE, "\r\nNext Segment (Computation time %d.%dms)\r\n", ticks / 1000, ticks % 1000);
+        next_segment = print_segment_route(chosen_route);
+    }
+}
+
 static track_node *print_segment_route(routing_actions *route) {
     if (route->state == ERR_NO_ROUTE) {
         uart_printf(CONSOLE, "ERROR: no route found\r\n");
@@ -55,21 +118,19 @@ static track_node *print_segment_route(routing_actions *route) {
     while (!routing_action_queue_empty(&route->speed_changes)) {
         routing_action_queue_front(&route->speed_changes, &action);
 
-        char *action_str;
-
         switch (action.action_type) {
             case SPD_CHANGE:
-                uart_printf(CONSOLE, "Changed Speed to %d after %d ticks",
-                    action.action.spd, action.info.delay_ticks);
+                uart_printf(CONSOLE, "Changed Speed to %d after %dms",
+                    action.action.spd, action.info.delay_ticks * 10);
                 break;
             case SPD_REACHED:
-                uart_printf(CONSOLE, "Reached Speed %d after %d ticks",
-                    action.action.spd, action.info.delay_ticks);
+                uart_printf(CONSOLE, "Reached Speed %d after %dms",
+                    action.action.spd, action.info.delay_ticks * 10);
                 break;
             case DECISION_PT:
                 uassert(action.sensor_num != SENSOR_NONE)
-                uart_printf(CONSOLE, "Decision point: %d ticks",
-                    action.info.delay_ticks);
+                uart_printf(CONSOLE, "Decision point: %dms",
+                    action.info.delay_ticks * 10);
                 break;
             default:
                 upanic("Incorrect Action Type: %s\r\n", action);
@@ -92,61 +153,4 @@ static track_node *print_segment_route(routing_actions *route) {
     uart_printf(CONSOLE, "\r\n");
 
     return segment_end;
-}
-
-void user_main(void) {
-    speed_data_init(&spd_data);
-    init_track_b(track);
-
-    int track_server_tid = Create(P_SERVER_HI, track_server_main);
-
-    routing_actions fwd_route;
-    routing_actions_init(&fwd_route);
-
-    routing_actions rv_route;
-    routing_actions_init(&rv_route);
-
-    routing_actions *chosen_route;
-
-    track_node *start = &track[45];
-    track_node *end = &track[1];
-    uint8_t trn = 77;
-    uint8_t spd = SPD_MED;
-
-    uart_printf(CONSOLE, "Planning route %s -> %s\r\n", start->name, end->name);
-
-    track_node *next_segment = start;
-
-    // edge case => from stationary
-    uint64_t ticks = get_curr_ticks();
-    plan_stopped_route(start, end, 0, trn, spd, track_server_tid, &fwd_route, &rv_route);
-    ticks = get_curr_ticks() - ticks;
-
-    uart_printf(CONSOLE, "From Stationary (Computation time %d ticks)\r\n", ticks);
-
-    uart_printf(CONSOLE, "Forward:\r\n");
-    track_node *fwd_next_segment = print_segment_route(&fwd_route);
-
-    uart_printf(CONSOLE, "Backward:\r\n");
-    track_node *rv_next_segment = print_segment_route(&rv_route);
-
-    // determine which route to take
-    if (fwd_next_segment != NULL) {
-        next_segment = fwd_next_segment;
-        chosen_route = &fwd_route;
-    } else if (rv_next_segment != NULL) {
-        next_segment = rv_next_segment;
-        chosen_route = &rv_route;
-    } else {
-        upanic("ERROR: no route found!");
-    }
-
-    // now to arbitrary case
-    while (next_segment != end) {
-        ticks = get_curr_ticks();
-        plan_in_progress_route(start, end, 0, trn, spd, track_server_tid, chosen_route);
-        ticks = get_curr_ticks() - ticks;
-        uart_printf(CONSOLE, "\r\nNext Segment (Computation time %d ticks)\r\n", ticks);
-        next_segment = print_segment_route(chosen_route);
-    }
 }
