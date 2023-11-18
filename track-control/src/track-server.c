@@ -246,7 +246,6 @@ void track_server_main() {
                                 replySegment(train_data[i].requesterTid, locked_segmentId);
                             }
                         }
-
                     }
                 }
                 break;
