@@ -1,6 +1,7 @@
 #include "rpi.h"
 #include "uassert.h"
 
+#include "clock.h"
 #include "clock-server.h"
 #include "controller-consts.h"
 #include "routing.h"
@@ -20,7 +21,9 @@ void user_main(void) {
     speed_data_init(&spd_data);
     init_track_b(track);
 
-    int track_server_tid = 1; // Create(P_SERVER_HI, track_server_main);
+    int clock_tid = Create(P_SERVER_HI, clockserver_main);
+    int track_server_tid = Create(P_SERVER_HI, track_server_main);
+    Delay(clock_tid, 50);
 
     routing_actions fwd_route;
     routing_actions_init(&fwd_route);

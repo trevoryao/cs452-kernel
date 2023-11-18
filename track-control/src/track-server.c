@@ -26,7 +26,6 @@ static void reply(int tid, bool success) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
 
-
 static void replySegment(int tid, int segmentID) {
     struct msg_ts_server msg_reply;
     msg_reply.type = (segmentID == -1) ? MSG_TS_REQUEST_FAIL : MSG_TS_REQUEST_SUCCESS;
@@ -42,7 +41,6 @@ static void replyError(int tid) {
 
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
-
 
 static bool checkAllFree(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     for (int i = 0; i < no_requested_segments; i++) {
@@ -118,14 +116,12 @@ void track_server_main() {
     train_locking_structure train_data[N_TRNS];
     memset(train_data, 0, N_TRNS * sizeof(train_locking_structure));
 
-    
     // Start three notifiers and safe them in the train structure
     for (int i = 0; i < N_TRNS; i++) {
-        train_data[i].notifierTid = Create(P_MED, track_server_timeout_notifier);
+        train_data[i].notifierTid = Create(P_NOTIF, track_server_timeout_notifier);
         Delay(clock, 10);
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
     }
-
 
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
@@ -291,7 +287,7 @@ void track_server_timeout_notifier(void) {
     int clock = WhoIs(CLOCK_SERVER_NAME);
     int parent = MyParentTid();
 
-    
+
     msg_ts_server msg;
     msg.type = MSG_TS_NOTIF;
     msg.trainNo = 0;

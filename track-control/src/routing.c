@@ -201,10 +201,9 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
             // get segment locked state for fixed penalty
             if (segment_cache[node->segmentId] == SEGMENT_CACHE_NONE) {
-                // segment_cache[node->segmentId] =
-                //     track_server_segment_is_locked(track_server_tid, node->segmentId, trn)
-                //     ? SEGMENT_CACHE_LOCKED : SEGMENT_CACHE_UNLOCKED;
-                segment_cache[node->segmentId] = SEGMENT_CACHE_UNLOCKED;
+                segment_cache[node->segmentId] =
+                    track_server_segment_is_locked(track_server_tid, node->segmentId, trn)
+                    ? SEGMENT_CACHE_LOCKED : SEGMENT_CACHE_UNLOCKED;
             }
 
             int mult = (segment_cache[node->segmentId] == SEGMENT_CACHE_LOCKED)
@@ -316,7 +315,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     }
 
     if (node == end) {
-        upanic("Short Move! -- Not implemented\r\n");
+        ULOG("Short Move! -- Not implemented\r\n");
         return;
     }
 
