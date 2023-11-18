@@ -85,6 +85,12 @@ static track_node *print_segment_route(routing_actions *route) {
         routing_action_queue_pop_front(&route->speed_changes, NULL);
     }
 
+    uart_printf(CONSOLE, "Segments:");
+    while (!deque_empty(&route->segments)) {
+        uart_printf(CONSOLE, " %d", deque_pop_front(&route->segments));
+    }
+    uart_printf(CONSOLE, "\r\n");
+
     return segment_end;
 }
 
