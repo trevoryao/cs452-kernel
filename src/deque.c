@@ -71,7 +71,7 @@ int32_t deque_itr_get(deque *q, deque_itr itr) {
 deque_itr deque_begin(deque *q) { return q->front; }
 
 deque_itr deque_end(deque *q) {
-    return q->back + q->max_size;
+    return (q->front == q->back) ? (q->back + q->max_size) : q->back;
 }
 
 deque_itr deque_itr_next(deque_itr itr) {
