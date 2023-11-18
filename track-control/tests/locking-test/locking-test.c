@@ -43,17 +43,19 @@ void client1_test(void) {
     uart_printf(CONSOLE, "Client 1 - Woke up\r\n");
 
     bool success = track_server_lock_all_segments_timeout(tsTid, &segments, trainNo, 20);
-    uart_printf(CONSOLE, "Client 1 - locked all segments: %d", success);
+    uart_printf(CONSOLE, "Client 1 - locked all segments: %d\r\n", success);
 
     Delay(clock, 100);
 
+    uart_printf(CONSOLE, "Client 1 - freeing the segments\r\n");
     track_server_free_segments(tsTid, &segments, trainNo);
+    uart_printf(CONSOLE, "Client 1 - freed the segments\r\n");
 
     Delay(clock, 100);
 
     // try to lock one 
-    int segment = track_server_lock_one_segments_timeout(tsTid, &segments, trainNo, 100);
-    uart_printf(CONSOLE, "Client 1 - locked one segments: %d", segment);
+    int segment = track_server_lock_one_segment_timeout(tsTid, &segments, trainNo, 100);
+    uart_printf(CONSOLE, "Client 1 - locked one segments: %d\r\n", segment);
 
 
 }
@@ -75,23 +77,30 @@ void client2_test(void) {
     Delay(clock, 2);
     uart_printf(CONSOLE, "Client 2 - Woke up\r\n");
 
+    uart_printf(CONSOLE, "Client 2 -  trying to timeout lock\r\n");
     // trying to lock all with timeout
     bool success = track_server_lock_all_segments_timeout(tsTid, &segments, trainNo, 20);
-    uart_printf(CONSOLE, "Client 2 - locked all segments timeout - should fail: %d", success);
-
+    uart_printf(CONSOLE, "Client 2 - locked all segments timeout - should fail: %d\r\n", success);
 
     track_server_lock_all_segments(tsTid, &segments, trainNo);
-    uart_printf(CONSOLE, "Client 2 - locked all segments");
+    uart_printf(CONSOLE, "Client 2 - locked all segments\r\n");
 
     uart_printf(CONSOLE, "Client 2 - Done\r\n");
 }
 
 void user_main(void) {
     // start up clock, uart servers
-    Create(P_SERVER_HI, clockserver_main);
+    int clock = Create(P_SERVER_HI, clockserver_main);
     Create(P_SERVER_LO, console_server_main);
+
+    uart_printf(CONSOLE, "Test started\r\n");
+
     
     Create(P_SERVER_HI, track_server_main);
+
+    Delay(clock, 100);
+
+    uart_printf(CONSOLE, "Track server started\r\n");
 
     // reset track to get our loop
     speed_data_init(&spd_data);
@@ -99,4 +108,10 @@ void user_main(void) {
 
     Create(P_HIGH, client1_test);
     Create(P_HIGH, client2_test);
+
+    for(;;) {
+        // some stupid loop
+
+        Delay(clock, 1000);
+    }
 }
