@@ -285,7 +285,7 @@ static void train_tc(void) {
     routing_action_queue_init(&path);
     routing_action_queue_init(&spd_changes);
 
-    plan_route(params.start, params.end, params.offset, params.trn, SPD_STP, params.spd, &path, &spd_changes);
+    // plan_route(params.start, params.end, params.offset, params.trn, SPD_STP, params.spd, &path, &spd_changes);
 
     // flags to not overwhelm notifiers and not to excessively block
     bool waiting_route = false, waiting_spd = false;
