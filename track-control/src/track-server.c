@@ -18,7 +18,7 @@
 
 extern track_node track[];
 
-void reply(int tid, bool success) {
+static void reply(int tid, bool success) {
     struct msg_ts_server msg_reply;
     msg_reply.type = success ? MSG_TS_REQUEST_SUCCESS : MSG_TS_REQUEST_FAIL;
 
@@ -26,7 +26,7 @@ void reply(int tid, bool success) {
 }
 
 
-void replySegment(int tid, int segmentID) {
+static void replySegment(int tid, int segmentID) {
     struct msg_ts_server msg_reply;
     msg_reply.type = (segmentID == -1) ? MSG_TS_REQUEST_FAIL : MSG_TS_REQUEST_SUCCESS;
     msg_reply.segmentIDs[0] = segmentID;
@@ -35,7 +35,7 @@ void replySegment(int tid, int segmentID) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
 
-void replyError(int tid) {
+static void replyError(int tid) {
     struct msg_ts_server msg_reply;
     msg_reply.type = MSG_TS_ERROR;
 
@@ -43,9 +43,9 @@ void replyError(int tid) {
 }
 
 
-bool checkAllFree(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static bool checkAllFree(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     for (int i = 0; i < no_requested_segments; i++) {
-        int segment = requested_segments[i]; 
+        int segment = requested_segments[i];
         if (lock_segments[segment] != 0 && lock_segments[segment] != trainNo) {
             return false;
         }
@@ -53,14 +53,14 @@ bool checkAllFree(uint16_t *lock_segments, uint16_t *requested_segments, uint16_
     return true;
 }
 
-bool lockAll_Unsafe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static void lockAll_Unsafe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     for (int i = 0; i < no_requested_segments; i++) {
-        int segment = requested_segments[i]; 
+        int segment = requested_segments[i];
         lock_segments[segment] = trainNo;
     }
 }
 
-int lockOne_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static int lockOne_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     // go through all segments and return the first free segment
     for (int i = 0; i < no_requested_segments; i++) {
         int requested_id = requested_segments[i];
@@ -74,7 +74,7 @@ int lockOne_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t
     return -1;
 }
 
-bool lockAll_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static bool lockAll_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     // check if all are free
     if (checkAllFree(lock_segments, requested_segments, no_requested_segments, trainNo)) {
         lockAll_Unsafe(lock_segments, requested_segments, no_requested_segments, trainNo);
@@ -84,20 +84,20 @@ bool lockAll_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_
     }
 }
 
-void replyNotifier(int tid, uint16_t trainNo, uint16_t timeout) {
+static void replyNotifier(int tid, uint16_t trainNo, uint16_t timeout) {
     msg_ts_server msg;
-    msg.type = MSG_TS_NOTIF;  
+    msg.type = MSG_TS_NOTIF;
     msg.timeout = timeout;
     msg.trainNo = trainNo;
 
     Reply(tid, (char *)&msg, sizeof(msg_ts_server));
 }
 
-void copyTrainData(train_locking_structure *train_data, msg_ts_server *msg) {
+static void copyTrainData(train_locking_structure *train_data, msg_ts_server *msg) {
     train_data->no_segments = msg->no_segments;
     train_data->trainNo = msg->trainNo;
     train_data->timeout = msg->timeout;
-    
+
     memcpy(train_data->segmentIDs, msg->segmentIDs, sizeof(uint16_t) * MAX_SEGMENTS_MSG);
 }
 
@@ -119,8 +119,8 @@ void track_server_main() {
     // Start three notifiers and safe them in the train structure
     for (int i = 0; i < N_TRNS; i++) {
         train_data[i].notifierTid = Create(P_NOTIF, track_server_timeout_notifier);
-    } 
-    
+    }
+
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
 
@@ -132,8 +132,8 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ALL_TIMEOUT: {
-                // first check if it can lock all segments 
-                bool success = lockAll_Safe(&lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                // first check if it can lock all segments
+                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
 
                 if (success) {
@@ -143,8 +143,8 @@ void track_server_main() {
                     train_data[train_hash].all_segments_required = true;
                     train_data[train_hash].t_state = train_blocked_timeout;
                     train_data[train_hash].requesterTid = senderTid;
-                   
-                    // copy the rest 
+
+                    // copy the rest
                     copyTrainData(&train_data[train_hash], &msg_received);
 
                     // start notifier
@@ -154,7 +154,7 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ALL_NO_TIMEOUT: {
-                bool success = lockAll_Safe(&lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (success) {
                     train_data[train_hash].t_state = train_idle;
@@ -164,15 +164,15 @@ void track_server_main() {
                     train_data[train_hash].all_segments_required = true;
                     train_data[train_hash].t_state = train_blocked;
                     train_data[train_hash].requesterTid = senderTid;
-                   
-                    // copy the rest 
+
+                    // copy the rest
                     copyTrainData(&train_data[train_hash], &msg_received);
                 }
                 break;
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ONE_TIMEOUT: {
-                int locked_segmentId = lockOne_Safe(&lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                int locked_segmentId = lockOne_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (locked_segmentId != -1) {
                     train_data[train_hash].t_state = train_idle;
@@ -182,8 +182,8 @@ void track_server_main() {
                     train_data[train_hash].all_segments_required = false;
                     train_data[train_hash].t_state = train_blocked_timeout;
                     train_data[train_hash].requesterTid = senderTid;
-                   
-                    // copy the rest 
+
+                    // copy the rest
                     copyTrainData(&train_data[train_hash], &msg_received);
 
                     // start notifier
@@ -193,7 +193,7 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT: {
-                int locked_segmentId = lockOne_Safe(&lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                int locked_segmentId = lockOne_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (locked_segmentId != -1) {
                     train_data[train_hash].t_state = train_idle;
@@ -203,8 +203,8 @@ void track_server_main() {
                     train_data[train_hash].all_segments_required = false;
                     train_data[train_hash].t_state = train_blocked;
                     train_data[train_hash].requesterTid = senderTid;
-                   
-                    // copy the rest 
+
+                    // copy the rest
                     copyTrainData(&train_data[train_hash], &msg_received);
                 }
                 break;
@@ -230,15 +230,15 @@ void track_server_main() {
                         int train_hash = trn_hash(msg_received.trainNo);
                         // try to assign the locks to it
                         if (train_data[i].all_segments_required) {
-                            bool success = lockAll_Safe(&lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
-                            
+                            bool success = lockAll_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+
                             // only reply if success -> else ignore
                             if (success) {
                                 train_data[i].t_state = train_idle;
                                 reply(train_data[i].requesterTid, true);
                             }
                         } else {
-                            int locked_segmentId = lockOne_Safe(&lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                            int locked_segmentId = lockOne_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
 
                             // only reply if success
                             if (locked_segmentId != -1) {
@@ -260,10 +260,10 @@ void track_server_main() {
 
                     // try to lock the segments
                     if (train_data[train_hash].all_segments_required) {
-                        bool success = lockAll_Safe(&lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        bool success = lockAll_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         reply(train_data[train_hash].requesterTid, success);
                     } else {
-                        int lockedSegment = lockOne_Safe(&lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        int lockedSegment = lockOne_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         replySegment(train_data[train_hash].requesterTid, lockedSegment);
                     }
                 } else {
@@ -280,7 +280,6 @@ void track_server_main() {
         }
     }
 }
-
 
 void track_server_timeout_notifier() {
     int clock = WhoIs(CLOCK_SERVER_NAME);
