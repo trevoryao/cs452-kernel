@@ -21,6 +21,7 @@
 #include "track-segment-locking.h"
 #include "track-server.h"
 #include "nameserver.h"
+#include "deque.h"
 
 speed_data spd_data;
 track_node track[TRACK_MAX];
@@ -32,56 +33,57 @@ void client1_test(void) {
 
     int trainNo = 77;
 
+    deque segments;
+    deque_init(&segments, 4);
+
+    deque_push_back(&segments, 3);
+    deque_push_back(&segments, 4);
+    deque_push_back(&segments, 5);
+
     uart_printf(CONSOLE, "Client 1 - Woke up\r\n");
-    track_server_acquire_server_lock(tsTid, trainNo);
 
-    uart_printf(CONSOLE, "Client 1 - Acquired server lock\r\n");
-    // locking segment 21
-    bool lock1 = track_server_lock_segment(tsTid, &track[17], trainNo);
-    uart_printf(CONSOLE, "Client 1 - Locked segment 15 from B1: %d\r\n", lock1);
+    bool success = track_server_lock_all_segments_timeout(tsTid, &segments, trainNo, 20);
+    uart_printf(CONSOLE, "Client 1 - locked all segments: %d", success);
 
-    bool lock2 = track_server_lock_segment(tsTid, &track[18], trainNo);
-    uart_printf(CONSOLE, "Client 1 - Locked segment 26 from B3: %d\r\n", lock2);
+    Delay(clock, 100);
 
-    // make sure other task is scheduled
-    Delay(clock, 20);
-    
-    bool lock3 = track_server_lock_segment(tsTid, &track[30], trainNo);
-    uart_printf(CONSOLE, "Client 1 - Locked segment 10 from B15: %d\r\n", lock3);
+    track_server_free_segments(tsTid, &segments, trainNo);
 
-    track_server_free_segment(tsTid, &track[17], trainNo);
-    uart_printf(CONSOLE, "Client 1 - Freed segment 15\r\n");
+    Delay(clock, 100);
 
-    track_server_free_server_lock(tsTid, trainNo);
-    uart_printf(CONSOLE, "Client 1 - done\r\n");
+    // try to lock one 
+    int segment = track_server_lock_one_segments_timeout(tsTid, &segments, trainNo, 100);
+    uart_printf(CONSOLE, "Client 1 - locked one segments: %d", segment);
+
 
 }
 
 void client2_test(void) {
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
     int tsTid = WhoIs(TS_SERVER_NAME);
+    int clock = WhoIs(CLOCK_SERVER_NAME);
+
 
     int trainNo = 24;
 
+    deque segments;
+    deque_init(&segments, 4);
+    deque_push_back(&segments, 3);
+    deque_push_back(&segments, 4);
+    deque_push_back(&segments, 6);
+
+    Delay(clock, 2);
     uart_printf(CONSOLE, "Client 2 - Woke up\r\n");
-    track_server_acquire_server_lock(tsTid, trainNo);
 
-    uart_printf(CONSOLE, "Client 2 - Acquired server lock\r\n");
-    // locking segment 21
-    bool lock2 = track_server_lock_segment(tsTid, &track[18], trainNo);
-    uart_printf(CONSOLE, "Client 2 - trying to lock segment 26 should fail: %d\r\n", lock2);
-
-    // locking segment 21
-    bool lock3 = track_server_lock_segment(tsTid, &track[3], trainNo);
-    uart_printf(CONSOLE, "Client 2 - trying to lock segment 10 from A4 - should fail: %d\r\n", lock3);
+    // trying to lock all with timeout
+    bool success = track_server_lock_all_segments_timeout(tsTid, &segments, trainNo, 20);
+    uart_printf(CONSOLE, "Client 2 - locked all segments timeout - should fail: %d", success);
 
 
-    bool lock4 = track_server_lock_segment(tsTid, &track[73], trainNo);
-    uart_printf(CONSOLE, "Client 2 - trying to lock segment 15 from  E10 - should work: %d\r\n", lock4);
+    track_server_lock_all_segments(tsTid, &segments, trainNo);
+    uart_printf(CONSOLE, "Client 2 - locked all segments");
 
-    track_server_free_server_lock(tsTid, trainNo);
-    uart_printf(CONSOLE, "Client 2 - done\r\n");
-
+    uart_printf(CONSOLE, "Client 2 - Done\r\n");
 }
 
 void user_main(void) {
