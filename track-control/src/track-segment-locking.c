@@ -5,13 +5,15 @@
 #include "msg.h"
 #include "track-server.h"
 #include "deque.h"
+#include "rpi.h"
 
 // TODO -> sanity check if segment is in allowed range!!!!
 void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->no_segments = 0;
 
-    while (!deque_empty(segments)) {
-        msg->segmentIDs[msg->no_segments] = deque_pop_front(segments);
+    for (deque_itr it = deque_begin(segments); it != deque_end(segments); it = deque_itr_next(it)) {
+        int value = deque_itr_get(segments, it); 
+        msg->segmentIDs[msg->no_segments] = value;
         msg->no_segments += 1;
     }
 }

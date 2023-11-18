@@ -15,6 +15,7 @@
 #include "clock.h"
 #include "task.h"
 #include "uassert.h"
+#include "speed.h"
 
 extern track_node track[];
 
@@ -107,6 +108,8 @@ void track_server_main() {
 
     RegisterAs(TS_SERVER_NAME);
 
+    int clock = WhoIs(CLOCK_SERVER_NAME);
+
     // data structures for keeping the locks
     uint16_t lock_sectors[N_SEGMENTS];
     memset(lock_sectors, 0, sizeof(uint16_t) * N_SEGMENTS);
@@ -115,11 +118,14 @@ void track_server_main() {
     train_locking_structure train_data[N_TRNS];
     memset(train_data, 0, N_TRNS * sizeof(train_locking_structure));
 
-
+    
     // Start three notifiers and safe them in the train structure
     for (int i = 0; i < N_TRNS; i++) {
-        train_data[i].notifierTid = Create(P_NOTIF, track_server_timeout_notifier);
+        train_data[i].notifierTid = Create(P_MED, track_server_timeout_notifier);
+        Delay(clock, 10);
+        Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
     }
+
 
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
@@ -227,10 +233,9 @@ void track_server_main() {
                 // go through the list of trains and check if some train is blocked
                 for(int i = 0; i < N_TRNS; i++) {
                     if (train_data[i].trainNo != msg_received.trainNo && train_data[i].t_state == train_blocked) {
-                        int train_hash = trn_hash(msg_received.trainNo);
                         // try to assign the locks to it
                         if (train_data[i].all_segments_required) {
-                            bool success = lockAll_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                            bool success = lockAll_Safe(lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
 
                             // only reply if success -> else ignore
                             if (success) {
@@ -238,7 +243,7 @@ void track_server_main() {
                                 reply(train_data[i].requesterTid, true);
                             }
                         } else {
-                            int locked_segmentId = lockOne_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                            int locked_segmentId = lockOne_Safe(lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
 
                             // only reply if success
                             if (locked_segmentId != -1) {
@@ -246,7 +251,6 @@ void track_server_main() {
                                 replySegment(train_data[i].requesterTid, locked_segmentId);
                             }
                         }
-
                     }
                 }
                 break;
@@ -281,10 +285,13 @@ void track_server_main() {
     }
 }
 
-void track_server_timeout_notifier() {
+void track_server_timeout_notifier(void) {
+    //int clock = WhoIs(CLOCK_SERVER_NAME);
+
     int clock = WhoIs(CLOCK_SERVER_NAME);
     int parent = MyParentTid();
 
+    
     msg_ts_server msg;
     msg.type = MSG_TS_NOTIF;
     msg.trainNo = 0;
