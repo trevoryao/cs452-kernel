@@ -91,7 +91,49 @@ void speed_data_init(speed_data *data) {
     data->stopping_data[2][3] = 768428; // 11 -> 0
 
 
-    // short moves data
+    // short moves data 
+    // tr 24
+    data->short_moves[0][0] = 195000;   // 150
+    data->short_moves[0][1] = 245000;   // 175
+    data->short_moves[0][2] = 270000;   // 200
+    data->short_moves[0][3] = 320000;   // 225
+    data->short_moves[0][4] = 355000;   // 250
+    data->short_moves[0][5] = 400000;   // 275
+    data->short_moves[0][6] = 440000;   // 300
+    data->short_moves[0][7] = 470000;   // 325
+    data->short_moves[0][8] = 520000;   // 350
+    data->short_moves[0][9] = 570000;   // 375
+    data->short_moves[0][10] = 600000;  // 400
+    data->short_moves[0][11] = 640000;  // 425
+    data->short_moves[0][12] = 680000;  // 450
+    data->short_moves[0][13] = 730000;  // 475
+    data->short_moves[0][14] = 770000;  // 500
+    data->short_moves[0][15] = 815000;  // 525
+    data->short_moves[0][16] = 855000;  // 550
+    data->short_moves[0][16] = 900000;  // 575
+
+        
+    // tr 58
+    data->short_moves[1][0] = 170000;   // 150
+    data->short_moves[1][1] = 210000;   // 175
+    data->short_moves[1][2] = 250000;   // 200
+    data->short_moves[1][3] = 285000;   // 225
+    data->short_moves[1][4] = 320000;   // 250
+    data->short_moves[1][5] = 365000;   // 275
+    data->short_moves[1][6] = 400000;   // 300
+    data->short_moves[1][7] = 430000;   // 325
+    data->short_moves[1][8] = 475000;   // 350
+    data->short_moves[1][9] = 530000;   // 375
+    data->short_moves[1][10] = 555000;  // 400
+    data->short_moves[1][11] = 590000;  // 425
+    data->short_moves[1][12] = 630000;  // 450
+    data->short_moves[1][13] = 670000;  // 475
+    data->short_moves[1][14] = 700000;  // 500
+    data->short_moves[1][15] = 750000;  // 525
+    data->short_moves[1][16] = 780000;  // 550
+    data->short_moves[1][17] = 810000;  // 575
+
+    // tr 77
     data->short_moves[2][0] = 185000;
     data->short_moves[2][1] = 235000;
     data->short_moves[2][2] = 270000;
@@ -103,9 +145,13 @@ void speed_data_init(speed_data *data) {
     data->short_moves[2][8] = 520000;
     data->short_moves[2][9] = 570000;
     data->short_moves[2][10] = 620000;
-    data->short_moves[2][11] = 710000;
-    data->short_moves[2][12] = 750000;
-    data->short_moves[2][13] = 800000;
+    data->short_moves[2][11] = 670000;
+    data->short_moves[2][12] = 710000;
+    data->short_moves[2][13] = 750000;
+    data->short_moves[2][14] = 820000;
+    data->short_moves[2][15] = 850000;
+    data->short_moves[2][16] = 940000;
+    data->short_moves[2][17] = 980000;
 }
 
 int32_t get_velocity(speed_data *data, uint16_t n, uint16_t s) {
@@ -278,7 +324,7 @@ int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal)
     int train_hash = trn_hash(trn);
     // first get the right two time steps
     int i = 0;
-    int32_t distance = data->short_moves[train_hash][i];
+    uint32_t distance = data->short_moves[train_hash][i];
     while ((i < N_SHORT_MOVES) && (dist_goal > distance)) {
         i += 1;
         distance = data->short_moves[train_hash][i];
@@ -292,7 +338,7 @@ int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal)
 
     // interpolate between the two distances
     int point1 = SHORT_MOVES_BASE + (i-1) * SHORT_MOVES_STEPS;
-    int point2 = SHORT_MOVES_BASE + i * SHORT_MOVES_STEPS;
+    //int point2 = SHORT_MOVES_BASE + i * SHORT_MOVES_STEPS;
 
 
     // slope
