@@ -260,6 +260,133 @@ void acceleration_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint
     }
 }
 
+void acceleration_speed_adaptive(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_um, uint8_t base_speed, uint8_t goal_speed) {
+    speed_t speed;
+    speed_t_init(&speed);
+
+    const uint8_t BASE_SPD = base_speed;
+    uint8_t START_SEN[2] = {'E' - 'A' + 1, 12};
+    uint8_t SPEED_SENS[2] = {'C' - 'A' + 1, 6};
+
+    int64_t dist = 0;
+
+    // Compute the distance of measurement
+    track_node *node = &track[75]; // E12
+    while (node != &track[37]) { // C6
+        if (node->type == NODE_BRANCH) {
+            dist += node->edge[DIR_STRAIGHT].dist;
+            node = node->edge[DIR_STRAIGHT].dest;
+        } else {
+            dist += node->edge[DIR_AHEAD].dist;
+            node = node->edge[DIR_AHEAD].dest;
+        }
+    }
+
+    // start throws all necessary switches
+    Printf(console, "Distance 1: %u mm\r\n", dist);
+
+    for (int i = 0; i < N_TRNS; ++i) {
+        // train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
+        Printf(console, "Place Train %d before sensor A7 and press any key: ", ALL_TRNS[i]);
+        Getc(console);
+        Puts(console, "\r\n");
+
+        Printf(console, "Speed: %d<->%d\r\n", BASE_SPD, goal_speed);
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
+        sensor_discard_all(marklin);
+
+        // run it in a loop two times 1 loop acceleration, second deacceleration
+        wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+        Printf(console, "running train in a loop once\r\n");
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], goal_speed);
+        sensor_discard_all(marklin);
+
+        wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+        sensor_discard_all(marklin);
+
+        // second loop back to base speed
+        wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], BASE_SPD);
+        sensor_discard_all(marklin);
+
+        wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+        sensor_discard_all(marklin);
+
+
+        Printf(console, "reached end sensor - discarding sensor data and starting measurements\r\n");
+
+
+        int64_t t[2][N_TESTS];
+
+        for (int j = 0; j < 2 * N_TESTS; ++j) {
+            // WTF?
+            wait_sensor_activate(marklin, START_SEN[0], START_SEN[1]);
+            t[j % 2][j / 2] = get_curr_ticks();
+            train_mod_speed(marklin, &speed, ALL_TRNS[i], (j % 2 == 0) ? goal_speed : BASE_SPD);
+            Printf(console, COL_GRN "start sensor triggered (%d)\r\n" COL_RST, j);
+            sensor_discard(marklin, START_SEN[0]);
+
+            wait_sensor_activate(marklin, SPEED_SENS[0], SPEED_SENS[1]);
+            t[j % 2][j / 2] = get_curr_ticks() - t[j % 2][j / 2]; // end - start
+            Printf(console, COL_GRN "end sensor triggered (%d)\r\n" COL_RST, j);
+            sensor_discard(marklin, SPEED_SENS[0]);
+        }
+
+        int64_t t_x[2][N_TESTS];
+
+        // acceleration
+        int64_t v1 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
+        int64_t v2 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+        Printf(console, "Got velocities v1 %d and v2 %d\r\n", v1, v2);
+
+
+        int64_t a_avg = 0;
+        for (int j = 0; j < N_TESTS; ++j) {
+            t_x[0][j] = (2 * ((dist * 1000000000) - (v2 * t[0][j]))) / (v1 - v2);
+            a_avg += (1000000LL * (v2 - v1)) / t_x[0][j];
+
+            Printf(console, "Measured time t: %d, t_x: %d, a_avg %d, dist %d\r\n", t[0][j], t_x[0][j], a_avg, dist);
+        }
+
+        a_avg /= N_TESTS;
+        Printf(console, "Avg Acceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
+
+        // deacceleration
+        v1 = get_velocity(&spd_data, ALL_TRNS[i], goal_speed);
+        v2 = get_velocity(&spd_data, ALL_TRNS[i], BASE_SPD);
+
+        a_avg = 0;
+        for (int j = 0; j < N_TESTS; ++j) {
+            t_x[1][j] = (2 * ((dist * 1000000000) - (v2 * t[1][j]))) / (v1 - v2);
+            a_avg += (1000000LL * (v2 - v1)) / t_x[1][j];
+        }
+
+        a_avg /= N_TESTS;
+        Printf(console, "Avg Deacceleration (%d->%d over %d mm): %d um/s2\r\n", v1, v2, dist, a_avg);
+
+        time_t t_t;
+        time_t tx_t;
+
+        Printf(console, "Acceleration Data:\r\n");
+        for (int j = 0; j < N_TESTS; ++j) {
+            time_from_sys_ticks(&t_t, t[0][j]);
+            time_from_sys_ticks(&tx_t, t_x[0][j]);
+            Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
+        }
+        Printf(console, "\r\n");
+
+        Printf(console, "Deacceleration Data:\r\n");
+        for (int j = 0; j < N_TESTS; ++j) {
+            time_from_sys_ticks(&t_t, t[1][j]);
+            time_from_sys_ticks(&tx_t, t_x[1][j]);
+            Printf(console, "(%d) measured time: %u:%u calculated time: %u:%u\t\t", j, t_t.sec, t_t.tsec, tx_t.sec, tx_t.tsec);
+        }
+        Printf(console, "\r\n");
+
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
+    }
+}
+
 void stopping_distance(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_loop_mm) {
     speed_t speed;
     speed_t_init(&speed);
@@ -414,11 +541,11 @@ void stop_train_at_sensor(uint16_t clock, uint16_t console, uint16_t marklin, sp
     sensor_discard(marklin, 4);
 }
 
-void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_um) {
+void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_um, uint8_t target_spd) {
     speed_t speed;
     speed_t_init(&speed);
 
-    const uint8_t TARGET_SPD = 7;
+    const uint8_t TARGET_SPD = target_spd;
 
     int64_t dist = 0;
     track_node *node = &track[58]; // D11
@@ -455,7 +582,7 @@ void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, 
         Getc(console);
         Puts(console, "\r\n");
 
-        Printf(console, "Speed: 0 -> 7\r\n");
+        Printf(console, "Speed: 0 -> %d\r\n", target_spd);
 
         int64_t t[N_TESTS];
 
@@ -503,6 +630,42 @@ void acceleration_from_zero(uint16_t clock, uint16_t console, uint16_t marklin, 
     }
 }
 
+void short_moves(int clock,  int console, int marklin) { 
+    speed_t speed;
+    speed_t_init(&speed);
+
+    uint8_t trainNo = 77;
+    uint8_t TARGET_SPD = 7;
+    uint8_t amount_delays = 15;
+    uint32_t TIME_DELAYS[15] = {150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500};
+    int i = 0;
+    while (i < 15) {
+        Printf(console, "Place Train %d at start - running with time %d\r\n", trainNo, TIME_DELAYS[i]);
+        Getc(console);
+        Puts(console, "\r\n");
+
+        int time = Time(clock);
+        train_mod_speed(marklin, &speed, trainNo, TARGET_SPD);
+
+        DelayUntil(clock, time + TIME_DELAYS[i]);
+
+        train_mod_speed(marklin, &speed, trainNo, 0);
+        Printf(console, "repeat or continue?\r\n", trainNo, TIME_DELAYS[i]);
+        char c = Getc(console);
+        if (c != 'r') {
+            i = i+1;
+        }
+    } 
+    
+}
+
+void short_move_test(int console) {
+    int distances[8] = {190000, 235000, 270000, 280000, 560000, 650000, 730000, 800000};
+    for (int i = 0; i < 8; i++) {
+        Printf(console, "distance %d, delay %d\r\n", distances[i], get_short_move_delay(&spd_data, 77, distances[i]));
+    }
+}
+
 void user_main(void) {
     // start up clock, uart servers
     uint16_t clock = Create(P_SERVER_HI, clockserver_main);
@@ -540,10 +703,14 @@ void user_main(void) {
 
     // constant_speed(clock, console, marklin, dist_um);
     // acceleration_speed(clock, console, marklin, dist_um);
-    stopping_distance(clock, console, marklin, dist_um);
+    // stopping_distance(clock, console, marklin, dist_um);
     // manual_testing(clock, console, marklin, dist_um, 520, 24);
     // stop_train_at_sensor(clock, console, marklin, 58);
     // acceleration_from_zero(clock, console, marklin, dist_um);
+    //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
+
+    //short_moves(clock, console, marklin);
+    acceleration_from_zero(clock, console, marklin, dist_um, 9);
 
     WaitOutputEmpty(marklin);
 }

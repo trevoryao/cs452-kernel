@@ -5,7 +5,11 @@
 
 // space saving for the trns buf, ugly ugly ugly
 #define N_TRNS 3
-static const uint8_t ALL_TRNS[N_TRNS] = {24, 58, 77};
+#define N_SHORT_MOVES 14
+static const uint8_t ALL_TRNS[N_TRNS] = {58, 77};
+
+static const uint32_t SHORT_MOVES_BASE = 150;
+static const uint32_t SHORT_MOVES_STEPS = 25;
 
 enum SPEEDS {
     SPD_STP = 0,
