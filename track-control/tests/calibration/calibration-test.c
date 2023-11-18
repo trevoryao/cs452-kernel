@@ -634,12 +634,12 @@ void short_moves(int clock,  int console, int marklin) {
     speed_t speed;
     speed_t_init(&speed);
 
-    uint8_t trainNo = 77;
+    uint8_t trainNo = 24;
     uint8_t TARGET_SPD = 7;
     uint8_t amount_delays = 15;
-    uint32_t TIME_DELAYS[15] = {150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500};
+    uint32_t TIME_DELAYS[18] = {575, 550, 525, 500, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475};
     int i = 0;
-    while (i < 15) {
+    while (i < 17) {
         Printf(console, "Place Train %d at start - running with time %d\r\n", trainNo, TIME_DELAYS[i]);
         Getc(console);
         Puts(console, "\r\n");
@@ -659,10 +659,23 @@ void short_moves(int clock,  int console, int marklin) {
     
 }
 
-void short_move_test(int console) {
-    int distances[8] = {190000, 235000, 270000, 280000, 560000, 650000, 730000, 800000};
-    for (int i = 0; i < 8; i++) {
-        Printf(console, "distance %d, delay %d\r\n", distances[i], get_short_move_delay(&spd_data, 77, distances[i]));
+void short_move_test(int clock,  int console, int marklin) {
+    speed_t speed;
+    speed_t_init(&speed);
+
+    int trainNo = 77;
+    int distances[12] = {200000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000, 650000, 700000, 750000};
+    for (int i = 0; i < 12; i++) {
+        int delay = get_short_move_delay(&spd_data, trainNo, distances[i]);
+        Printf(console, "Testing train %d with distance %d and delay %d\r\n", trainNo, distances[i], get_short_move_delay(&spd_data, 77, distances[i]));
+        Getc(console);
+
+        train_mod_speed(marklin, &speed, trainNo, 7);
+
+        Delay(clock, delay);
+
+        train_mod_speed(marklin, &speed, trainNo, 0);
+
     }
 }
 
@@ -709,8 +722,8 @@ void user_main(void) {
     // acceleration_from_zero(clock, console, marklin, dist_um);
     //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
 
-    //short_moves(clock, console, marklin);
-    acceleration_from_zero(clock, console, marklin, dist_um, 9);
+    short_move_test(clock, console, marklin);
+    //acceleration_from_zero(clock, console, marklin, dist_um, 9);
 
     WaitOutputEmpty(marklin);
 }

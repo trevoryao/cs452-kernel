@@ -4,13 +4,15 @@
 #include "speed.h"
 
 #define REVERSE_OFFSET 120 // mm
+#define SHORT_MOVE_MIN 200000 // = 20cm
+#define SHORT_MOVE_MAX 800000 // = 80cm
 
 typedef struct speed_data {
     // all data in um/s / um/s2
     uint32_t velocity_data[N_TRNS][N_SPDS];
     int32_t acceleration_data[N_TRNS][N_SPDS][N_SPDS]; // start, stop speeds
     int32_t stopping_data[N_TRNS][N_SPDS]; // all from spd -> 0
-    int32_t short_moves[N_TRNS][N_SHORT_MOVES];
+    uint32_t short_moves[N_TRNS][N_SHORT_MOVES];
 } speed_data;
 
 void speed_data_init(speed_data *data);
