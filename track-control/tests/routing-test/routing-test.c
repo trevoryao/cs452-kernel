@@ -33,7 +33,7 @@ void user_main(void) {
 
     route *chosen_route;
 
-    track_node *start = &track[45];
+    track_node *start = track[45].reverse;
     track_node *end = &track[1];
     uint8_t trn = 77;
     uint8_t spd = SPD_MED;
@@ -55,15 +55,17 @@ void user_main(void) {
     uart_printf(CONSOLE, "Backward:\r\n");
     track_node *rv_next_segment = print_segment_route(&rv_route);
 
+    rv_next_segment = NULL; // throwaway
+
     // determine which route to take
-    if (fwd_next_segment != NULL) {
-        uart_printf(CONSOLE, "Taking Forward Route\r\n");
-        next_segment = fwd_next_segment;
-        chosen_route = &fwd_route;
-    } else if (rv_next_segment != NULL) {
+    if (rv_next_segment != NULL) {
         uart_printf(CONSOLE, "Taking Reverse Route\r\n");
         next_segment = rv_next_segment;
         chosen_route = &rv_route;
+    } else if (fwd_next_segment != NULL) {
+        uart_printf(CONSOLE, "Taking Forward Route\r\n");
+        next_segment = fwd_next_segment;
+        chosen_route = &fwd_route;
     } else {
         upanic("ERROR: no route found!");
     }
@@ -71,7 +73,6 @@ void user_main(void) {
     // now to arbitrary case
     while (chosen_route->state != FINAL_SEGMENT) {
         uassert(chosen_route->state != ERR_NO_ROUTE);
-        uart_printf(CONSOLE, "Planning from %s\r\n", next_segment->name);
         ticks = get_curr_ticks();
         plan_in_progress_route(next_segment, end, 0, trn, spd, track_server_tid, chosen_route);
         ticks = get_curr_ticks() - ticks;
@@ -87,6 +88,10 @@ static track_node *print_segment_route(route *route) {
     }
 
     routing_action action;
+
+    // get segment_end
+    routing_action_queue_pop_back(&route->path, &action);
+    track_node *segment_end = &track[action.sensor_num];
 
     uart_printf(CONSOLE, "Route:\r\n");
     while (!routing_action_queue_empty(&route->path)) {
@@ -114,8 +119,6 @@ static track_node *print_segment_route(route *route) {
 
         routing_action_queue_pop_front(&route->path, NULL);
     }
-
-    track_node *segment_end = &track[action.sensor_num];
 
     uart_printf(CONSOLE, "Speed Changes:\r\n");
     while (!routing_action_queue_empty(&route->speed_changes)) {
@@ -152,9 +155,9 @@ static track_node *print_segment_route(route *route) {
 
     uart_printf(CONSOLE, "Decision Point: ");
     if (route->decision_pt.sensor_num == SENSOR_NONE) {
-        uart_printf(CONSOLE, "N/A");
+        uart_printf(CONSOLE, "N/A\r\n");
     } else {
-        uart_printf(CONSOLE, "%dms (after Sensor %c%d)", route->decision_pt.ticks * 10,
+        uart_printf(CONSOLE, "%dms (after Sensor %c%d)\r\n", route->decision_pt.ticks * 10,
             SENSOR_MOD(route->decision_pt.sensor_num) + 'A' - 1, SENSOR_NO(route->decision_pt.sensor_num));
     }
 

@@ -12,7 +12,7 @@ int deque_init(deque *q, uint16_t size) {
     q->back = 0;
 
     // don't want to, but can cause issues on boot up for some reason
-    // memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
+    memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
     return 0;
 }
 
@@ -27,7 +27,7 @@ void deque_move(deque *q, deque *other) {
     q->max_size = other->max_size;
 
     // don't want to, but can cause issues on boot up for some reason
-    // memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
+    memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
 
     while (!deque_empty(other)) {
         deque_push_back(q, deque_pop_front(other));

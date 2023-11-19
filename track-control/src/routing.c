@@ -132,7 +132,7 @@ static void dump_branches(route *route, deque *branches) {
     routing_action action;
 
     while (!deque_empty(branches)) {
-        ULOG("Stopping Branches Loop\r\n");
+        ULOG("Branches Loop\r\n");
         track_node *branch_node = &track[deque_pop_front(branches)];
         int8_t branch_dir = deque_pop_front(branches);
 
@@ -143,9 +143,11 @@ static void dump_branches(route *route, deque *branches) {
         action.info.delay_ticks = 0;
         routing_action_queue_push_front(&route->path, &action);
     }
+
+    ULOG("Exit dump branches\r\n");
 }
 
-static const int32_t DECISION_PT_OFFSET = -100 * MM_TO_UM;
+static const int32_t DECISION_PT_OFFSET = -65 * MM_TO_UM;
 static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
 // main method for path finding
@@ -156,6 +158,8 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS start_spd,
     enum SPEEDS target_spd, bool include_first_node,
     int track_server_tid, route *route) {
+
+    ULOG("plan direct route from %s\r\n", start_node->name);
 
     int32_t dist[TRACK_MAX]; // actual dist (speed calculations)
     int32_t weighted_dist[TRACK_MAX]; // modified path weight dependent of locked state, etc
@@ -221,10 +225,12 @@ plan_direct_route(track_node *start_node, track_node *end_node,
             int32_t alt_path_weighted_dist = dist[HASH(node)] + (mult * node->edge[i].dist);
 
             if (alt_path_weighted_dist < weighted_dist[HASH(nbr)]) {
-                weighted_dist[HASH(nbr)] = alt_path_weighted_dist;
-                dist[HASH(nbr)] = alt_path_dist;
-                prev[HASH(nbr)] = node;
-                uassert(priority_queue_decrease(&pq, nbr, alt_path_weighted_dist));
+                // must account for not visited case
+                if (priority_queue_decrease(&pq, nbr, alt_path_weighted_dist)) {
+                    weighted_dist[HASH(nbr)] = alt_path_weighted_dist;
+                    dist[HASH(nbr)] = alt_path_dist;
+                    prev[HASH(nbr)] = node;
+                }
             }
         }
     }
@@ -234,7 +240,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     int32_t accel_dist = get_distance_from_acceleration(&spd_data, trn,
         start_spd, target_spd);
 
-    // TODO: check if short move
+    ULOG("accel_dist: %dmm\r\n", accel_dist / MM_TO_UM);
 
     // queueing branch nodes
     deque branches;
@@ -254,7 +260,6 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     // check short move:
     // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
     // in either case, if within short move params, we do a short move
-
     if (start_spd == SPD_STP) {
         // need to check if we have space to accelerate & stop
         if (dist[HASH(end_node)] * MM_TO_UM < accel_dist + MIN_ROLL_DIST + stopping_dist) {
@@ -264,6 +269,11 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         }
     }
 
+    // use prev[HASH(node)] to cmp?
+    // can't use start_node anymore to get sector
+    // must use whatever node preceeds start_node
+    // accumulate previous sector?
+
     // find stopping node and determine if we need to stop on this iteration
     ULOG("stopping search\r\n");
     track_node *stopping_node = NULL;
@@ -271,7 +281,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     deque_push_front(&route->segments, next_sector_end->segmentId);
 
     while (node != end) { // only in an emergency, should not happen
-        ULOG("itr %s\r\n", node->name);
+        // ULOG("itr %s\r\n", node->name);
 
         if (node->type == NODE_BRANCH) {
             int8_t branch_dir;
@@ -357,7 +367,12 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     // acceleration point goes to
 
     // calculate from start_node to end of start node sector
+    track_node *target_node = NULL; // end of start node sector
+
+    ULOG("blah\r\n");
+
     while (node != end) {
+        ULOG("itr %s\r\n", node->name);
         if (node->type != NODE_SENSOR) {
             next = node;
             node = prev[HASH(next)];
@@ -366,14 +381,20 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
         if (start_spd == SPD_STP) {
             // check if we are first one past accel dist
-            if (dist[HASH(node)] * MM_TO_UM < accel_dist) {
+            // why does this work? not sure
+            track_node *check_node = include_first_node ? node : prev[HASH(node)];
+            if (dist[HASH(check_node)] * MM_TO_UM < accel_dist) {
                 // must go to end node of previous sensor's sector
-                node = next_sector_end;
+                ULOG("jumping back to %s\r\n", next_sector_end->name);
+                target_node = next_sector_end;
                 break;
             }
         } else {
-            if (node->reverse->segmentId == start_node->segmentId)
-                break; // end of segment
+            if (node->reverse->segmentId == start_node->segmentId) {
+                ULOG("new target node %s (%d)\r\n", node->name, node->segmentId);
+                target_node = node;
+                // don't break, since need to check first such node (since we may loop)
+            }
         }
 
         // go to our desired segment
@@ -387,55 +408,60 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         node = prev[HASH(next)];
     }
 
+    ULOG("foo\r\n");
+
+    node = target_node; // get first such one (may jump back)
     track_node *sector_end = (end_node != NULL) ? node : NULL;
 
     // reset sector end marker (may have jumped back)
     // use next_sector_end forward ID to compare
     next_sector_end = node;
 
-    // in target sectors
-    ULOG("target sectors\r\n");
-    while (node != end) {
-        if (node->type == NODE_BRANCH) {
-            int8_t branch_dir;
-            if (next) { // only if we are stopping on a branch node
-                branch_dir = (node->edge[DIR_CURVED].dest == next) ? DIR_CURVED : DIR_STRAIGHT;
-            } else {
-                branch_dir = DIR_STRAIGHT; // default straight
+    if (sector_end != NULL) {
+        while (node != end) {
+            if (node->type == NODE_BRANCH) {
+                int8_t branch_dir;
+                if (next) { // only if we are stopping on a branch node
+                    branch_dir = (node->edge[DIR_CURVED].dest == next) ? DIR_CURVED : DIR_STRAIGHT;
+                } else {
+                    branch_dir = DIR_STRAIGHT; // default straight
+                }
+
+                deque_push_back(&branches, HASH(node)); // node
+                deque_push_back(&branches, branch_dir); // branch_dir
             }
 
-            deque_push_back(&branches, HASH(node)); // node
-            deque_push_back(&branches, branch_dir); // branch_dir
-        }
+            if (node->type != NODE_SENSOR) { // go to prev node
+                next = node;
+                node = prev[HASH(next)];
+                continue;
+            }
 
-        if (node->type != NODE_SENSOR) { // go to prev node
+            //ULOG("itr %s\r\n", node->name);
+
+            if (next_sector_end->segmentId != node->segmentId) {
+                next_sector_end = node;
+                ULOG("Pushing sector %d (%s)\r\n", node->segmentId, node->name);
+                deque_push_front(&route->segments, node->segmentId);
+            }
+
+            if (next_sensor != NULL) {
+                // add distance information
+                action.sensor_num = node->num;
+                action.action_type = SENSOR;
+                action.action.total = 0;
+                action.info.dist = DIST_TRAVELLED(HASH(node), HASH(next_sensor)) / MM_TO_UM;
+                routing_action_queue_push_front(&route->path, &action);
+            }
+
             next = node;
+            next_sensor = next;
             node = prev[HASH(next)];
-            continue;
         }
 
-        if (next_sector_end->segmentId != node->segmentId) {
-            next_sector_end = node;
-            ULOG("Pushing sector %d (%s)\r\n", node->segmentId, node->name);
-            deque_push_front(&route->segments, node->segmentId);
-        }
-
-        if (next_sensor != NULL) {
-            // add distance information
-            action.sensor_num = node->num;
-            action.action_type = SENSOR;
-            action.action.total = 0;
-            action.info.dist = DIST_TRAVELLED(HASH(node), HASH(next_sensor)) / MM_TO_UM;
-            routing_action_queue_push_front(&route->path, &action);
-        }
-
-        next = node;
-        next_sensor = next;
-        node = prev[HASH(next)];
+        // throw branches in our sector into queue
+        dump_branches(route, &branches);
     }
-
-    // throw branches in our sector into queue
-    dump_branches(route, &branches);
 
     // calculate next decision point
     if (sector_end == NULL) {
