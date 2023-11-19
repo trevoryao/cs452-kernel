@@ -2588,7 +2588,7 @@ void init_track_b(track_node *track) {
   track[104].edge[DIR_CURVED].src = &track[104];
   track[104].edge[DIR_CURVED].dest = &track[79];
   track[104].edge[DIR_CURVED].dist = 246;
-  track[104].segmentId = 13;
+  track[104].segmentId = 19;
 
   track[105].name = "MR13";
   track[105].type = NODE_MERGE;
@@ -2598,7 +2598,7 @@ void init_track_b(track_node *track) {
   track[105].edge[DIR_AHEAD].src = &track[105];
   track[105].edge[DIR_AHEAD].dest = &track[43];
   track[105].edge[DIR_AHEAD].dist = 120;
-  track[105].segmentId = 13;
+  track[105].segmentId = 19;
 
   track[106].name = "BR14";
   track[106].type = NODE_BRANCH;

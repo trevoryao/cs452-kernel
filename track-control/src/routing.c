@@ -137,7 +137,7 @@ static void dump_branches(routing_actions *route, deque *branches) {
 }
 
 static const int32_t DECISION_PT_OFFSET = -100 * MM_TO_UM;
-static const int32_t MIN_ROLL_DIST = 100 * MM_TO_UM; // um (100mm)
+static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
 // main method for path finding
 // assumes train server has found track node num in track[]
@@ -182,7 +182,6 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         track_node *node = priority_queue_pop_min(&pq);
         uassert(node);
         if (node == end_node || node->reverse == end_node) {
-            ULOG("found route\r\n");
             end_node = node;
             break; // reached!
         }
@@ -223,6 +222,8 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     // backtrack to find route
     int32_t stopping_dist = get_stopping_distance(&spd_data, trn, target_spd);
+    int32_t accel_dist = get_distance_from_acceleration(&spd_data, trn,
+        start_spd, target_spd);
 
     // TODO: check if short move
 
@@ -236,22 +237,32 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     track_node *next = NULL;
     track_node *node = end_node;
 
+    // sector information
+    track_node *next_sector_end = end_node;
+
     track_node *end = include_first_node ? NULL : start_node;
 
-    // find stopping node and determine if we need to stop on this iteration
-    track_node *stopping_node = NULL;
-    while (node != end) { // only in an emergency, should not happen
-        ULOG("Stopping Node Loop (node %s)\r\n", node->name);
-        if (deque_empty(&route->segments) ||
-            deque_front(&route->segments) != node->reverse->segmentId) {
-            ULOG("Changing Segments\r\n");
-            // track which segment we are currently in
-            if (stopping_node != NULL) {
-                ULOG("Out of stopping segment\r\n");
-                break; // segment change point
-            }
-            deque_push_front(&route->segments, node->reverse->segmentId);
+    // check short move:
+    // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
+    // in either case, if within short move params, we do a short move
+
+    if (start_spd == SPD_STP) {
+        // need to check if we have space to accelerate & stop
+        if (dist[HASH(end_node)] * MM_TO_UM < accel_dist + MIN_ROLL_DIST + stopping_dist) {
+            ULOG("Short move! -- Not yet implemented\r\n");
+            route->state = ERR_NO_ROUTE;
+            return;
         }
+    }
+
+    // find stopping node and determine if we need to stop on this iteration
+    ULOG("stopping search\r\n");
+    track_node *stopping_node = NULL;
+
+    deque_push_front(&route->segments, next_sector_end->segmentId);
+
+    while (node != end) { // only in an emergency, should not happen
+        ULOG("itr %s\r\n", node->name);
 
         if (node->type == NODE_BRANCH) {
             int8_t branch_dir;
@@ -271,13 +282,27 @@ plan_direct_route(track_node *start_node, track_node *end_node,
             continue;
         }
 
+        if (next_sector_end->segmentId != node->segmentId) {
+            // track which segment we are currently in
+            ULOG("next_sector_end was %s / now %s\r\n", next_sector_end->name, node->name);
+            next_sector_end = node;
+            ULOG("Pushing sector %d (%s)\r\n", node->segmentId, node->name);
+            deque_push_front(&route->segments, node->segmentId);
+
+            if (stopping_node != NULL) {
+                break; // segment change point
+            }
+        }
+
         int32_t dist_travelled = DIST_TRAVELLED(HASH(node),
             HASH(end_node)) + (offset * MM_TO_UM);
 
         if (stopping_node == NULL && dist_travelled > stopping_dist) {
-            if (node->segmentId == start_node->segmentId ||
-                node->reverse->segmentId == start_node->segmentId) {
-                ULOG("Found Stopping Node -- Taking\r\n");
+            // assume that we are not in short move => not accelerating
+            // because otherwise not enough room => broken up into at
+            // least 2 calls
+
+            if (node == start_node) {
                 // need to stop?
                 action.sensor_num = node->num;
                 action.action_type = SPD_CHANGE;
@@ -290,11 +315,11 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
                 // want to go to the end of the segment
             } else {
-                ULOG("Found Stopping Node -- Skipping\r\n");
                 // clear any gathered data
                 routing_action_queue_reset(&route->path);
                 deque_reset(&route->segments);
                 deque_reset(&branches);
+                ULOG("Reset\r\n");
 
                 break; // break early
             }
@@ -314,40 +339,54 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         node = prev[HASH(next)];
     }
 
-    if (node == end) {
-        ULOG("Short Move! -- Not implemented\r\n");
-        return;
-    }
-
     // throw any switches needed during stopping
     if (stopping_node != NULL) {
         dump_branches(route, &branches);
     }
 
+    // if accelerating, must determine which sector our
+    // acceleration point goes to
+
     // calculate from start_node to end of start node sector
-    while (node != end && node->reverse->segmentId != start_node->segmentId) {
-        ULOG("End of start node loop (node %s)\r\n", node->name);
-        if (deque_empty(&route->segments) || deque_front(&route->segments) != node->reverse->segmentId) {
-            // only save last seen segment while iterating
-            if (!deque_empty(&route->segments))
-                deque_pop_front(&route->segments);
-                // track which segment we are currently in
-            deque_push_front(&route->segments, node->reverse->segmentId);
+    while (node != end) {
+        if (node->type != NODE_SENSOR) {
+            next = node;
+            node = prev[HASH(next)];
+            continue;
+        }
+
+        if (start_spd == SPD_STP) {
+            // check if we are first one past accel dist
+            if (dist[HASH(node)] * MM_TO_UM < accel_dist) {
+                // must go to end node of previous sensor's sector
+                node = next_sector_end;
+                break;
+            }
+        } else {
+            if (node->reverse->segmentId == start_node->segmentId)
+                break; // end of segment
         }
 
         // go to our desired segment
-        if (node->type == NODE_SENSOR)
-            next_sensor = node;
+        if (next_sector_end->segmentId != node->reverse->segmentId) {
+            // no need to save outside our sectors
+            next_sector_end = node;
+        }
 
+        next_sensor = node;
         next = node;
         node = prev[HASH(next)];
     }
 
     track_node *sector_end = (end_node != NULL) ? node : NULL;
 
-    // in target sector
+    // reset sector end marker (may have jumped back)
+    // use next_sector_end forward ID to compare
+    next_sector_end = node;
+
+    // in target sectors
+    ULOG("target sectors\r\n");
     while (node != end) {
-        ULOG("Start Sector loop (node %s)\r\n", node->name);
         if (node->type == NODE_BRANCH) {
             int8_t branch_dir;
             if (next) { // only if we are stopping on a branch node
@@ -364,6 +403,12 @@ plan_direct_route(track_node *start_node, track_node *end_node,
             next = node;
             node = prev[HASH(next)];
             continue;
+        }
+
+        if (next_sector_end->segmentId != node->segmentId) {
+            next_sector_end = node;
+            ULOG("Pushing sector %d (%s)\r\n", node->segmentId, node->name);
+            deque_push_front(&route->segments, node->segmentId);
         }
 
         if (next_sensor != NULL) {
@@ -385,14 +430,10 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     // calculate next decision point
     if (sector_end != NULL) {
-        ULOG("Calculating Decision point (%s -> %s)\r\n", start_node->name, sector_end->name);
         int32_t decision_dist = DIST_TRAVELLED(HASH(start_node),
             HASH(sector_end)) + DECISION_PT_OFFSET;
 
-        ULOG("Using %dmm as max dist travelled\r\n", decision_dist / MM_TO_UM);
-
         uint32_t decision_delay_time;
-
         if (start_spd == target_spd) {
             // assume constant
             decision_delay_time = get_time_from_velocity_um(&spd_data, trn,
@@ -427,7 +468,6 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     // calculate acceleration data if needed
     if (start_spd != target_spd) {
-        ULOG("Calculating acceleration\r\n");
         int32_t start_time = get_time_from_acceleration(&spd_data, trn, start_spd, target_spd);
 
         action.sensor_num = SENSOR_NONE;

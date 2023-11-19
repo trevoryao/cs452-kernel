@@ -255,6 +255,7 @@ static void train_tc(void) {
     train_params params;
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
+    int console_server_tid = WhoIs(CONSOLE_SERVER_NAME);
 
     if (Receive(&ptid, (char *)&msg, sizeof(train_msg)) != sizeof(train_msg)) { // error, did not fully rcv?
         msg.type = MSG_TRAIN_ERROR;
@@ -269,8 +270,7 @@ static void train_tc(void) {
     // register with coordinator
     if (track_control_register_train(tc_server_tid, MyTid(), params.trn,
         SENSOR_MOD(params.start->num), SENSOR_NO(params.start->num)) == -1) {
-        // ULOG("[train] unable to register with coordinator");
-        print_in_progress_message(WhoIs(CONSOLE_SERVER_NAME));
+        print_in_progress_message(console_server_tid);
         return;
     }
 
