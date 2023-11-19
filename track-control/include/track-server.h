@@ -14,6 +14,8 @@ enum TS_MSG_TYPE {
     MSG_TS_REQUEST_SEGMENTS_ONE_TIMEOUT,
     MSG_TS_REQUEST_SEGMENTS_ALL_NO_TIMEOUT,
     MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT,
+    MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT, 
+    MSG_TS_REQUEST_SEGMENTS_AND_OR_NO_TIMEOUT,
     MSG_TS_FREE_SEGMENTS,
     MSG_TS_ASK_SEGMENT_FREE,
     MSG_TS_REQUEST_SUCCESS,
@@ -33,7 +35,9 @@ typedef struct msg_ts_server {
     enum TS_MSG_TYPE type;
     uint16_t trainNo;
     uint16_t segmentIDs[MAX_SEGMENTS_MSG];
+    uint16_t second_segmentIDs[MAX_SEGMENTS_MSG];
     uint8_t no_segments;
+    uint8_t second_no_segments;
     uint32_t timeout;
 } msg_ts_server;
 
@@ -44,6 +48,9 @@ typedef struct train_locking_structure {
 
     uint16_t segmentIDs[MAX_SEGMENTS_MSG];
     uint8_t no_segments;
+
+    uint16_t second_segmentIDs[MAX_SEGMENTS_MSG];
+    uint8_t second_no_segments;
     bool all_segments_required;
 
     uint16_t notifierTid; 
