@@ -28,7 +28,9 @@ enum TS_MSG_TYPE {
 enum train_state {
     train_idle = 0,     // no things to do for the server
     train_blocked,  // train in blocked state and waiting for segments to be free
-    train_blocked_timeout   // train in a timeout loop waiting to be done
+    train_blocked_timeout,   // train in a timeout loop waiting to be done
+    train_blocked_two, 
+    train_blocked_timeout_two
 };
 
 typedef struct msg_ts_server {

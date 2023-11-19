@@ -144,7 +144,7 @@ bool track_server_segment_is_locked(int tid, int segmentID, uint16_t trainNo) {
 }
 
 
-bool track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo, uint32_t timeout_ticks) {
+int track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo, uint32_t timeout_ticks) {
     struct msg_ts_server msg_request, msg_reply;
     msg_request.type = MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT;
     msg_request.timeout = timeout_ticks;
@@ -158,10 +158,15 @@ bool track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, dequ
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
 
-    return (msg_reply.type == MSG_TS_REQUEST_SUCCESS);
+    if (msg_reply.type == MSG_TS_REQUEST_SUCCESS) {
+        // check the segment ids for which queue
+        return msg_reply.segmentIDs[0];
+    } else {
+        return -1;
+    }
 }
 
-void track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo) {
+int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo) {
     struct msg_ts_server msg_request, msg_reply;
     msg_request.type = MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT;
     msg_request.trainNo = trainNo;
@@ -174,5 +179,7 @@ void track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *secon
     copySecondSegmentIDs(&msg_request, second_segmentIDs);
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+
+    return msg_reply.segmentIDs[0];
 }
 
