@@ -65,6 +65,12 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
         memcpy(&element->data, data, sizeof(sensor_data));
 
         sensor_queue_insert(sq, act_sensor_mod, act_sensor_no, element);
+
+        // if position -> add to timeout queue
+        if (data->pos_rqst) {
+            int train_hash = trn_hash(data->trn);
+            sq->sensor_timeout[train_hash] = element;
+        }
     }
 }
 
@@ -78,8 +84,12 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
     struct sensor_queue_entry *head = sq->sensors[act_sensor_mod][act_sensor_no];
 
-    if (head == NULL || head->data.expected_time > activation_time + TIMEOUT_TICKS) {
+    if (head == NULL) {
         return SENSOR_QUEUE_DONE;
+    }
+
+    if (head->data.expected_time > activation_time + TIMEOUT_TICKS) {
+        return SENSOR_QUEUE_EARLY;
     }
 
     // pop off queue
@@ -96,11 +106,35 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
     if (data->expected_time == TIME_NONE)
         return SENSOR_QUEUE_FOUND;
+    
+    if (data->pos_rqst) {
+        // deque from timeout struct
+        int train_hash = trn_hash(data->trn);
+        if (sq->sensor_timeout[train_hash] == head) {
+            sq->sensor_timeout[train_hash] = NULL;
+        }
+    }
 
     return (activation_time - TIMEOUT_TICKS <= data->expected_time
         && data->expected_time <= activation_time + TIMEOUT_TICKS)
         ? SENSOR_QUEUE_FOUND : SENSOR_QUEUE_TIMEOUT;
 }
+
+int sensor_queue_check_timeout(sensor_queue *sq, int8_t train_hash, uint32_t activation_time) {
+    // check if that trainNo is empty    
+    if (sq->sensor_timeout[train_hash] == NULL) {
+        return SENSOR_QUEUE_DONE;
+    } 
+
+    if (sq->sensor_timeout[train_hash]->data.expected_time + TIMEOUT_TICKS < activation_time) {
+        // Case that we actually have a timeout
+        // set it to NULL -> we only want one timeout activation
+        return SENSOR_QUEUE_TIMEOUT;
+    } else {
+        return SENSOR_QUEUE_DONE;
+    }
+}
+
 
 void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     uint16_t sensor_no, uint16_t tid, int64_t expected_time) {

@@ -18,14 +18,22 @@ enum TC_MSG_TYPE {
     MSG_TC_SWITCH_PUT,
     MSG_TC_SENSOR_GET,
     MSG_TC_SENSOR_PUT,
+    MSG_TC_SENSOR_PUT_TIMEOUT,
     MSG_TC_ERROR,
     MSG_TC_MAX
+};
+
+enum train_sensor_state {
+    TR_SENSOR_OK, 
+    TR_SENSOR_LATE, 
+    TRAIN_SENSOR_FAILURE
 };
 
 typedef struct trn_data {
     uint16_t tid;
     uint16_t trn_no;
     sensor sensor;
+    enum train_sensor_state sensorState;
 } trn_data;
 
 typedef struct msg_tc_server {

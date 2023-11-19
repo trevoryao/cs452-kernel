@@ -218,6 +218,21 @@ void track_control_coordinator_main() {
 
                 break;
             }
+            case MSG_TC_SENSOR_PUT_TIMEOUT: {
+                Reply(senderTid, NULL, 0);
+
+                // no sensor read -> just go through the queue and check for time outs
+                for (int i=0; i < N_TRNS; i++) {
+                    int state = sensor_queue_check_timeout(&sensor_queue, i, msg_received.clockTick);
+
+                    if (state == SENSOR_QUEUE_TIMEOUT) {
+                        //  handle timeout
+                        if (registered_trns[i].)
+                    }
+                }
+                
+                break;
+            }
             case MSG_TC_SWITCH_PUT: {
                 switch_throw(marklinTid, msg_received.data.sw_cmd.sw_no, msg_received.data.sw_cmd.sw_dir);
                 replySwitchPosition(senderTid, msg_received.data.sw_cmd.sw_no, msg_received.data.sw_cmd.sw_dir);
