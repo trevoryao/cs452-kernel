@@ -545,14 +545,13 @@ static void train_tc(void) {
             plan_stopped_route(current_node, params.end, params.offset, params.trn,
                 params.spd, locking_server_tid, &routes[0], &routes[1]);
 
-            /*
+
             // wait on either forward or reverse
             // returns index of whichever one was acquired
-            cur = track_server_lock_one_segment_grp(locking_server_tid,
+            cur = track_server_lock_two_all_segments(locking_server_tid,
                 &routes[0].segments, &routes[1].segments, params.trn);
             uassert(cur != -1);
             reversed = (cur == 1); // save for done
-            */
 
             if (reversed) {
                 track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
