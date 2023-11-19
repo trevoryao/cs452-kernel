@@ -94,10 +94,14 @@ static void replyNotifier(int tid, uint16_t trainNo, uint16_t timeout) {
 
 static void copyTrainData(train_locking_structure *train_data, msg_ts_server *msg) {
     train_data->no_segments = msg->no_segments;
+    train_data->second_no_segments = msg->second_no_segments;
     train_data->trainNo = msg->trainNo;
     train_data->timeout = msg->timeout;
 
     memcpy(train_data->segmentIDs, msg->segmentIDs, sizeof(uint16_t) * MAX_SEGMENTS_MSG);
+
+    // copy the second segmentIDs
+    memcpy(train_data->second_segmentIDs, msg->second_segmentIDs, sizeof(uint16_t) * MAX_SEGMENTS_MSG);
 }
 
 void track_server_main() {
@@ -212,6 +216,62 @@ void track_server_main() {
                 break;
             }
 
+            case MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT: {
+                // first try to lock the first segment
+                int train_hash = trn_hash(msg_received.trainNo);
+
+                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                if (success) {
+                    // reply that the first one was successfull
+                    train_data[train_hash].t_state = train_idle;
+                    replySegment(senderTid, 0);
+                } else {
+                    // try to lock the second one
+                    success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                    if (success) {
+                        // reply the second on
+                        train_data[train_hash].t_state = train_idle;
+                        replySegment(senderTid, 1);
+                    } else {
+                        // putting them into memory and starting timeout
+                        train_data[train_hash].all_segments_required = true;
+                        train_data[train_hash].t_state = train_blocked_timeout_two;
+                        train_data[train_hash].requesterTid = senderTid;
+                        
+                        copyTrainData(&train_data[train_hash], &msg_received);
+
+                        // start notifier
+                        replyNotifier(train_data[train_hash].notifierTid, train_data[train_hash].trainNo, train_data[train_hash].timeout);
+                    }
+                }
+                break;
+            }
+
+            case MSG_TS_REQUEST_SEGMENTS_AND_OR_NO_TIMEOUT: {
+                int train_hash = trn_hash(msg_received.trainNo);
+                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                if (success) {
+                    train_data[train_hash].t_state = train_idle;
+                    replySegment(senderTid, 0);
+                } else {
+                    success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                    if (success) {
+                        // reply the second on
+                        train_data[train_hash].t_state = train_idle;
+                        replySegment(senderTid, 1);
+                    } else {
+                        // putting them into memory and starting timeout
+                        train_data[train_hash].all_segments_required = true;
+                        train_data[train_hash].t_state = train_blocked_two;
+                        train_data[train_hash].requesterTid = senderTid;
+                        
+                        copyTrainData(&train_data[train_hash], &msg_received);
+                    }
+                }
+                break;
+            }
+
+
             case MSG_TS_FREE_SEGMENTS: {
                 // go through the entries to be freed
                 for (int i = 0; i < msg_received.no_segments; i++) {
@@ -247,6 +307,24 @@ void track_server_main() {
                                 replySegment(train_data[i].requesterTid, locked_segmentId);
                             }
                         }
+                    } else if (train_data[i].trainNo != msg_received.trainNo && train_data[i].t_state == train_blocked_two) {
+                        
+                        bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                        
+                        if (success) {
+                            // reply that the first one was successfull
+                            train_data[i].t_state = train_idle;
+                            replySegment(train_data[i].requesterTid, 0);
+                        } else {
+                            // try to lock the second one
+                            success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                            if (success) {
+                                // reply the second on
+                                train_data[i].t_state = train_idle;
+                                replySegment(train_data[i].requesterTid, 1);
+                            }
+                            // do nothing if not yet possible to reply
+                        }
                     }
                 }
                 break;
@@ -256,16 +334,34 @@ void track_server_main() {
                 if (msg_received.trainNo != 0) {
                     // handle timeout -> look at the train Number
                     int train_hash = trn_hash(msg_received.trainNo);
-                    train_data[train_hash].t_state = train_idle;
+                    
+                    // special case
+                    if (train_data[train_hash].t_state == train_blocked_timeout_two) {
+                        
+                        bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                        if (success) {
+                            // reply that the first one was successfull
+                            replySegment(train_data[train_hash].requesterTid, 0);
+                        } else {
+                            // try to lock the second one
+                            success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                            if (success) {
+                                // reply the second on
+                                replySegment(train_data[train_hash].requesterTid, 1);
+                            } else {
+                                reply(train_data[train_hash].requesterTid, false);
+                            }
+                        }
 
-                    // try to lock the segments
-                    if (train_data[train_hash].all_segments_required) {
+                    } else if (train_data[train_hash].all_segments_required) {
                         bool success = lockAll_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         reply(train_data[train_hash].requesterTid, success);
                     } else {
                         int lockedSegment = lockOne_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         replySegment(train_data[train_hash].requesterTid, lockedSegment);
                     }
+
+                    train_data[train_hash].t_state = train_idle;
                 } else {
                     // ignore startup message -> being able to reply
                     uart_printf(CONSOLE, "received startup msg from notifier of train \r\n");

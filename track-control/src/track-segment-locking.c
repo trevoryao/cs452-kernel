@@ -18,6 +18,16 @@ void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     }
 }
 
+void copySecondSegmentIDs(msg_ts_server *msg, deque *segments) {
+    msg->second_no_segments = 0;
+
+    for (deque_itr it = deque_begin(segments); it != deque_end(segments); it = deque_itr_next(it)) {
+        int value = deque_itr_get(segments, it);
+        msg->second_segmentIDs[msg->second_no_segments] = value;
+        msg->second_no_segments += 1;
+    }
+}
+
 bool track_server_lock_segment_timeout(int tid, uint16_t segmentID, uint16_t trainNo,
     uint32_t timeout_ticks) {
     struct msg_ts_server msg_request, msg_reply;
@@ -132,3 +142,44 @@ bool track_server_segment_is_locked(int tid, int segmentID, uint16_t trainNo) {
 
     return (msg_reply.type == MSG_TS_REQUEST_SUCCESS);
 }
+
+
+int track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo, uint32_t timeout_ticks) {
+    struct msg_ts_server msg_request, msg_reply;
+    msg_request.type = MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT;
+    msg_request.timeout = timeout_ticks;
+    msg_request.trainNo = trainNo;
+
+    // copy over the segments
+    copySegmentIDs(&msg_request, segmentIDs);
+
+    // copy second segments
+    copySecondSegmentIDs(&msg_request, second_segmentIDs);
+
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+
+    if (msg_reply.type == MSG_TS_REQUEST_SUCCESS) {
+        // check the segment ids for which queue
+        return msg_reply.segmentIDs[0];
+    } else {
+        return -1;
+    }
+}
+
+int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo) {
+    struct msg_ts_server msg_request, msg_reply;
+    msg_request.type = MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT;
+    msg_request.trainNo = trainNo;
+    msg_request.timeout = 0;
+
+    // copy over the segments
+    copySegmentIDs(&msg_request, segmentIDs);
+
+    // copy second segments
+    copySecondSegmentIDs(&msg_request, second_segmentIDs);
+
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+
+    return msg_reply.segmentIDs[0];
+}
+

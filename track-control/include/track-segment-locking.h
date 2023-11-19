@@ -48,4 +48,11 @@ void track_server_free_segments(int tid, deque *segmentIDs, uint16_t trainNo);
 // returns true if the given segmentID is locked, false otherwise
 bool track_server_segment_is_locked(int tid, int segmentID, uint16_t trainNo);
 
+// returns -1 for failed, 0 for first and 1 for second
+int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo);
+
+// returns -1 for failed, 0 for first and 1 for second
+int track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, deque *second_segmentIDs, uint16_t trainNo, uint32_t timeout_ticks);
+
+
 #endif
