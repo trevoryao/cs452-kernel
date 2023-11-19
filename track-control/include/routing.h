@@ -31,8 +31,7 @@ typedef struct routing_action {
         SWITCH,
         SPD_CHANGE,
         SPD_REACHED,
-        SENSOR,
-        DECISION_PT
+        SENSOR
     } action_type;
 
     union {
@@ -71,22 +70,32 @@ void routing_action_queue_pop_front(routing_action_queue *raq, routing_action *a
 void routing_action_queue_pop_back(routing_action_queue *raq, routing_action *action);
 
 void routing_action_queue_front(routing_action_queue *raq, routing_action *action);
+void routing_action_queue_back(routing_action_queue *raq, routing_action *action);
 
-typedef enum ROUTING_ACTIONS_STATE {
+typedef enum ROUTING_STATE {
     ERR_NO_ROUTE = -1,
     NORMAL_SEGMENT,
     FINAL_SEGMENT
-} ROUTING_ACTIONS_STATE;
+} ROUTING_STATE;
 
-typedef struct routing_actions {
-    ROUTING_ACTIONS_STATE state;
+typedef struct decision_pt {
+    int16_t sensor_num;
+    uint32_t ticks;
+} decision_pt;
+
+typedef struct route {
+    ROUTING_STATE state;
+
+    int32_t total_path_dist; // total distance on the path in mm (not just the segment)
+
+    decision_pt decision_pt;
 
     routing_action_queue path;
     routing_action_queue speed_changes;
     deque segments;
-} routing_actions;
+} route;
 
-void routing_actions_init(routing_actions *actions);
+void routing_actions_init(route *actions);
 
 /*
  * Path Finding methods assume that train server has found
@@ -113,12 +122,12 @@ void routing_actions_init(routing_actions *actions);
 // returns both a fwd
 void plan_stopped_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS spd, int track_server_tid,
-    routing_actions *fwd_route, routing_actions *rv_route);
+    route *fwd_route, route *rv_route);
 
 // assumes already at spd
 // will not reverse train mid-route
 void plan_in_progress_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS spd, int track_server_tid,
-    routing_actions *route);
+    route *route);
 
 #endif

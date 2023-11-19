@@ -15,6 +15,7 @@
 #include "track.h"
 #include "track-control-coordinator.h"
 #include "track-data.h"
+#include "track-server.h"
 
 speed_data spd_data;
 track_node track[TRACK_MAX];
@@ -46,6 +47,9 @@ void user_main(void) {
 
     uint16_t console_tid = Create(P_SERVER_LO, console_server_main);
     uint16_t marklin_tid = Create(P_SERVER_HI, marklin_server_main);
+
+    Create(P_SERVER_HI, track_server_main);
+    // init_track delays enough
 
     // init before coordinator
     speed_data_init(&spd_data);

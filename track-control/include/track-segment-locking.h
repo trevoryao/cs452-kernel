@@ -10,6 +10,13 @@ typedef struct deque deque;
 
 #define TS_SERVER_NAME "track-server"
 
+/*
+ * Locks given segment ID
+ * Blocks until timeout (if specified) or
+ * until segment lock acquired
+ */
+bool track_server_lock_segment_timeout(int tid, uint16_t segmentID, uint16_t trainNo, uint32_t timeout_ticks);
+void track_server_lock_segment(int tid, uint16_t segmentID, uint16_t trainNo);
 
 /*
  * Max deque length = 8 (msg sent as fixed-length array)
@@ -26,7 +33,7 @@ void track_server_lock_all_segments(int tid, deque *segmentIDs, uint16_t trainNo
  * Blocks until timeout (if specified) or
  * until a segment lock acquired
  *
- * Returns the segmentID of the acquired segment 
+ * Returns the segmentID of the acquired segment
  *      (returns -1 if failed)
  */
 int track_server_lock_one_segment_timeout(int tid, deque *segmentIDs, uint16_t trainNo, uint32_t timeout_ticks);

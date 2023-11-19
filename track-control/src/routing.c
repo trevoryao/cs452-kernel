@@ -88,11 +88,20 @@ void routing_action_queue_front(routing_action_queue *raq, routing_action *actio
     action->info.delay_ticks = (uint32_t)deque_itr_get(&raq->q, itr);
 }
 
-void routing_actions_init(routing_actions *actions) {
+void routing_action_queue_back(routing_action_queue *raq, routing_action *action) {
+    // no backwards iterators...
+    routing_action_queue_pop_back(raq, action);
+    routing_action_queue_push_back(raq, action);
+}
+
+void routing_actions_init(route *actions) {
+    actions->state = NORMAL_SEGMENT;
+    actions->total_path_dist = 0;
+    actions->decision_pt.sensor_num = SENSOR_NONE;
+    actions->decision_pt.ticks = 0;
     routing_action_queue_init(&actions->path);
     routing_action_queue_init(&actions->speed_changes);
     deque_init(&actions->segments, 3);
-    actions->state = NORMAL_SEGMENT;
 }
 
 #define HASH(node) ((node) - track)
@@ -119,7 +128,7 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
     return (int32_t)(result / 10);
 }
 
-static void dump_branches(routing_actions *route, deque *branches) {
+static void dump_branches(route *route, deque *branches) {
     routing_action action;
 
     while (!deque_empty(branches)) {
@@ -146,7 +155,7 @@ static void
 plan_direct_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS start_spd,
     enum SPEEDS target_spd, bool include_first_node,
-    int track_server_tid, routing_actions *route) {
+    int track_server_tid, route *route) {
 
     int32_t dist[TRACK_MAX]; // actual dist (speed calculations)
     int32_t weighted_dist[TRACK_MAX]; // modified path weight dependent of locked state, etc
@@ -429,7 +438,9 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     dump_branches(route, &branches);
 
     // calculate next decision point
-    if (sector_end != NULL) {
+    if (sector_end == NULL) {
+        route->decision_pt.sensor_num = SENSOR_NONE;
+    } else {
         int32_t decision_dist = DIST_TRAVELLED(HASH(start_node),
             HASH(sector_end)) + DECISION_PT_OFFSET;
 
@@ -459,11 +470,8 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         }
 
         // add decision pt to queue
-        action.sensor_num = start_node->num;
-        action.action_type = DECISION_PT;
-        action.info.delay_ticks = decision_delay_time;
-        action.action.total = 0; // memset
-        routing_action_queue_push_front(&route->speed_changes, &action);
+        route->decision_pt.sensor_num = start_node->num;
+        route->decision_pt.ticks = decision_delay_time;
     }
 
     // calculate acceleration data if needed
@@ -485,19 +493,20 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     route->state = (stopping_node != NULL) ?
         FINAL_SEGMENT : NORMAL_SEGMENT;
+    route->total_path_dist = dist[HASH(end_node)];
 
     ULOG("Returning state=%d\r\n", route->state);
 }
 
 void plan_in_progress_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS spd, int track_server_tid,
-    routing_actions *route) {
+    route *route) {
     plan_direct_route(start_node, end_node, offset, trn, spd, spd, true, track_server_tid, route);
 }
 
 void plan_stopped_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS spd, int track_server_tid,
-    routing_actions *fwd_route, routing_actions *rv_route) {
+    route *fwd_route, route *rv_route) {
     ULOG("Forward Route:\r\n");
     plan_direct_route(start_node, end_node, offset, trn, SPD_STP, spd, true, track_server_tid, fwd_route);
 

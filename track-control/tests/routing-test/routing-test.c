@@ -15,7 +15,7 @@
 speed_data spd_data;
 track_node track[TRACK_MAX];
 
-static track_node *print_segment_route(routing_actions *route);
+static track_node *print_segment_route(route *route);
 
 void user_main(void) {
     speed_data_init(&spd_data);
@@ -25,13 +25,13 @@ void user_main(void) {
     int track_server_tid = Create(P_SERVER_HI, track_server_main);
     Delay(clock_tid, 50);
 
-    routing_actions fwd_route;
+    route fwd_route;
     routing_actions_init(&fwd_route);
 
-    routing_actions rv_route;
+    route rv_route;
     routing_actions_init(&rv_route);
 
-    routing_actions *chosen_route;
+    route *chosen_route;
 
     track_node *start = &track[45];
     track_node *end = &track[1];
@@ -80,7 +80,7 @@ void user_main(void) {
     }
 }
 
-static track_node *print_segment_route(routing_actions *route) {
+static track_node *print_segment_route(route *route) {
     if (route->state == ERR_NO_ROUTE) {
         uart_printf(CONSOLE, "ERROR: no route found\r\n");
         return NULL;
@@ -130,11 +130,6 @@ static track_node *print_segment_route(routing_actions *route) {
                 uart_printf(CONSOLE, "Reached Speed %d after %dms",
                     action.action.spd, action.info.delay_ticks * 10);
                 break;
-            case DECISION_PT:
-                uassert(action.sensor_num != SENSOR_NONE)
-                uart_printf(CONSOLE, "Decision point: %dms",
-                    action.info.delay_ticks * 10);
-                break;
             default:
                 upanic("Incorrect Action Type: %s\r\n", action);
                 break;
@@ -154,6 +149,14 @@ static track_node *print_segment_route(routing_actions *route) {
         uart_printf(CONSOLE, " %d", deque_pop_front(&route->segments));
     }
     uart_printf(CONSOLE, "\r\n");
+
+    uart_printf(CONSOLE, "Decision Point: ");
+    if (route->decision_pt.sensor_num == SENSOR_NONE) {
+        uart_printf(CONSOLE, "N/A");
+    } else {
+        uart_printf(CONSOLE, "%dms (after Sensor %c%d)", route->decision_pt.ticks * 10,
+            SENSOR_MOD(route->decision_pt.sensor_num) + 'A' - 1, SENSOR_NO(route->decision_pt.sensor_num));
+    }
 
     return segment_end;
 }
