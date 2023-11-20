@@ -6,7 +6,7 @@
 
 #include "controller-consts.h"
 
-#define TIMEOUT_TICKS 15 // 150ms timeout between sensor activations
+#define TIMEOUT_TICKS 20 // 200ms timeout between sensor activations
 
 // returns -1 if already registered (or any other error)
 int track_control_register_train(int tid, int task_tid, uint16_t trainNo, uint16_t sensor_mod, uint16_t sensor_no);

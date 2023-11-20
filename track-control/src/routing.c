@@ -99,9 +99,21 @@ void routing_actions_init(route *actions) {
     actions->total_path_dist = 0;
     actions->decision_pt.sensor_num = SENSOR_NONE;
     actions->decision_pt.ticks = 0;
+
     routing_action_queue_init(&actions->path);
     routing_action_queue_init(&actions->speed_changes);
     deque_init(&actions->segments, 3);
+}
+
+void routing_actions_reset(route *actions) {
+    actions->state = NORMAL_SEGMENT;
+    actions->total_path_dist = 0;
+    actions->decision_pt.sensor_num = SENSOR_NONE;
+    actions->decision_pt.ticks = 0;
+
+    routing_action_queue_reset(&actions->path);
+    routing_action_queue_reset(&actions->speed_changes);
+    deque_reset(&actions->segments);
 }
 
 #define HASH(node) ((node) - track)
@@ -131,6 +143,8 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
     return (int32_t)(result / 10);
 }
 
+static void gather_branches(route *route, deque *branches, track_node *node);
+
 static const int32_t DECISION_PT_OFFSET = -65 * MM_TO_UM;
 static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
@@ -143,7 +157,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     enum SPEEDS target_spd, bool include_first_node,
     int track_server_tid, route *route) {
 
-    ULOG("plan direct route from %s\r\n", start_node->name);
+    // ULOG("plan direct route from %s\r\n", start_node->name);
 
     int32_t dist[TRACK_MAX]; // actual dist (speed calculations)
     int32_t weighted_dist[TRACK_MAX]; // modified path weight dependent of locked state, etc
@@ -180,12 +194,12 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         uassert(node);
         if (node == end_node || node->reverse == end_node) {
             end_node = node;
-            ULOG("Found path to %s\r\n", end_node->name);
+            // ULOG("Found path to %s\r\n", end_node->name);
             break; // reached!
         }
 
         if (dist[HASH(node)] == INT32_MAX) { // can't reach?
-            ULOG("node was unreachable\r\n");
+            // ULOG("node was unreachable\r\n");
             route->state = ERR_NO_ROUTE;
             return;
         }
@@ -225,7 +239,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     int32_t accel_dist = get_distance_from_acceleration(&spd_data, trn,
         start_spd, target_spd);
 
-    ULOG("stopping_dist: %dmm accel_dist: %dmm\r\n", stopping_dist / MM_TO_UM, accel_dist / MM_TO_UM);
+    // ULOG("stopping_dist: %dmm accel_dist: %dmm\r\n", stopping_dist / MM_TO_UM, accel_dist / MM_TO_UM);
 
     // check short move:
     // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
@@ -240,8 +254,13 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     }
 
     // queueing branch nodes for each segment
+    // futher along nodes are at the front, closer nodes are at the back
     deque branches;
-    deque_init(&branches, 5);
+    deque_init(&branches, 7);
+
+    // constants for determining what is next in the branch deque
+    #define BR_NODE -1
+    #define SW_ANCHOR -2
 
     routing_action action; // used for pushing back actions
 
@@ -249,20 +268,17 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     track_node *next = NULL;
     track_node *node = end_node;
 
-    uint16_t cur_segment = end_node->reverse->segmentId;
-
     // adjustable end point for stopping early (in case of reversing early)
     track_node *end = include_first_node ? NULL : start_node;
 
     // use as a stack to get full path from start to end, don't want to push full path onto route->path
-    routing_action_queue sensor_path, route_branches;
+    routing_action_queue sensor_path;
     routing_action_queue_init(&sensor_path);
-    routing_action_queue_init(&route_branches);
-
-    // deliberately add last sensor
 
     // iterate all the way back to wherever our root is
     while (node != end) {
+        ULOG("backtracking %s\r\n", node->name);
+
         if (node->type == NODE_BRANCH) {
             int8_t branch_dir;
             if (next) { // only if we are stopping on a branch node
@@ -271,53 +287,23 @@ plan_direct_route(track_node *start_node, track_node *end_node,
                 branch_dir = DIR_STRAIGHT; // default straight
             }
 
-            deque_push_back(&branches, HASH(node)); // node
             deque_push_back(&branches, branch_dir); // branch_dir
-        }
+            deque_push_back(&branches, HASH(node)); // node
+            deque_push_back(&branches, BR_NODE); // type
+        } else if (node->type == NODE_SENSOR) {
+            // add all branches to their proceeding sensor
+            deque_push_back(&branches, HASH(node)); // node
+            deque_push_back(&branches, SW_ANCHOR); // type
 
-        if (node->type != NODE_SENSOR) { // go to prev node
-            goto ContinueBacktrack;
-        }
-
-        // changed segments?
-        if (node->reverse->segmentId != cur_segment) {
-            // pop off all branches
-            while (!deque_empty(&branches)) {
-                track_node *branch_node = &track[deque_pop_front(&branches)];
-                int8_t branch_dir = deque_pop_front(&branches);
-
-                action.sensor_num = node->num; // to tell them apart
-                action.action_type = SWITCH;
-                action.action.sw.num = branch_node->num;
-                action.action.sw.dir = (branch_dir == DIR_CURVED) ? CRV : STRT;
-                action.info.delay_ticks = 0;
-
-                routing_action_queue_push_front(&route_branches, &action);
-            }
-
-            cur_segment = node->reverse->segmentId;
-        }
-
-        if (next_sensor != NULL) {
-            // add distance information
-            action.sensor_num = node->num;
-            action.action_type = SENSOR;
-            action.action.total = 0;
-            action.info.dist = DIST_TRAVELLED(node, next_sensor) / MM_TO_UM;
-            routing_action_queue_push_front(&sensor_path, &action);
-
-            // ULOG("adding %s with dist %dmm\r\n", node->name, action.info.dist);
-        } else {
+            // add distance info
             // deliberately add last node without any distance to avoid edge cases below
             action.sensor_num = node->num;
             action.action_type = SENSOR;
             action.action.total = 0;
-            action.info.dist = 0;
+            action.info.dist = (next_sensor != NULL) ?
+                (DIST_TRAVELLED(node, next_sensor) / MM_TO_UM) : 0;
             routing_action_queue_push_front(&sensor_path, &action);
-        }
 
-ContinueBacktrack:
-        if (node->type == NODE_SENSOR) {
             next_sensor = node;
         }
 
@@ -332,10 +318,10 @@ ContinueBacktrack:
     // save for calculations
     track_node *true_starting_node = node;
 
-    ULOG("true starting node: %s\r\n", true_starting_node->name);
+    // ULOG("true starting node: %s\r\n", true_starting_node->name);
 
     routing_action_queue_push_back(&route->path, &action); // return to user in other order
-    ULOG("pushing back %s\r\n", track[action.sensor_num].name);
+    ULOG("pushing back true starting node %s\r\n", track[action.sensor_num].name);
 
     // is the stopping node our starting node?
     // must get next node
@@ -347,16 +333,16 @@ ContinueBacktrack:
 
     // if next sensor is less than the stopping distance, then we are the
     // first one more than stopping distance = > stopping_node
-    ULOG("[routing] stopping checking %dmm (%s -> %s)\r\n", (DIST_TRAVELLED(next_sensor, end_node) + (offset * MM_TO_UM)) / MM_TO_UM, next_sensor->name, end_node->name);
+    // ULOG("[routing] stopping checking %dmm (%s -> %s)\r\n", (DIST_TRAVELLED(next_sensor, end_node) + (offset * MM_TO_UM)) / MM_TO_UM, next_sensor->name, end_node->name);
 
-    ULOG("[routing] next_sensor dist: %dmm end_node dist: %dmm \r\n", dist[HASH(next_sensor)], dist[HASH(end_node)]);
+    // ULOG("[routing] next_sensor dist: %dmm end_node dist: %dmm \r\n", dist[HASH(next_sensor)], dist[HASH(end_node)]);
 
     if (DIST_TRAVELLED(next_sensor, end_node) + (offset * MM_TO_UM) < stopping_dist) {
         // stopping node
         // combine all our nodes into one single queue on route->path
         // segment change is now forward direction
 
-        ULOG("[routing] Stopping case\r\n");
+        // ULOG("[routing] Stopping case\r\n");
 
         // already popped off for first sensor, so weird iteration
         for (;;) {
@@ -368,24 +354,16 @@ ContinueBacktrack:
                 action.action_type = SPD_CHANGE;
                 action.action.spd = SPD_STP;
                 action.info.delay_ticks = calculate_stopping_delay(trn, stopping_dist, sensor_dist, target_spd);
-                routing_action_queue_push_front(&route->speed_changes,
-                    &action);
+                routing_action_queue_push_front(&route->speed_changes, &action);
+
+                // gather all the branches
+                gather_branches(route, &branches, node);
 
                 route->state = FINAL_SEGMENT;
 
                 // pop off final end node
                 routing_action_queue_pop_back(&route->path, NULL);
                 break;
-            }
-
-            while (!routing_action_queue_empty(&route_branches)) {
-                routing_action_queue_front(&route_branches, &action);
-                if (action.sensor_num == HASH(node)) {
-                    routing_action_queue_push_back(&route->path, &action);
-                    routing_action_queue_pop_front(&route_branches, NULL);
-                } else {
-                    break;
-                }
             }
 
             // don't need to add for last one
@@ -403,29 +381,11 @@ ContinueBacktrack:
     } else if (start_spd == SPD_STP) { // guarantee can't be both in short move check
         // travel to the end of our acceleration distance
         for (;;) {
-            while (!routing_action_queue_empty(&route_branches)) {
-                routing_action_queue_front(&route_branches, &action);
-                if (action.sensor_num == HASH(node)) {
-                    routing_action_queue_push_back(&route->path, &action);
-                    routing_action_queue_pop_front(&route_branches, NULL);
-                } else {
-                    break;
-                }
-            }
-
-            ULOG("[routing] accel checking %dmm (%s)\r\n", (DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM)) / MM_TO_UM, node->name);
-
-            routing_action_queue_pop_front(&sensor_path, &action);
-            routing_action_queue_push_back(&route->path, &action); // push back for next itr
-            next_sensor = &track[action.sensor_num];
-
-            // check for segment change
-            if (node->segmentId != next_sensor->segmentId) {
-                deque_push_back(&route->segments, node->segmentId);
-            }
+            // ULOG("[routing] accel checking %dmm (%s)\r\n", (DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM)) / MM_TO_UM, node->name);
 
             // node must be the first node past the accel_dist
             if (DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM) > accel_dist) {
+                ULOG("node %s is our accel_node\r\n", node->name);
                 // add speed info
                 int32_t start_time = get_time_from_acceleration(&spd_data, trn, start_spd, target_spd);
 
@@ -441,29 +401,32 @@ ContinueBacktrack:
                 action.info.delay_ticks = 0;
                 routing_action_queue_push_front(&route->speed_changes, &action);
 
+                // gather all the branches until we hit our current node
+                gather_branches(route, &branches, node);
+
                 route->state = NORMAL_SEGMENT;
                 break;
+            }
+
+            routing_action_queue_pop_front(&sensor_path, &action);
+            routing_action_queue_push_back(&route->path, &action); // push back for next itr
+            next_sensor = &track[action.sensor_num];
+            ULOG("pushed back %s\r\n", next_sensor->name);
+
+            // check for segment change
+            if (node->segmentId != next_sensor->segmentId) {
+                deque_push_back(&route->segments, node->segmentId);
             }
 
             node = next_sensor; // prime for next itr
         }
     } else {
         // constant speed case, iterate until we have a segment change
-        ULOG("CONSTANT CASE\r\n");
+        // ULOG("CONSTANT CASE\r\n");
         for (;;) {
-            while (!routing_action_queue_empty(&route_branches)) {
-                routing_action_queue_front(&route_branches, &action);
-                if (action.sensor_num == HASH(node)) {
-                    routing_action_queue_push_back(&route->path, &action);
-                    routing_action_queue_pop_front(&route_branches, NULL);
-                } else {
-                    break;
-                }
-            }
-
             routing_action_queue_pop_front(&sensor_path, &action);
             routing_action_queue_push_back(&route->path, &action); // push back for next itr
-            ULOG("pushing back %s (%d total)\r\n", track[action.sensor_num].name, routing_action_queue_size(&route->path));
+            // ULOG("pushing back %s (%d total)\r\n", track[action.sensor_num].name, routing_action_queue_size(&route->path));
 
             next_sensor = &track[action.sensor_num];
 
@@ -471,6 +434,9 @@ ContinueBacktrack:
             if (node->segmentId != next_sensor->segmentId) {
                 deque_push_back(&route->segments, node->segmentId);
                 node = next_sensor; // for tracking where we end
+
+                // gather all the branches until we hit our current node
+                gather_branches(route, &branches, node);
 
                 route->state = NORMAL_SEGMENT;
                 break;
@@ -484,7 +450,7 @@ ContinueBacktrack:
     // calculate next decision point
     if (node == end_node) {
         // stopping
-        ULOG("[routing] no decision point for stopping\r\n");
+        // ULOG("[routing] no decision point for stopping\r\n");
         route->decision_pt.sensor_num = SENSOR_NONE;
     } else {
         int32_t decision_dist = DIST_TRAVELLED(true_starting_node,
@@ -521,7 +487,33 @@ ContinueBacktrack:
     }
 
     route->total_path_dist = dist[HASH(end_node)];
-    ULOG("Returning state=%d\r\n", route->state);
+    // ULOG("Returning state=%d\r\n", route->state);
+}
+
+static void gather_branches(route *route, deque *branches, track_node *node) {
+    routing_action action;
+
+    while (!deque_empty(branches)) {
+        // pushes further along nodes first, closer nodes last (front of path)
+        if (deque_pop_back(branches) == SW_ANCHOR) {
+            ULOG("checking %s\r\n", track[deque_back(branches)].name);
+            if ((int64_t)deque_pop_back(branches) == HASH(node)) {
+                break; // reached ourselves
+            }
+
+        } else { // branch node
+            track_node *branch_node = &track[deque_pop_back(branches)];
+            int8_t branch_dir = deque_pop_back(branches);
+
+            action.sensor_num = SENSOR_NONE; // throw immediately
+            action.action_type = SWITCH;
+            action.action.sw.num = branch_node->num;
+            action.action.sw.dir = (branch_dir == DIR_CURVED) ? CRV : STRT;
+            action.info.delay_ticks = 0;
+
+            routing_action_queue_push_front(&route->path, &action);
+        }
+    }
 }
 
 void plan_in_progress_route(track_node *start_node, track_node *end_node,

@@ -96,6 +96,7 @@ typedef struct route {
 } route;
 
 void routing_actions_init(route *actions);
+void routing_actions_reset(route *actions);
 
 /*
  * Path Finding methods assume that train server has found

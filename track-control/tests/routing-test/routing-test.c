@@ -40,8 +40,8 @@ void user_main(void) {
 
     route *chosen_route;
 
-    track_node *start = &track[57];
-    track_node *end = &track[78];
+    track_node *start = &track[71];
+    track_node *end = &track[42];
     uint8_t trn = 77;
     uint8_t spd = SPD_MED;
 
@@ -79,6 +79,7 @@ void user_main(void) {
 
     // now to arbitrary case
     while (chosen_route->state != FINAL_SEGMENT) {
+        uart_printf(CONSOLE, "planning route from %s\r\n", next_segment->name);
         uassert(chosen_route->state != ERR_NO_ROUTE);
         ticks = get_curr_ticks();
         plan_in_progress_route(next_segment, end, 0, trn, spd, track_server_tid, chosen_route);

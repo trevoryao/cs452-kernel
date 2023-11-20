@@ -41,7 +41,7 @@
 #define SEN_START_Y 6
 
 #define SEC_START_X 1
-#define SEC_START_Y 28
+#define SEC_START_Y 29
 
 #define PRMT_START_X 1
 #define PRMT_START_Y 38
@@ -54,7 +54,7 @@ static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 #define SPD_START_X SEN_START_X
 
-static const uint16_t IDLE_START_Y = SPD_START_Y + 3 * N_TRNS + 7;
+static const uint16_t IDLE_START_Y = SEC_START_Y + 6;
 #define IDLE_START_X 7
 
 #define TC_START_Y SPD_START_Y
@@ -156,13 +156,13 @@ void init_monitor(uint16_t tid) {
     // idle
     Printf(tid, CURS_MOV COL_YEL "Idle:" COL_RST, IDLE_START_Y, IDLE_START_X - 6);
 
-    // no triggered sensors
-    print_prompt(tid);
-
     // sensors
     Printf(tid, CURS_MOV COL_YEL "Sectors:" COL_RST, SEC_START_Y - 1, SEC_START_X);
     for (uint16_t i = 0; i <  N_SEGMENTS; ++i) // SW0
         update_segment(tid, i, 0);
+
+    // no triggered sensors
+    print_prompt(tid);
 
     #endif
 }
@@ -361,7 +361,7 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
     #else
 
     deque_itr it = deque_begin(q);
-    for (uint16_t offset = 0; offset < deque_size(q); ++offset) {
+    for (uint16_t offset = 0; offset < (deque_size(q) >> 1); ++offset) {
         char mod = 'A' + deque_itr_get(q, it); // module number
         it = deque_itr_next(it);
         uint16_t no = deque_itr_get(q, it); // sensor number (in module)
@@ -416,16 +416,13 @@ void update_segment(uint16_t tid, int segmentID, uint16_t trainNo) {
         col = COL_GRN;
         clear_char = " ";
     } else {
-        col = COL_RED;
+        col = COL_BLU;
         clear_char = "";
     }
 
-    
-    
-
-
-    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV "S%d: %s%d%s" COL_RST CURS_UNSAVE CURS_SHOW, 
-        (SEC_START_Y + y_off), (SEC_START_X + x_off), 
-        segmentID, col, trainNo, clear_char
-        );
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV
+        "S%d: %s%d%s"
+        COL_RST CURS_UNSAVE CURS_SHOW,
+        (SEC_START_Y + y_off), (SEC_START_X + x_off),
+        segmentID, col, trainNo, clear_char);
 }
