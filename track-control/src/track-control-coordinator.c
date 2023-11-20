@@ -15,6 +15,7 @@
 #include "uassert.h"
 #include "speed-data.h"
 #include "position.h"
+#include "track-segment-locking.h"
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
@@ -113,6 +114,7 @@ void track_control_coordinator_main() {
     int clockTid = WhoIs(CLOCK_SERVER_NAME);
     int marklinTid = WhoIs(MARKLIN_SERVER_NAME);
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
+    int tsTid = WhoIs(TS_SERVER_NAME);
 
     // start up a sensorWorker
     Create(P_HIGH, sensor_worker_main);
@@ -164,6 +166,8 @@ void track_control_coordinator_main() {
                 trn_position_reset(&pos,
                     msg_received.data.trn_register.trn_no);
 
+                track_server_free_all(tsTid, msg_received.data.trn_register.trn_no);
+            
                 break;
             }
             case MSG_TC_TRAIN_GET: {

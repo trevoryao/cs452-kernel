@@ -183,3 +183,10 @@ int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second
     return msg_reply.segmentIDs[0];
 }
 
+void track_server_free_all(int tid, uint16_t trainNo) {
+    struct msg_ts_server msg_request;
+    msg_request.type = MSG_TS_FREE_ALL;
+    msg_request.trainNo = trainNo;
+
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_request, sizeof(struct msg_ts_server));
+}

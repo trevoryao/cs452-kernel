@@ -335,6 +335,12 @@ void track_server_main() {
                     // handle timeout -> look at the train Number
                     int train_hash = trn_hash(msg_received.trainNo);
                     
+                    // ignore after reset
+                    if (train_data[train_hash].t_state == train_idle) {
+                        ULOG("Ignoring notifier after reseting the lock server\r\n");
+                        break;
+                    }
+
                     // special case
                     if (train_data[train_hash].t_state == train_blocked_timeout_two) {
                         
@@ -366,6 +372,21 @@ void track_server_main() {
                     // ignore startup message -> being able to reply
                     uart_printf(CONSOLE, "received startup msg from notifier of train \r\n");
                 }
+                break;
+            }
+
+            case MSG_TS_FREE_ALL: {
+                // zero all segments for that train
+                int train_id = msg_received.trainNo;
+
+                for (int i = 0; i < N_SEGMENTS; i++) {
+                    if (lock_sectors[i] == train_id) {
+                        lock_sectors[i] = 0;
+                    }
+                }
+                
+                // set train to idle
+                train_data[trn_hash(train_id)].t_state = train_idle;
                 break;
             }
 
