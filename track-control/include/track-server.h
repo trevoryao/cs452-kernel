@@ -14,7 +14,7 @@ enum TS_MSG_TYPE {
     MSG_TS_REQUEST_SEGMENTS_ONE_TIMEOUT,
     MSG_TS_REQUEST_SEGMENTS_ALL_NO_TIMEOUT,
     MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT,
-    MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT, 
+    MSG_TS_REQUEST_SEGMENTS_AND_OR_TIMEOUT,
     MSG_TS_REQUEST_SEGMENTS_AND_OR_NO_TIMEOUT,
     MSG_TS_FREE_SEGMENTS,
     MSG_TS_ASK_SEGMENT_FREE,
@@ -29,7 +29,7 @@ enum train_state {
     train_idle = 0,     // no things to do for the server
     train_blocked,  // train in blocked state and waiting for segments to be free
     train_blocked_timeout,   // train in a timeout loop waiting to be done
-    train_blocked_two, 
+    train_blocked_two,
     train_blocked_timeout_two
 };
 
@@ -55,7 +55,7 @@ typedef struct train_locking_structure {
     uint8_t second_no_segments;
     bool all_segments_required;
 
-    uint16_t notifierTid; 
+    uint16_t notifierTid;
     uint16_t timeout;
 } train_locking_structure;
 

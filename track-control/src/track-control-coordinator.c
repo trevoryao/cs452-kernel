@@ -225,7 +225,6 @@ void track_control_coordinator_main() {
                 break;
             }
             case MSG_TC_TRAIN_PUT: {
-                /* code */
                 train_mod_speed(marklinTid, &spd_t, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd);
                 uint32_t speed_change_time = Time(clockTid);
                 replyTrainSpeed(&spd_t, msg_received.data.trn_cmd.trn_no, senderTid);

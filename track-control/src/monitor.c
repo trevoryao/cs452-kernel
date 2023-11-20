@@ -223,11 +223,12 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
 
 void print_tc_params(uint16_t tid, int sen_track_num_start, int sen_track_num_end, int16_t offset, uint16_t trn) {
     #if LOGGING
-    (void)tid;
-    (void)sen_track_num_start;
-    (void)sen_track_num_end;
-    (void)offset;
-    (void)trn;
+    Printf(tid, "trn %d: %c%d -> %c%d (%dmm)", trn,
+        SENSOR_MOD(sen_track_num_start) - 1 + 'A',
+        SENSOR_NO(sen_track_num_start),
+        SENSOR_MOD(sen_track_num_end) - 1 + 'A',
+        SENSOR_NO(sen_track_num_end),
+        offset);
     #else
     int8_t trn_hash_no = trn_hash(trn);
     if (trn_hash_no < 0) return;
@@ -241,7 +242,7 @@ void print_tc_params(uint16_t tid, int sen_track_num_start, int sen_track_num_en
         SENSOR_MOD(sen_track_num_end) - 1 + 'A',
         SENSOR_NO(sen_track_num_end),
         offset);
-#endif
+    #endif
 }
 
 void reset_tc_params(uint16_t tid, uint16_t trn) {
@@ -350,7 +351,7 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
     #else
 
     deque_itr it = deque_begin(q);
-    for (uint16_t offset = 0; it != deque_end(q); ++offset) {
+    for (uint16_t offset = 0; offset < deque_size(q); ++offset) {
         char mod = 'A' + deque_itr_get(q, it); // module number
         it = deque_itr_next(it);
         uint16_t no = deque_itr_get(q, it); // sensor number (in module)

@@ -11,7 +11,7 @@
 void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->no_segments = 0;
 
-    for (deque_itr it = deque_begin(segments); it != deque_end(segments); it = deque_itr_next(it)) {
+    for (deque_itr it = deque_begin(segments); msg->no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
         msg->segmentIDs[msg->no_segments] = value;
         msg->no_segments += 1;
@@ -21,7 +21,7 @@ void copySegmentIDs(msg_ts_server *msg, deque *segments) {
 void copySecondSegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->second_no_segments = 0;
 
-    for (deque_itr it = deque_begin(segments); it != deque_end(segments); it = deque_itr_next(it)) {
+    for (deque_itr it = deque_begin(segments); msg->second_no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
         msg->second_segmentIDs[msg->second_no_segments] = value;
         msg->second_no_segments += 1;

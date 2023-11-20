@@ -79,12 +79,12 @@ static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
     switch (action->action_type) {
         case SWITCH:
             // ULOG("[train] Switch %d to %c\r\n",
-            //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
+               //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
             track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
             break;
         case SPD_CHANGE:
         case SPD_REACHED:
-            // ULOG("[train] Set Speed to %d\r\n", action->action.spd);
+            uart_printf(CONSOLE, "[train] Set Speed to %d\r\n", action->action.spd);
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         default:
@@ -93,9 +93,7 @@ static void do_action(int tc_tid, uint8_t trn, routing_action *action) {
     }
 }
 
-#ifdef USERLOG
 #define NOTIF_TYPE(type) ((type == 2) ? "route" : "spd")
-#endif
 
 static void train_speed_notifier(void) {
     int ptid;
@@ -111,6 +109,8 @@ static void train_speed_notifier(void) {
 
     for (;;) {
         uassert(Receive(&ptid, (char *)&msg, sizeof(train_msg)) == sizeof(train_msg));
+
+        // uart_printf(CONSOLE, "[train-notifier-%s] received message %d\r\n", msg.type);
 
         enum TRAIN_MSG_TYPE rcvd_type = msg.type;
 
@@ -134,11 +134,12 @@ static void train_speed_notifier(void) {
 
         // wait for sensor activation
         if (action.sensor_num != SENSOR_NONE) {
-            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
-            //     NOTIF_TYPE(type),
-            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
-            //     SENSOR_NO(action.sensor_num));
+            uart_printf(CONSOLE, "[train-notifier-%s] wait on sensor %c%d\r\n",
+                    NOTIF_TYPE(type),
+                    SENSOR_MOD(action.sensor_num) - 1 + 'A',
+                    SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
+
             int ret = track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
                 SENSOR_NO(action.sensor_num),
@@ -155,7 +156,7 @@ static void train_speed_notifier(void) {
 
         if (action.delay != 0) {
             // ULOG("[train-notifier %s] delay %d ms\r\n",
-            //     NOTIF_TYPE(type), action.delay * 10);
+                //     NOTIF_TYPE(type), action.delay * 10);
             Delay(clock_tid, action.delay);
         }
 
@@ -208,10 +209,11 @@ static void train_route_notifier(void) {
         // wait for sensor activation
         if (action.sensor_num != SENSOR_NONE) {
             // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
-            //     NOTIF_TYPE(type),
-            //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
-            //     SENSOR_NO(action.sensor_num));
+                //     NOTIF_TYPE(type),
+                //     SENSOR_MOD(action.sensor_num) - 1 + 'A',
+                //     SENSOR_NO(action.sensor_num));
             // Delay(clock_tid, 10);
+
             int ret = track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.sensor_num),
                 SENSOR_NO(action.sensor_num),
@@ -229,7 +231,7 @@ static void train_route_notifier(void) {
 
         if (action.delay != 0) {
             // ULOG("[train-notifier %s] delay %d ms\r\n",
-            //     NOTIF_TYPE(type), action.delay * 10);
+                //     NOTIF_TYPE(type), action.delay * 10);
             Delay(clock_tid, action.delay);
         }
 
@@ -268,6 +270,7 @@ static void train_locking_notifier(void) {
     train_msg msg;
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
+    int clock_tid = WhoIs(CLOCK_SERVER_NAME);
     int console_tid = WhoIs(CONSOLE_SERVER_NAME);
     int locking_server_tid = WhoIs(TS_SERVER_NAME);
 
@@ -298,11 +301,11 @@ static void train_locking_notifier(void) {
 
         // wait for sensor activation
         if (action.decision_pt.sensor_num != SENSOR_NONE) {
-            // ULOG("[train-notifier-%s] wait on sensor %c%d\r\n",
-            //     NOTIF_TYPE(type),
-            //     SENSOR_MOD(action.decision_pt.sensor_num) - 1 + 'A',
-            //     SENSOR_NO(action.decision_pt.sensor_num));
+            uart_printf(CONSOLE, "[train-notifier-locking] wait on sensor %c%d\r\n",
+                SENSOR_MOD(action.decision_pt.sensor_num) - 1 + 'A',
+                SENSOR_NO(action.decision_pt.sensor_num));
             // Delay(clock_tid, 10);
+
             int ret = track_control_wait_sensor(tc_server_tid,
                 SENSOR_MOD(action.decision_pt.sensor_num),
                 SENSOR_NO(action.decision_pt.sensor_num),
@@ -325,17 +328,22 @@ static void train_locking_notifier(void) {
             deque_push_back(&segments, action.segmentIDs[i]);
         }
 
-        // return result back to server
+        uart_printf(CONSOLE, "[train-notifier-locking] locking w/ timeout %dms\r\n",
+            action.decision_pt.ticks * 10);
+            // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
             &segments, action.trn, action.decision_pt.ticks);
-        msg.type = res ? MSG_TRAIN_NOTIFY_LOCKING_SUCCESS : MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT;
+        uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
+        msg.type = res ? MSG_TRAIN_NOTIFY_LOCKING_SUCCESS : MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT;
         Send(ptid, (char *)&msg, sizeof(train_msg), NULL, 0);
     }
 }
 
 inline static void
 wait_decision_pt(int notif_tid, train_msg *msg, route *route, int trn) {
+    // uart_printf(CONSOLE, "[train] sending to notifier\r\n");
+
     msg->type = MSG_TRAIN_ACTION;
     memcpy(&msg->payload.locking_action.decision_pt, &route->decision_pt, sizeof(decision_pt));
     msg->payload.locking_action.trn = trn;
@@ -422,10 +430,12 @@ static bool execute_plan(route *cur_route, route *prev_route, int tc_server_tid,
 
         switch (msg.type) {
             case MSG_TRAIN_NOTIFY_LOCKING_SUCCESS: {
+                uart_printf(CONSOLE, "[train] got next lock, continuing\r\n");
                 break; // Nothing to do -- could theoretically plan next route already, but not really needed
             }
             case MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT: {
                 // emergency stop
+                uart_printf(CONSOLE, "[train] lock timed out, returning true");
                 track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
                 track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
 
@@ -508,10 +518,10 @@ static void train_tc(void) {
 
     route_notifier = Create(P_MED, train_route_notifier);
     spd_notifier = Create(P_VHIGH, train_speed_notifier);
-    lock_notifier = Create(P_VHIGH, train_locking_notifier);
+    lock_notifier = Create(P_HIGH, train_locking_notifier);
 
     // flags for tracking train attributes
-    bool stopped = false;
+    bool stopped = true;
     bool reversed = false;
 
     // lock initial segment
@@ -537,6 +547,7 @@ static void train_tc(void) {
     for (;;) {
         // plan next segment
         if (stopped) {
+            ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
             // save segments we need to unlock after determining a route
             deque_move(&prev_segments, &routes[cur].segments);
@@ -545,18 +556,32 @@ static void train_tc(void) {
             plan_stopped_route(current_node, params.end, params.offset, params.trn,
                 params.spd, locking_server_tid, &routes[0], &routes[1]);
 
-
-            // wait on either forward or reverse
-            // returns index of whichever one was acquired
-            cur = track_server_lock_two_all_segments(locking_server_tid,
-                &routes[0].segments, &routes[1].segments, params.trn);
-            uassert(cur != -1);
-            reversed = (cur == 1); // save for done
+            if (routes[0].state != ERR_NO_ROUTE && routes[1].state != ERR_NO_ROUTE) {
+                // wait on either forward or reverse
+                // returns index of whichever one was acquired
+                cur = track_server_lock_two_all_segments(locking_server_tid,
+                    &routes[0].segments, &routes[1].segments, params.trn);
+                uassert(cur != -1);
+                reversed = (cur == 1); // save for done
+            } else if (routes[0].state != ERR_NO_ROUTE) {
+                track_server_lock_all_segments(locking_server_tid,
+                    &routes[0].segments, params.trn);
+                cur = 0;
+                reversed = false;
+            } else if (routes[1].state != ERR_NO_ROUTE) {
+                track_server_lock_all_segments(locking_server_tid,
+                    &routes[1].segments, params.trn);
+                cur = 1;
+                reversed = true;
+            } else {
+                upanic("error: it actually happened!");
+            }
 
             if (reversed) {
                 track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
             }
         } else {
+            ULOG("[train] moving\r\n");
             // save old info for unlocking
             cur = 1 - cur;
 

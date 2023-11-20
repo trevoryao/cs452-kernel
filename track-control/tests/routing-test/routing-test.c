@@ -9,6 +9,9 @@
 #include "track-data.h"
 #include "track-server.h"
 #include "train.h"
+#include "console-server.h"
+#include "marklin-server.h"
+#include "track-control-coordinator.h"
 
 #include "sys-clock.h"
 
@@ -25,6 +28,10 @@ void user_main(void) {
     int track_server_tid = Create(P_SERVER_HI, track_server_main);
     Delay(clock_tid, 50);
 
+    //Create(P_SERVER_HI, track_control_coordinator_main);
+    // Create(P_SERVER_LO, console_server_main);
+    //Create(P_SERVER_HI, marklin_server_main);
+
     route fwd_route;
     routing_actions_init(&fwd_route);
 
@@ -33,8 +40,8 @@ void user_main(void) {
 
     route *chosen_route;
 
-    track_node *start = track[45].reverse;
-    track_node *end = &track[1];
+    track_node *start = &track[57];
+    track_node *end = &track[78];
     uint8_t trn = 77;
     uint8_t spd = SPD_MED;
 
@@ -58,14 +65,14 @@ void user_main(void) {
     rv_next_segment = NULL; // throwaway
 
     // determine which route to take
-    if (rv_next_segment != NULL) {
-        uart_printf(CONSOLE, "Taking Reverse Route\r\n");
-        next_segment = rv_next_segment;
-        chosen_route = &rv_route;
-    } else if (fwd_next_segment != NULL) {
+    if (fwd_next_segment != NULL) {
         uart_printf(CONSOLE, "Taking Forward Route\r\n");
         next_segment = fwd_next_segment;
         chosen_route = &fwd_route;
+    } else if (rv_next_segment != NULL) {
+        uart_printf(CONSOLE, "Taking Reverse Route\r\n");
+        next_segment = rv_next_segment;
+        chosen_route = &rv_route;
     } else {
         upanic("ERROR: no route found!");
     }
@@ -79,6 +86,9 @@ void user_main(void) {
         uart_printf(CONSOLE, "\r\nNext Segment (Computation time %d.%dms)\r\n", ticks / 1000, ticks % 1000);
         next_segment = print_segment_route(chosen_route);
     }
+
+    // uart_printf(CONSOLE, "\r\n\r\n****** Controlled Train ******\r\n\r\n");
+    // uassert(CreateControlledTrain(trn, start, end, 0) >= 0);
 }
 
 static track_node *print_segment_route(route *route) {
@@ -90,10 +100,11 @@ static track_node *print_segment_route(route *route) {
     routing_action action;
 
     // get segment_end
-    routing_action_queue_pop_back(&route->path, &action);
+    routing_action_queue_back(&route->path, &action);
     track_node *segment_end = &track[action.sensor_num];
 
     uart_printf(CONSOLE, "Route:\r\n");
+    ULOG("size: %d\r\n", routing_action_queue_size(&route->path));
     while (!routing_action_queue_empty(&route->path)) {
         routing_action_queue_front(&route->path, &action);
 
