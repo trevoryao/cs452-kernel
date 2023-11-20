@@ -117,8 +117,6 @@ void routing_actions_reset(route *actions) {
 }
 
 #define HASH(node) ((node) - track)
-// #define DIST_TRAVELLED(n1, n2) (((n1) == (n2) || (n1)->reverse == (n2)) ?
-//     (0) : ((dist[HASH(n2)] - dist[HASH(n1)]) * MM_TO_UM))
 
 #define DIST_TRAVELLED(n1, n2) ((dist[HASH(n2)] - dist[HASH(n1)]) * MM_TO_UM)
 
@@ -145,7 +143,7 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
 
 static void gather_branches(route *route, deque *branches, track_node *node);
 
-static const int32_t DECISION_PT_OFFSET = -65 * MM_TO_UM;
+static const int32_t DECISION_PT_OFFSET = -100 * MM_TO_UM;
 static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
 // main method for path finding

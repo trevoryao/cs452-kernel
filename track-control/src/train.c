@@ -322,10 +322,13 @@ static void train_locking_notifier(void) {
         deque segments;
         deque_init(&segments, 3);
 
+        uart_puts(CONSOLE, "locking");
         // acquire lock with given timeout
         for (uint8_t i = 0; i < action.no_segments; ++i) {
             deque_push_back(&segments, action.segmentIDs[i]);
+            uart_printf(CONSOLE, " %d", action.segmentIDs[i]);
         }
+        uart_puts(CONSOLE, "\r\n");
 
         // uart_printf(CONSOLE, "[train-notifier-locking] locking w/ timeout %dms\r\n",
         //     action.decision_pt.ticks * 10);
@@ -340,23 +343,25 @@ static void train_locking_notifier(void) {
 }
 
 inline static void
-wait_decision_pt(int notif_tid, train_msg *msg, route *route, int trn) {
+wait_decision_pt(int notif_tid, route *route, int trn) {
     // uart_printf(CONSOLE, "[train] sending to notifier\r\n");
 
-    msg->type = MSG_TRAIN_ACTION;
-    memcpy(&msg->payload.locking_action.decision_pt, &route->decision_pt, sizeof(decision_pt));
-    msg->payload.locking_action.trn = trn;
+    train_msg msg;
 
-    msg->payload.locking_action.no_segments = 0;
+    msg.type = MSG_TRAIN_ACTION;
+    memcpy(&msg.payload.locking_action.decision_pt, &route->decision_pt, sizeof(decision_pt));
+    msg.payload.locking_action.trn = trn;
+
+    msg.payload.locking_action.no_segments = 0;
     for (deque_itr it = deque_begin(&route->segments);
-        msg->payload.locking_action.no_segments < deque_size(&route->segments);
+        msg.payload.locking_action.no_segments < deque_size(&route->segments);
         it = deque_itr_next(it)) {
-        msg->payload.locking_action.segmentIDs[msg->payload.locking_action.no_segments++] =
+        msg.payload.locking_action.segmentIDs[msg.payload.locking_action.no_segments++] =
             deque_itr_get(&route->segments, it);
     }
 
-    Send(notif_tid, (char *)msg, sizeof(train_msg), (char *)msg, sizeof(train_msg));
-    uassert(msg->type == MSG_TRAIN_ACK);
+    Send(notif_tid, (char *)&msg, sizeof(train_msg), (char *)&msg, sizeof(train_msg));
+    uassert(msg.type == MSG_TRAIN_ACK);
 }
 
 // returns the new value of stopped -- i.e. true if train has had to stop
@@ -393,7 +398,7 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
 
     // start-up locking notifier (separate from any other route actions)
     if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
-        wait_decision_pt(locking_notifier, &msg, cur_route, params->trn);
+        wait_decision_pt(locking_notifier, cur_route, params->trn);
 
     // set next_segment (because of when we timeout, can guarantee)
     routing_action_queue_pop_back(&cur_route->path, &routing_action);
@@ -431,6 +436,11 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
                 // plan next route
                 plan_in_progress_route(*next_segment, params->end, params->offset,
                     params->trn, params->spd, locking_server_tid, next_route);
+
+                if (next_route->decision_pt.sensor_num != SENSOR_NONE) {
+                    wait_decision_pt(locking_notifier, next_route, params->trn);
+                    next_route->decision_pt.sensor_num = SENSOR_NONE; // don't wait twice
+                }
 
                 // throw next route's switches
                 while (!routing_action_queue_empty(&cur_route->path)) {
