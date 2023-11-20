@@ -632,7 +632,7 @@ static void train_tc(void) {
 }
 
 int CreateControlledTrain(uint8_t trn, track_node *start,
-    track_node *end, int32_t offset) {
+    track_node *end, int32_t offset, enum SPEEDS spd) {
     uassert(trn_hash(trn) != -1);
     uassert(start && end);
     uassert(track <= start || start < track + TRACK_MAX);
@@ -643,7 +643,7 @@ int CreateControlledTrain(uint8_t trn, track_node *start,
     train_msg msg;
     msg.type = MSG_TRAIN_PARAMS;
     msg.payload.params.trn = trn;
-    msg.payload.params.spd = SPD_MED; // default spd, changed by TCC
+    msg.payload.params.spd = spd;
     msg.payload.params.start = start;
     msg.payload.params.end = end;
     msg.payload.params.offset = offset;

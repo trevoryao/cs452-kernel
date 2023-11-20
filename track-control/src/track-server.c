@@ -241,7 +241,7 @@ void track_server_main() {
                         train_data[train_hash].all_segments_required = true;
                         train_data[train_hash].t_state = train_blocked_timeout_two;
                         train_data[train_hash].requesterTid = senderTid;
-                        
+
                         copyTrainData(&train_data[train_hash], &msg_received);
 
                         // start notifier
@@ -268,7 +268,7 @@ void track_server_main() {
                         train_data[train_hash].all_segments_required = true;
                         train_data[train_hash].t_state = train_blocked_two;
                         train_data[train_hash].requesterTid = senderTid;
-                        
+
                         copyTrainData(&train_data[train_hash], &msg_received);
                     }
                 }
@@ -314,9 +314,9 @@ void track_server_main() {
                             }
                         }
                     } else if (train_data[i].trainNo != msg_received.trainNo && train_data[i].t_state == train_blocked_two) {
-                        
+
                         bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
-                        
+
                         if (success) {
                             // reply that the first one was successfull
                             train_data[i].t_state = train_idle;
@@ -340,7 +340,7 @@ void track_server_main() {
                 if (msg_received.trainNo != 0) {
                     // handle timeout -> look at the train Number
                     int train_hash = trn_hash(msg_received.trainNo);
-                    
+
                     // ignore after reset
                     if (train_data[train_hash].t_state == train_idle) {
                         ULOG("Ignoring notifier after reseting the lock server\r\n");
@@ -349,7 +349,7 @@ void track_server_main() {
 
                     // special case
                     if (train_data[train_hash].t_state == train_blocked_timeout_two) {
-                        
+
                         bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                         if (success) {
                             // reply that the first one was successfull
@@ -388,11 +388,13 @@ void track_server_main() {
                 for (int i = 0; i < N_SEGMENTS; i++) {
                     if (lock_sectors[i] == train_id) {
                         lock_sectors[i] = 0;
+                        update_segment(console, i, train_id);
                     }
                 }
-                
+
                 // set train to idle
                 train_data[trn_hash(train_id)].t_state = train_idle;
+                Reply(senderTid, NULL, 0);
                 break;
             }
 

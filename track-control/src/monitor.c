@@ -416,7 +416,7 @@ void update_segment(uint16_t tid, int segmentID, uint16_t trainNo) {
         col = COL_GRN;
         clear_char = " ";
     } else {
-        col = COL_BLU;
+        col = COL_CYN;
         clear_char = "";
     }
 

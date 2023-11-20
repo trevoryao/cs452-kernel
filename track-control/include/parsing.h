@@ -24,7 +24,7 @@ enum CMD_KIND {
     CMD_Q,
 };
 
-#define MAX_CMD_PARAMS 2
+#define MAX_CMD_PARAMS 3
 
 // organised multi-value return struct
 typedef struct cmd_s {
