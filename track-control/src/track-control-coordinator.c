@@ -28,24 +28,52 @@ static void replyError(int senderTid) {
     Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 }
 
-static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, uint32_t activation_ticks, trn_position *pos) {
+static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, uint32_t activation_ticks, trn_position *pos, trn_data *registered_trns) {
     struct msg_tc_server msg_reply;
 
     int ret;
     sensor_data data;
 
+    int timeout_train = -1;
+    int early_train = -1;
+    
     for (;;) {
         ret = sensor_queue_get_waiting_tid(sensor_queue, sensor_mod, sensor_no, activation_ticks, &data);
 
         switch (ret) {
-            case SENSOR_QUEUE_DONE: return; // exit
+            case SENSOR_QUEUE_DONE: {
+                // TODO -> do something about the failure states!
+                if (timeout_train != -1) {
+                    int train_hash = trn_hash(timeout_train);
+                    if (registered_trns[train_hash].sensorState == TR_SENSOR_OK) {
+                        registered_trns[train_hash].sensorState = TR_SENSOR_LATE;
+                    } else {
+                        // failure -> stop train
+                        registered_trns[train_hash].sensorState = TRAIN_SENSOR_FAILURE;
+                    }
+                } 
+                if (early_train != -1) {
+                    int train_hash = trn_hash(early_train);
+                    if (registered_trns[train_hash].sensorState == TR_SENSOR_OK) {
+                        registered_trns[train_hash].sensorState = TR_SENSOR_EARLY;
+                    } else {
+                        // failure -> stop train
+                        registered_trns[train_hash].sensorState = TRAIN_SENSOR_FAILURE;
+                    }
+                }
+                return;
+            } // exit
+
+
             case SENSOR_QUEUE_TIMEOUT: {
                 msg_reply.type = MSG_TC_ERROR; // let train deal
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 
-                ULOG("Dropping sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
-
+                ULOG("Late sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+                
+                // setting the required structure
+                timeout_train = data.trn;
                 break;
             }
             case SENSOR_QUEUE_FOUND: {
@@ -55,10 +83,24 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
 
                 if (data.pos_rqst) {
                     trn_position_reached_sensor(pos, data.trn, activation_ticks);
+                    // reset timeout to ok          
+                    registered_trns[trn_hash(data.trn)].sensorState = TR_SENSOR_OK;
                 }
 
                 // ULOG("Replying to tid %d for sensor mod %d and sensor no %d (trn %d)\r\n", data.tid, sensor_mod, sensor_no, data.trn);
 
+                break;
+            }
+            case SENSOR_QUEUE_EARLY: {
+                // Q: how to handle early sensor activation -> also inform train?
+                // TODO: -> deque as well ? -> otherwise we wont wait for the next sensor? 
+                msg_reply.type = MSG_TC_ERROR; // let train deal
+                msg_reply.requesterTid = data.tid;
+                Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
+
+                ULOG("Early sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+
+                early_train = data.trn;
                 break;
             }
             default: upanic("Unknown result from sensor_queue_get %d\r\n", ret);
@@ -210,10 +252,10 @@ void track_control_coordinator_main() {
                     latestSensorTimestamp = current_Timestamp;
 
                     // dequeue waiting processes
-                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, current_Timestamp, &pos);
+                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, current_Timestamp, &pos, registered_trns);
 
                     // inform UI about sensor update
-                    update_triggered_sensor(consoleTid, &ui_sensor_queue, (sensor_module_number - 1), sensor_number);
+                    update_triggered_sensor(consoleTid, &ui_sensor_queue, (sensor_module_number - 1), sensor_number); 
                 }
 
                 break;
@@ -226,8 +268,8 @@ void track_control_coordinator_main() {
                     int state = sensor_queue_check_timeout(&sensor_queue, i, msg_received.clockTick);
 
                     if (state == SENSOR_QUEUE_TIMEOUT) {
-                        //  handle timeout
-                        if (registered_trns[i].)
+                        replyWaitingProcess(&sensor_queue, sensor_queue.timeout[i]->module_no, sensor_queue.timeout[i]->sensor_no, 
+                            msg_received.clockTick, &pos, &registered_trns[i]);
                     }
                 }
                 

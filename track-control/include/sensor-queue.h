@@ -23,13 +23,19 @@ struct sensor_queue_entry {
     sensor_queue_entry *next;
 };
 
+typedef struct timeout_struct {
+    uint32_t expected_time;
+    uint16_t module_no;
+    uint16_t sensor_no;
+} timeout_struct;
+
 typedef struct sensor_queue {
     sensor_queue_entry storage[MAX_WAITING_PROCESSES];
     sensor_queue_entry *freelist;
 
     sensor_queue_entry *sensors[N_SENSOR_MODULES][N_SENSORS];
 
-    sensor_queue_entry *sensor_timeout[N_TRNS];
+    timeout_struct *timeout[N_TRNS];
 } sensor_queue;
 
 void sensor_queue_init(sensor_queue *sq);

@@ -20,4 +20,6 @@ void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no, 
 
 int track_control_set_switch(int tid, uint16_t switch_no, enum SWITCH_DIR switch_dir);
 
+void track_control_send_timeout(int tid);
+
 #endif

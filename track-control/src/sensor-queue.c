@@ -60,7 +60,7 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
         // get new element
         struct sensor_queue_entry *element = sq->freelist;
         sq->freelist = sq->freelist->next;
-
+       
         // copy data
         memcpy(&element->data, data, sizeof(sensor_data));
 
@@ -69,7 +69,8 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
         // if position -> add to timeout queue
         if (data->pos_rqst) {
             int train_hash = trn_hash(data->trn);
-            sq->sensor_timeout[train_hash] = element;
+            sq->timeout[train_hash]->module_no = sensor_mod;
+            sq->timeout[train_hash]->sensor_no = sensor_no;
         }
     }
 }
@@ -110,8 +111,8 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     if (data->pos_rqst) {
         // deque from timeout struct
         int train_hash = trn_hash(data->trn);
-        if (sq->sensor_timeout[train_hash] == head) {
-            sq->sensor_timeout[train_hash] = NULL;
+        if ((sq->timeout[train_hash]->module_no == sensor_mod) && (sq->timeout[train_hash]->sensor_no == sensor_no)) {
+            sq->timeout[train_hash]->expected_time = 0;
         }
     }
 
@@ -122,13 +123,13 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
 int sensor_queue_check_timeout(sensor_queue *sq, int8_t train_hash, uint32_t activation_time) {
     // check if that trainNo is empty    
-    if (sq->sensor_timeout[train_hash] == NULL) {
+    if (sq->timeout[train_hash]->expected_time == 0) {
         return SENSOR_QUEUE_DONE;
     } 
 
-    if (sq->sensor_timeout[train_hash]->data.expected_time + TIMEOUT_TICKS < activation_time) {
+    if (sq->timeout[train_hash]->expected_time + TIMEOUT_TICKS < activation_time) {
         // Case that we actually have a timeout
-        // set it to NULL -> we only want one timeout activation
+        // pop it off and return -> train needs to wait on the next sensor
         return SENSOR_QUEUE_TIMEOUT;
     } else {
         return SENSOR_QUEUE_DONE;
@@ -165,6 +166,10 @@ void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     }
 
     if (curr == NULL) return; // no found
+
+    // update the timeout structure
+    int train_hash = trn_hash(curr->data.trn);
+    sq->timeout[train_hash]->expected_time = expected_time;
 
     // reinsert in new position
     curr->data.expected_time = expected_time;

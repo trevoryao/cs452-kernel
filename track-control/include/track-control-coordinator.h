@@ -25,7 +25,8 @@ enum TC_MSG_TYPE {
 
 enum train_sensor_state {
     TR_SENSOR_OK, 
-    TR_SENSOR_LATE, 
+    TR_SENSOR_LATE,
+    TR_SENSOR_EARLY, 
     TRAIN_SENSOR_FAILURE
 };
 

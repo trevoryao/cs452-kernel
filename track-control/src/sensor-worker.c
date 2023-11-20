@@ -10,6 +10,7 @@
 #include "rpi.h"
 
 #define N_SENSOR 8
+#define N_TIMEOUT_MSG 5
 
 void parseAndReply(char data, int no_of_byte, int tcTid, uint32_t activation_ticks) {
     int sensor_mod = (no_of_byte / 2) + 1;
@@ -35,6 +36,8 @@ void sensor_worker_main() {
 
     uint32_t rqst_time;
 
+    int timeout = 0;
+
     for (;;) {
         // Wait for the Queue to be empty
         WaitOutputEmpty(marklinTid);
@@ -52,6 +55,11 @@ void sensor_worker_main() {
                 parseAndReply(data, i, tcTid, rqst_time);
             }
         }
-
+        timeout += 1;
+        // send timeout message
+        if (timeout == 5) {
+            track_control_send_timeout(tcTid);
+            timeout = 0;
+        }
     }
 }
