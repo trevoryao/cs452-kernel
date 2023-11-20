@@ -16,6 +16,7 @@
 #include "task.h"
 #include "uassert.h"
 #include "speed.h"
+#include "monitor.h"
 
 extern track_node track[];
 
@@ -52,19 +53,21 @@ static bool checkAllFree(uint16_t *lock_segments, uint16_t *requested_segments, 
     return true;
 }
 
-static void lockAll_Unsafe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static void lockAll_Unsafe(int console, uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     for (int i = 0; i < no_requested_segments; i++) {
         int segment = requested_segments[i];
         lock_segments[segment] = trainNo;
+        update_segment(console, segment, trainNo);
     }
 }
 
-static int lockOne_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static int lockOne_Safe(int console, uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     // go through all segments and return the first free segment
     for (int i = 0; i < no_requested_segments; i++) {
         int requested_id = requested_segments[i];
         if (lock_segments[requested_id] == 0 || lock_segments[requested_id] == trainNo) {
             lock_segments[requested_id] = trainNo;
+            update_segment(console, requested_id, trainNo);
             return requested_id;
         }
     }
@@ -73,10 +76,10 @@ static int lockOne_Safe(uint16_t *lock_segments, uint16_t *requested_segments, u
     return -1;
 }
 
-static bool lockAll_Safe(uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
+static bool lockAll_Safe(int console, uint16_t *lock_segments, uint16_t *requested_segments, uint16_t no_requested_segments, uint16_t trainNo) {
     // check if all are free
     if (checkAllFree(lock_segments, requested_segments, no_requested_segments, trainNo)) {
-        lockAll_Unsafe(lock_segments, requested_segments, no_requested_segments, trainNo);
+        lockAll_Unsafe(console, lock_segments, requested_segments, no_requested_segments, trainNo);
         return true;
     } else {
         return false;
@@ -111,6 +114,7 @@ void track_server_main() {
     RegisterAs(TS_SERVER_NAME);
 
     int clock = WhoIs(CLOCK_SERVER_NAME);
+    int console = WhoIs(CONSOLE_SERVER_NAME);
 
     // data structures for keeping the locks
     uint16_t lock_sectors[N_SEGMENTS];
@@ -139,7 +143,7 @@ void track_server_main() {
 
             case MSG_TS_REQUEST_SEGMENTS_ALL_TIMEOUT: {
                 // first check if it can lock all segments
-                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
 
                 if (success) {
@@ -160,7 +164,7 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ALL_NO_TIMEOUT: {
-                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (success) {
                     train_data[train_hash].t_state = train_idle;
@@ -178,7 +182,7 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ONE_TIMEOUT: {
-                int locked_segmentId = lockOne_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                int locked_segmentId = lockOne_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (locked_segmentId != -1) {
                     train_data[train_hash].t_state = train_idle;
@@ -199,7 +203,7 @@ void track_server_main() {
             }
 
             case MSG_TS_REQUEST_SEGMENTS_ONE_NO_TIMEOUT: {
-                int locked_segmentId = lockOne_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                int locked_segmentId = lockOne_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 int train_hash = trn_hash(msg_received.trainNo);
                 if (locked_segmentId != -1) {
                     train_data[train_hash].t_state = train_idle;
@@ -220,14 +224,14 @@ void track_server_main() {
                 // first try to lock the first segment
                 int train_hash = trn_hash(msg_received.trainNo);
 
-                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 if (success) {
                     // reply that the first one was successfull
                     train_data[train_hash].t_state = train_idle;
                     replySegment(senderTid, 0);
                 } else {
                     // try to lock the second one
-                    success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                    success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
                     if (success) {
                         // reply the second on
                         train_data[train_hash].t_state = train_idle;
@@ -249,12 +253,12 @@ void track_server_main() {
 
             case MSG_TS_REQUEST_SEGMENTS_AND_OR_NO_TIMEOUT: {
                 int train_hash = trn_hash(msg_received.trainNo);
-                bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                 if (success) {
                     train_data[train_hash].t_state = train_idle;
                     replySegment(senderTid, 0);
                 } else {
-                    success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                    success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
                     if (success) {
                         // reply the second on
                         train_data[train_hash].t_state = train_idle;
@@ -291,7 +295,7 @@ void track_server_main() {
                     if (train_data[i].trainNo != msg_received.trainNo && train_data[i].t_state == train_blocked) {
                         // try to assign the locks to it
                         if (train_data[i].all_segments_required) {
-                            bool success = lockAll_Safe(lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
+                            bool success = lockAll_Safe(console, lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
 
                             // only reply if success -> else ignore
                             if (success) {
@@ -299,7 +303,7 @@ void track_server_main() {
                                 reply(train_data[i].requesterTid, true);
                             }
                         } else {
-                            int locked_segmentId = lockOne_Safe(lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
+                            int locked_segmentId = lockOne_Safe(console, lock_sectors, train_data[i].segmentIDs, train_data[i].no_segments, train_data[i].trainNo);
 
                             // only reply if success
                             if (locked_segmentId != -1) {
@@ -309,7 +313,7 @@ void track_server_main() {
                         }
                     } else if (train_data[i].trainNo != msg_received.trainNo && train_data[i].t_state == train_blocked_two) {
                         
-                        bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                        bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                         
                         if (success) {
                             // reply that the first one was successfull
@@ -317,7 +321,7 @@ void track_server_main() {
                             replySegment(train_data[i].requesterTid, 0);
                         } else {
                             // try to lock the second one
-                            success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                            success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
                             if (success) {
                                 // reply the second on
                                 train_data[i].t_state = train_idle;
@@ -344,13 +348,13 @@ void track_server_main() {
                     // special case
                     if (train_data[train_hash].t_state == train_blocked_timeout_two) {
                         
-                        bool success = lockAll_Safe(lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                        bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
                         if (success) {
                             // reply that the first one was successfull
                             replySegment(train_data[train_hash].requesterTid, 0);
                         } else {
                             // try to lock the second one
-                            success = lockAll_Safe(lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                            success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
                             if (success) {
                                 // reply the second on
                                 replySegment(train_data[train_hash].requesterTid, 1);
@@ -360,10 +364,10 @@ void track_server_main() {
                         }
 
                     } else if (train_data[train_hash].all_segments_required) {
-                        bool success = lockAll_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        bool success = lockAll_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         reply(train_data[train_hash].requesterTid, success);
                     } else {
-                        int lockedSegment = lockOne_Safe(lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        int lockedSegment = lockOne_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
                         replySegment(train_data[train_hash].requesterTid, lockedSegment);
                     }
 

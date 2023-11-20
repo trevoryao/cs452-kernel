@@ -24,6 +24,7 @@
 #include "speed.h"
 #include "speed-data.h"
 #include "track-data.h"
+#include "track-server.h"
 
 // starting coordinates for various ui elements
 
@@ -39,8 +40,11 @@
 #define SEN_START_X 50
 #define SEN_START_Y 6
 
+#define SEC_START_X 1
+#define SEC_START_Y 28
+
 #define PRMT_START_X 1
-#define PRMT_START_Y 30
+#define PRMT_START_Y 38
 
 #define POS_START_X 1
 #define POS_START_Y 30
@@ -50,13 +54,14 @@ static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 #define SPD_START_X SEN_START_X
 
-static const uint16_t IDLE_START_Y = SPD_START_Y + 3 * N_TRNS + 3;
+static const uint16_t IDLE_START_Y = SPD_START_Y + 3 * N_TRNS + 7;
 #define IDLE_START_X 7
 
 #define TC_START_Y SPD_START_Y
 static const uint16_t TC_START_X = SPD_START_X + 12;
 
 #define SW_TAB 10 // tab distance
+#define SEC_TAB 9
 
 extern speed_data spd_data;
 
@@ -153,6 +158,11 @@ void init_monitor(uint16_t tid) {
 
     // no triggered sensors
     print_prompt(tid);
+
+    // sensors
+    Printf(tid, CURS_MOV COL_YEL "Sectors:" COL_RST, SEC_START_Y - 1, SEC_START_X);
+    for (uint16_t i = 0; i <  N_SEGMENTS; ++i) // SW0
+        update_segment(tid, i, 0);
 
     #endif
 }
@@ -392,4 +402,30 @@ void reset_error_message(uint16_t tid) {
 void print_train_time(uint16_t tid, int8_t trainNo, int32_t diff_time, int32_t diff_distance) {
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE "Train %d reached sensor with %d clock tick diff and %d um difference" CURS_UNSAVE CURS_SHOW,
             POS_START_Y, POS_START_X, trainNo, diff_time, diff_distance);
+}
+
+
+void update_segment(uint16_t tid, int segmentID, uint16_t trainNo) {
+    uint16_t x_off, y_off;
+    x_off = (segmentID & 7) * SEC_TAB; // mod 8
+    y_off = segmentID >> 3;
+
+    char *col;
+    char *clear_char;
+    if (trainNo == 0) {
+        col = COL_GRN;
+        clear_char = " ";
+    } else {
+        col = COL_RED;
+        clear_char = "";
+    }
+
+    
+    
+
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV "S%d: %s%d%s" COL_RST CURS_UNSAVE CURS_SHOW, 
+        (SEC_START_Y + y_off), (SEC_START_X + x_off), 
+        segmentID, col, trainNo, clear_char
+        );
 }
