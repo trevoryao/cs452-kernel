@@ -1,0 +1,144 @@
+\documentclass[12pt, titlepage]{article}
+
+\usepackage[sumlimits,nointlimits,namelimits]{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage[shortlabels]{enumitem}
+\usepackage{graphicx}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit}
+
+\setlist[itemize]{topsep=0pt}
+\setlist[enumerate]{topsep=0pt, label=(\alph*)}
+
+\setlength\parindent{0pt}
+\setlength\parskip{6pt}
+
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{\bf CS 452/652}
+\fancyhead[C]{\bf Train Control 2}
+\fancyhead[R]{\bf Heun \& Yao}
+
+\usepackage{hyperref}
+
+\hypersetup{
+    pdftitle={Train Control 2}
+    colorlinks=false,
+    pdfborder={0 0 1.5},
+    linkbordercolor=red,
+    urlbordercolor={0 1 1}
+}
+
+\usepackage{environ}
+\makeatletter
+\newsavebox{\measure@tikzpicture}
+\NewEnviron{scaletikzpicturetowidth}[1]{%
+  \def\tikz@width{#1}%
+  \def\tikzscale{1}\begin{lrbox}{\measure@tikzpicture}%
+  \BODY
+  \end{lrbox}%
+  \pgfmathparse{#1/\wd\measure@tikzpicture}%
+  \edef\tikzscale{\pgfmathresult}%
+  \BODY
+}
+\makeatother
+
+\begin{document}
+    \begin{titlepage}
+        \begin{center}
+            \vspace*{5em}
+            \textbf{\LARGE Train Control (Part 2)}
+            \vspace*{3em}
+
+            \begin{tabular}{c@{\hskip 8em}c}
+                \textbf{\large Niclas Heun} & \textbf{\large Trevor J. Yao} \\
+                {\small nheun@uwaterloo.ca} & {\small t27yao@uwaterloo.ca} \\
+                {\footnotesize 21111245} & {\footnotesize 20830290} \\
+            \end{tabular}
+
+            \vfill
+
+            Professor Ken Salem \\
+            CS 452/652: Real-Time Programming (Fall 2023) \\
+            University of Waterloo \\
+            22 November 2023
+
+            \vspace*{5em}
+
+        \end{center}
+    \end{titlepage}
+
+    \pagestyle{fancy}
+
+    \tableofcontents
+    \listoffigures
+    \pagebreak
+
+    \section{Overview}
+    \label{sec:overview}
+
+    This assignment finishes our implementation of the complex real-time problem of train control, building upon the work done in Part 1. In particular, this document assumes familiarity (or at the very least, easy access to the documentation of TC1) with the decision and implementation decisions made in TC1. When necessary, these choices may be repeated.
+    
+    In order to accurately route and stop trains on arbitrary positions on the track, our train control program runs atop the kernel which we have built over the last month. The user interface is built upon the K4 UI, adding a few additional interactive commands to route trains between arbitrary positions on the track. All the commands to interact with the track are as follows:
+
+    \begin{itemize}
+        \item \verb`tr <train number> <train speed>`: Set the speed of the specified train. The train number must be a valid supported train (i.e. listed in the interface), and the speed must be an integer in the range $[0,14] \cup [16,30]$, where the latter is used to toggle the light status.
+        \item \verb`rv <train number>`: Change the direction of the specified train to reverse. When run, the train will stop, before reversing at the same speed as before. Preserves the status of headlights.
+        \item \verb`sw <switch number> <switch direction>`: Throw the given switch in the given direction (\verb`s`/\verb`S` or \verb`c`/\verb`C`). The switch number must exist on the track.
+        \item \verb`init`: Initialises the track by learning the positions of any of the supported trains on the track. Must be called before the \verb`tc` command.
+        \item \verb`tc <end> <offset> <train number> <speed>`: Route the specified train from the start to end track nodes, stopping offset mm after (if positive) or before (if negative) at the specified speed. The track nodes must match their names in the track data (i.e. case sensitive). The speed is specified as one of \verb`lo`/\verb`med`. Note that the start node must be in the forward direction of the train.
+        \item \verb`st <train number>`: Stops the train mid-route. Useful for force quitting.
+        \item \verb`go`: Send the `Go' signal to the track.
+        \item \verb`hlt`: Send the `Stop' signal to the track.
+        \item \verb`q`: Halt the program and return to boot loader. This will send any remaining commands to the track before stopping control.
+    \end{itemize}
+
+    \subsection{Submission SHA}
+
+    The repository for the kernel is \href{https://git.uwaterloo.ca/t27yao/cs452-kernel}{ist-git@git.uwaterloo.ca:t27yao/cs452-kernel.git}. The submission SHA is $\langle$SHA$\rangle$.
+
+    \subsection{Program Structure}
+
+    The program (including the kernel) is structured into three sections. The \verb`kernel/` directory contains all the kernel code, including task descriptors, syscall/interrupt handlers, context switching functions, program execution timers, and allocators for task descriptors and stacks.
+
+    The root directory \verb`include/` and \verb`src/` directories contain system library code, which is used by user-level programs to interact with the kernel, and also any shared data structures between the kernel and user programs. These include interfaces for using any kernel-provided functionalities (i.e. syscalls, interrupt events, message passing). The interfaces for interacting with the Raspberry Pis, as well as assorted utility functions (string/memory interactions) are also found in the system library, and are used by both the kernel and user-level programs. The system library directory also holds the implementation of user-level servers, including the Name Server, Clock Server, and two I/O Servers, as well as their respective APIs. Finally, the system library also contains the deque (double-ended queue) and binary heap data structures.
+
+    All the user-level code needed to implement train control is contained in the \verb`track-control/` directory.\footnote{It was only realised when writing this document that this directory was indeed misnamed.} The contents of this directory are all discussed in detail throughout this document.
+
+    \section{Execution}
+
+    The Train Control program can be built from the root directory by running \verb`make` or \verb`make all`. It may be necessary to set the \verb`XDIR` variable to point to the directory containing the cross-compiler. For example, in the \verb`linux.student.cs` environment, \verb`XDIR` should be set to \verb`/u/cs452/public/xdev` (i.e. the parent of the \verb`bin` directory). Therefore, the program can be compiled in the \verb`linux.student.cs` environment by changing directory to the program root and executing:
+    \begin{verbatim}
+make XDIR=/u/cs452/public/xdev
+    \end{verbatim}
+    
+    \section{Routing}
+    
+    \section{Sensor Attribution}
+    
+    \section{Track Locking}
+    
+    \section{Train Control Design}
+    
+    \subsection{Position Modelling}
+    
+    \subsection{Train Administrator}
+    
+    % Notes
+    % You may find that creating a track server, which maintains the current state of the track, including reservations, and which answers questions about the track from other components, is an effective way of minimizing communication overhead.
+    % During the demo you are likely to be asked what parts of the track are reserved. Putting reservations into your display of the track status is a good idea, and might well reduce debugging time.
+    % When considering design choices or trade-offs, keep in mind the overall optimization criterion that trips should be completed as fast as possible.
+    % On possible implementation strategy starts conservatively, making generous track reservations. You will probably notice that the more conservative the reservation system, the more time the trains spend motionless. When you think things are robust you can then make your reservations more aggressive and get better performance.
+    
+    % It should explain how you route trains, how you handle sensor attribution, and how you manage track reservations and otherwise prevent trains from colliding. You should describe any predictive models that you have created, and how they are used for train control.
+\end{document}
