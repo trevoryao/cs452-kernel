@@ -24,19 +24,9 @@ void deque_reset(deque *q) {
     q->back = 0;
 }
 
-static void print_queue(deque *q) {
-    deque_itr it = deque_begin(q);
-    for (int i = 0; i < q->size; ++i)
-        uart_printf(CONSOLE, " %d", deque_itr_get(q, it));
-    uart_printf(CONSOLE, "\r\n");
-}
-
 void deque_move(deque *q, deque *other) {
     deque_reset(q);
     q->max_size = other->max_size;
-
-    uart_printf(CONSOLE, "other before:");
-    print_queue(other);
 
     // don't want to, but can cause issues on boot up for some reason
     memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
@@ -44,9 +34,6 @@ void deque_move(deque *q, deque *other) {
     while (!deque_empty(other)) {
         deque_push_back(q, deque_pop_front(other));
     }
-
-    uart_printf(CONSOLE, "q after:");
-    print_queue(q);
 }
 
 int16_t deque_empty(deque *q) { return q->size == 0; }

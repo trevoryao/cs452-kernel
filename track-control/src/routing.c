@@ -156,35 +156,6 @@ plan_direct_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS start_spd,
     enum SPEEDS target_spd, bool include_first_node,
     int track_server_tid, route *route) {
-
-    // routing_action debug_action;
-    // uart_printf(CONSOLE, "Route (size %d):\r\n", routing_action_queue_size(&route->path));
-    // while (!routing_action_queue_empty(&route->path)) {
-    //     routing_action_queue_front(&route->path, &debug_action);
-
-    //     if (debug_action.action_type == SWITCH) {
-    //         uassert(debug_action.info.delay_ticks == 0);
-
-    //         uart_printf(CONSOLE, "Switch %d to %d",
-    //             debug_action.action.sw.num, debug_action.action.sw.dir);
-
-    //         if (debug_action.sensor_num != SENSOR_NONE) {
-    //             uart_printf(CONSOLE, " (at Sensor %c%d)",
-    //                 SENSOR_MOD(debug_action.sensor_num) + 'A' - 1, SENSOR_NO(debug_action.sensor_num));
-    //         }
-
-    //         uart_printf(CONSOLE, "\r\n");
-    //     } else if (debug_action.action_type == SENSOR) {
-    //         uart_printf(CONSOLE, "Sensor %c%d -- dist to next: %d mm\r\n",
-    //             SENSOR_MOD(debug_action.sensor_num) + 'A' - 1, SENSOR_NO(debug_action.sensor_num),
-    //             debug_action.info.dist);
-    //     } else {
-    //         upanic("Incorrect Action Type: %s\r\n", debug_action);
-    //     }
-
-    //     routing_action_queue_pop_front(&route->path, NULL);
-    // }
-
     uassert(routing_action_queue_empty(&route->path));
     uassert(routing_action_queue_empty(&route->speed_changes));
     uassert(deque_empty(&route->segments));
