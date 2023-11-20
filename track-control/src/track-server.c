@@ -282,6 +282,8 @@ void track_server_main() {
                     int index = msg_received.segmentIDs[i];
                     if (lock_sectors[index] == msg_received.trainNo) {
                         lock_sectors[index] = 0;
+                        update_segment(console, index, 0);
+
                     } else {
                         ULOG("sector was not locked for train %d", msg_received.trainNo);
                     }
