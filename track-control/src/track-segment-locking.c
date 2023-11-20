@@ -11,21 +11,27 @@
 void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->no_segments = 0;
 
+    uart_printf(CONSOLE, "copySegmentIDs:");
     for (deque_itr it = deque_begin(segments); msg->no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
+        uart_printf(CONSOLE, " %d", value);
         msg->segmentIDs[msg->no_segments] = value;
         msg->no_segments += 1;
     }
+    uart_printf(CONSOLE, "\r\n");
 }
 
 void copySecondSegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->second_no_segments = 0;
 
+    uart_printf(CONSOLE, "copySegmentIDs:");
     for (deque_itr it = deque_begin(segments); msg->second_no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
+        uart_printf(CONSOLE, " %d", value);
         msg->second_segmentIDs[msg->second_no_segments] = value;
         msg->second_no_segments += 1;
     }
+    uart_printf(CONSOLE, "\r\n");
 }
 
 bool track_server_lock_segment_timeout(int tid, uint16_t segmentID, uint16_t trainNo,

@@ -104,8 +104,7 @@ static track_node *print_segment_route(route *route) {
     routing_action_queue_back(&route->path, &action);
     track_node *segment_end = &track[action.sensor_num];
 
-    uart_printf(CONSOLE, "Route:\r\n");
-    ULOG("size: %d\r\n", routing_action_queue_size(&route->path));
+    uart_printf(CONSOLE, "Route (size %d):\r\n", routing_action_queue_size(&route->path));
     while (!routing_action_queue_empty(&route->path)) {
         routing_action_queue_front(&route->path, &action);
 

@@ -373,12 +373,11 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
     // flags to not overwhelm notifiers and not to excessively block
     bool waiting_route = false, waiting_spd = false;
 
+    uassert(cur_route != next_route);
+
     int rcv_tid;
     routing_action routing_action;
     train_msg msg;
-
-    // flag to free previous segments after first entering new segments
-    bool segments_freed = false;
 
     // throw any initial non-sensor dependent switches
     // before we start rolling
@@ -477,9 +476,9 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
                 }
 
                 // free segments at end, make sure we have indeed completely left
-                if (!segments_freed) {
+                if (!deque_empty(prev_segments)) {
                     track_server_free_segments(locking_server_tid, prev_segments, params->trn);
-                    segments_freed = true; // only once
+                    deque_reset(prev_segments); // only once
                     uart_printf(CONSOLE, "[train] freed prev segments\r\n");
                 }
 
@@ -559,15 +558,17 @@ static void train_tc(void) {
     int8_t cur = 0; // current index in routes array
 
     // in "previous" itr, locked only starting segment
-    deque_push_back(&routes[cur].segments, params.start->reverse->segmentId);
+    deque_push_back(&routes[1 - cur].segments, params.start->reverse->segmentId);
 
     deque prev_segments; // used after stopping
+    deque_init(&prev_segments, 3);
 
     track_node *current_node = params.start;
 
     for (;;) {
         // save segments we need to unlock after determining a route
         deque_move(&prev_segments, &routes[1 - cur].segments);
+        uassert(deque_empty(&routes[1 - cur].segments));
 
         uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
@@ -585,8 +586,6 @@ static void train_tc(void) {
                     &routes[0].segments, &routes[1].segments, params.trn);
                 uassert(cur != -1);
 
-                routing_actions_reset(&routes[1 - cur]); // reset for next iteration
-                deque_move(&routes[1 - cur].segments, &prev_segments); // free later
                 reversed = (cur == 1); // save for done
             } else if (routes[0].state != ERR_NO_ROUTE) {
                 track_server_lock_all_segments(locking_server_tid,
@@ -602,6 +601,8 @@ static void train_tc(void) {
                 upanic("error: it actually happened! no possible route in either direction");
             }
 
+            routing_actions_reset(&routes[1 - cur]); // reset for next iteration
+
             if (reversed) {
                 track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
             }
@@ -609,8 +610,8 @@ static void train_tc(void) {
             ULOG("[train] moving\r\n");
 
             // already have lock from previous iteration
-            plan_in_progress_route(current_node, params.end, params.offset, params.trn,
-                params.spd, locking_server_tid, &routes[cur]);
+            // plan_in_progress_route(current_node, params.end, params.offset, params.trn,
+            //     params.spd, locking_server_tid, &routes[cur]);
 
             routing_actions_reset(&routes[1 - cur]); // reset for next iteration
         }
