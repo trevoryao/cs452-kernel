@@ -33,6 +33,8 @@ void sensor_worker_main() {
     int tcTid = WhoIs(TC_SERVER_NAME);
     int clockTid = WhoIs(CLOCK_SERVER_NAME);
 
+    int timeout = 0;
+
     uint32_t rqst_time;
 
     for (;;) {
@@ -53,5 +55,7 @@ void sensor_worker_main() {
             }
         }
 
+        timeout += 1;
+        track_control_send_timeout(tcTid, rqst_time);
     }
 }

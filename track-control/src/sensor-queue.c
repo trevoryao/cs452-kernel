@@ -5,9 +5,11 @@
 
 #include "controller-consts.h"
 #include "track-control.h"
+#include "speed.h"
 
 void sensor_queue_init(sensor_queue *sq) {
     memset(sq->storage, 0, sizeof(struct sensor_queue_entry) * MAX_WAITING_PROCESSES);
+    memset(sq->timeout, 0, sizeof(timeout_struct) * N_TRNS);
 
     for (int i = 0; i < N_SENSOR_MODULES; ++i) {
         memset(sq->sensors[i], 0, sizeof(sensor_queue_entry*) * N_SENSORS);
@@ -64,6 +66,16 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
         // copy data
         memcpy(&element->data, data, sizeof(sensor_data));
 
+        // update the timeout structure
+        if (data->pos_rqst) {
+            int train_hash = trn_hash(data->trn);
+            sq->timeout[train_hash].expected_time = data->expected_time;
+            sq->timeout[train_hash].module_no = sensor_mod;
+            sq->timeout[train_hash].sensor_no = sensor_no;
+
+            uart_printf(CONSOLE, "setting timeout %d\r\n", sq->timeout[train_hash].expected_time);
+        }
+
         sensor_queue_insert(sq, act_sensor_mod, act_sensor_no, element);
     }
 }
@@ -78,7 +90,8 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
     struct sensor_queue_entry *head = sq->sensors[act_sensor_mod][act_sensor_no];
 
-    if (head == NULL || head->data.expected_time > activation_time + TIMEOUT_TICKS) {
+    // we will always return
+    if (head == NULL) {
         return SENSOR_QUEUE_DONE;
     }
 
@@ -97,9 +110,26 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     if (data->expected_time == TIME_NONE)
         return SENSOR_QUEUE_FOUND;
 
-    return (activation_time - TIMEOUT_TICKS <= data->expected_time
-        && data->expected_time <= activation_time + TIMEOUT_TICKS)
-        ? SENSOR_QUEUE_FOUND : SENSOR_QUEUE_TIMEOUT;
+    if (data->pos_rqst) {
+        // reset the data structures
+        int train_hash = trn_hash(data->trn);
+        sq->timeout[train_hash].module_no = 0;
+        sq->timeout[train_hash].sensor_no = 0;
+        sq->timeout[train_hash].expected_time = 0;
+
+        uart_printf(CONSOLE, "deleting timeout due to dequeing\r\n");
+
+        if (data->expected_time + TIMEOUT_TICKS < activation_time) {
+            return SENSOR_QUEUE_TIMEOUT;
+        } else if (data->expected_time - TIMEOUT_TICKS > activation_time) {
+            return SENSOR_QUEUE_EARLY;
+        } else {
+            return SENSOR_QUEUE_FOUND;
+        }
+    } else {
+        // only for pos request we care about timeouts
+        return SENSOR_QUEUE_FOUND;
+    }
 }
 
 void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
@@ -132,6 +162,11 @@ void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
     if (curr == NULL) return; // no found
 
+    if (curr->data.pos_rqst) {
+        int train_hash = trn_hash(curr->data.trn);
+        sq->timeout[train_hash].expected_time = expected_time;
+
+    }
     // reinsert in new position
     curr->data.expected_time = expected_time;
     sensor_queue_insert(sq, act_sensor_mod, act_sensor_no, curr);
@@ -164,5 +199,21 @@ void sensor_queue_free_train(sensor_queue *sq, uint16_t trn) {
                 curr = curr->next;
             }
         }
+    }
+}
+
+int sensor_queue_check_timeout(sensor_queue *sq, int8_t train_hash, uint32_t activation_time) {
+    // check if that trainNo is empty    
+    if (sq->timeout[train_hash].expected_time == 0) {
+        return SENSOR_QUEUE_DONE;
+    } 
+    
+    // just interested in timeout here
+    if (sq->timeout[train_hash].expected_time + TIMEOUT_TICKS < activation_time) {
+        // Case that we actually have a timeout
+        // pop it off and return -> train needs to wait on the next sensor
+        return SENSOR_QUEUE_TIMEOUT;
+    } else {
+        return SENSOR_QUEUE_DONE;
     }
 }

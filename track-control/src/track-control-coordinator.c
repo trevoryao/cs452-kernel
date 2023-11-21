@@ -28,7 +28,7 @@ static void replyError(int senderTid) {
     Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 }
 
-static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, uint32_t activation_ticks, trn_position *pos) {
+static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sensor_mod, uint16_t sensor_no, uint32_t activation_ticks, trn_position *pos, trn_data *registered_trns) {
     struct msg_tc_server msg_reply;
 
     int ret;
@@ -44,7 +44,7 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 
-                ULOG("Dropping sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+                uart_printf(CONSOLE, "Late sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
 
                 break;
             }
@@ -58,6 +58,15 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
                 }
 
                 // ULOG("Replying to tid %d for sensor mod %d and sensor no %d (trn %d)\r\n", data.tid, sensor_mod, sensor_no, data.trn);
+
+                break;
+            }
+            case SENSOR_QUEUE_EARLY: {
+                msg_reply.type = MSG_TC_ERROR; // let train deal
+                msg_reply.requesterTid = data.tid;
+                Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
+
+                uart_printf(CONSOLE, "Early sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
 
                 break;
             }
@@ -210,7 +219,7 @@ void track_control_coordinator_main() {
                     latestSensorTimestamp = current_Timestamp;
 
                     // dequeue waiting processes
-                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, current_Timestamp, &pos);
+                    replyWaitingProcess(&sensor_queue, sensor_module_number, sensor_number, current_Timestamp, &pos, registered_trns);
 
                     // inform UI about sensor update
                     update_triggered_sensor(consoleTid, &ui_sensor_queue, (sensor_module_number - 1), sensor_number);
@@ -232,6 +241,23 @@ void track_control_coordinator_main() {
                 update_speed(consoleTid, &spd_t, msg_received.data.trn_cmd.trn_no);
 
                 trn_position_update_speed(&pos, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd, speed_change_time);
+                break;
+            }
+            case MSG_TC_SENSOR_PUT_TIMEOUT: {
+                Reply(senderTid, NULL, 0);
+
+                // check if we have any timeout
+                // no sensor read -> just go through the queue and check for time outs
+                for (int i=0; i < N_TRNS; i++) {
+                    int state = sensor_queue_check_timeout(&sensor_queue, i, msg_received.clockTick);
+
+                    if (state == SENSOR_QUEUE_TIMEOUT) {
+                        replyWaitingProcess(&sensor_queue, sensor_queue.timeout[i].module_no, sensor_queue.timeout[i].sensor_no, 
+                            msg_received.clockTick, &pos, &registered_trns);
+                    }
+                }
+                
+
                 break;
             }
             default: upanic("Unknown TCC msg type: %d", msg_received.type);

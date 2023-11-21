@@ -130,3 +130,12 @@ int track_control_set_switch(int tid, uint16_t switch_no, enum SWITCH_DIR switch
         return msg.data.sw_cmd.sw_dir;
     }
 }
+
+void track_control_send_timeout(int tid, uint32_t activation_time) {
+    struct msg_tc_server msg;
+    msg.type = MSG_TC_SENSOR_PUT_TIMEOUT;
+    msg.clockTick = activation_time;
+   
+    Send(tid, (char *)&msg, sizeof(struct msg_tc_server), (char *)&msg, sizeof(struct msg_tc_server));
+
+}
