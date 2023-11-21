@@ -153,6 +153,10 @@ void cmd_task_main(void) {
                     int offset = 0;
                     int trn1 = 24;
                     int spd1 = SPD_LO;
+
+                    // track_node *start1 = &track[45];
+                    // track_node *end1 = &track[1];
+
                     track_node *start1 = &track[0];
                     track_node *end1 = &track[78];
 
@@ -165,19 +169,19 @@ void cmd_task_main(void) {
                     );
                     print_tc_params(console_tid, start1->num, end1->num, offset, trn1);
 
-                    int trn2 = 58;
-                    int spd2 = SPD_LO;
-                    track_node *start2 = &track[16];
-                    track_node *end2 = &track[14];
+                    // int trn2 = 58;
+                    // int spd2 = SPD_LO;
+                    // track_node *start2 = &track[16];
+                    // track_node *end2 = &track[14];
 
-                    trains[trn_hash(trn2)] = CreateControlledTrain(
-                        trn2,
-                        start2,
-                        end2,
-                        offset,
-                        spd2
-                    );
-                    print_tc_params(console_tid, start2->num, end2->num, offset, trn2);
+                    // trains[trn_hash(trn2)] = CreateControlledTrain(
+                    //     trn2,
+                    //     start2,
+                    //     end2,
+                    //     offset,
+                    //     spd2
+                    // );
+                    // print_tc_params(console_tid, start2->num, end2->num, offset, trn2);
 
                     break;
                 }
