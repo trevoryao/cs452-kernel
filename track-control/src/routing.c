@@ -527,7 +527,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         }
 
         // add decision pt to queue
-        route->decision_pt.sensor_num = start_node->num;
+        route->decision_pt.sensor_num = true_starting_node->num;
         route->decision_pt.ticks = decision_delay_time;
     }
 

@@ -78,23 +78,23 @@ typedef struct train_msg {
 static void do_action(int tc_tid, int locking_tid, uint8_t trn, routing_action *action) {
     switch (action->action_type) {
         case SWITCH:
-            uart_printf(CONSOLE, "[train-%d] Switch %d to %c\r\n", trn,
-                action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
+            // uart_printf(CONSOLE, "[train-%d] Switch %d to %c\r\n", trn,
+            //     action->action.sw.num, (action->action.sw.dir == STRT) ? 'S' : 'C');
             track_control_set_switch(tc_tid, action->action.sw.num, action->action.sw.dir);
             break;
         case SPD_CHANGE:
         case SPD_REACHED:
-            uart_printf(CONSOLE, "[train-%d] Set Speed to %d\r\n", trn, action->action.spd);
+            // uart_printf(CONSOLE, "[train-%d] Set Speed to %d\r\n", trn, action->action.spd);
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         case SENSOR:
-            uart_printf(CONSOLE, "[train-%d] Free segment %d\r\n", trn,
-                track[action->sensor_num].reverse->segmentId);
+            // uart_printf(CONSOLE, "[train-%d] Free segment %d\r\n", trn,
+            //     track[action->sensor_num].reverse->segmentId);
             uassert(action->sensor_num != SENSOR_NONE);
             track_server_free_segment(locking_tid, track[action->sensor_num].reverse->segmentId, trn);
             break;
         default:
-            uart_printf(CONSOLE, "[train-%d] no action (%d)\r\n", trn, action->action_type);
+            // uart_printf(CONSOLE, "[train-%d] no action (%d)\r\n", trn, action->action_type);
             break; // none needed for any other actions
     }
 }
@@ -331,19 +331,21 @@ static void train_locking_notifier(void) {
         deque_init(&segments, 3);
 
         // acquire lock with given timeout
+        // uart_printf(CONSOLE, "[train-notifier-locking (%d)] locking w/ timeout %dms:\r\n",
+        //     action.trn, action.decision_pt.ticks * 10);
         for (uint8_t i = 0; i < action.no_segments; ++i) {
+            //uart_printf(CONSOLE, " %d", action.segmentIDs[i]);
             deque_push_back(&segments, action.segmentIDs[i]);
         }
+        //uart_printf(CONSOLE, "\r\n");
 
-        // uart_printf(CONSOLE, "[train-notifier-locking] locking w/ timeout %dms\r\n",
-        //     action.decision_pt.ticks * 10);
             // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
             &segments, action.trn, action.decision_pt.ticks);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
         if (!res) {
-            uart_printf(CONSOLE, "** EMERGENCY STOP **\r\n");
+            //uart_printf(CONSOLE, "** EMERGENCY STOP **\r\n");
             track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
             track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
             track_control_set_train_speed(tc_server_tid, action.trn, SP_STOP); // to properly display
@@ -517,7 +519,7 @@ static bool execute_plan(route *cur_route, route *next_route,
         }
 
         // check exit condition
-        uart_printf(CONSOLE, "[train-%d] exit: waiting_route=%d waiting_spd=%d waiting_lock=%d spd_changes_size=%d path_size=%d\r\n", params->trn, waiting_route, waiting_spd, waiting_lock, routing_action_queue_size(&cur_route->speed_changes), routing_action_queue_size(&cur_route->path));
+        // uart_printf(CONSOLE, "[train-%d] exit: waiting_route=%d waiting_spd=%d waiting_lock=%d spd_changes_size=%d path_size=%d\r\n", params->trn, waiting_route, waiting_spd, waiting_lock, routing_action_queue_size(&cur_route->speed_changes), routing_action_queue_size(&cur_route->path));
         if (!waiting_route && !waiting_spd && !waiting_lock &&
             routing_action_queue_empty(&cur_route->speed_changes) &&
             routing_action_queue_empty(&cur_route->path)) {
@@ -587,7 +589,7 @@ static void train_tc(void) {
     for (;;) {
         // uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
-            uart_printf(CONSOLE, "[train-%d] stopped -- planning from %s\r\n", params.trn, current_node->name);
+            // uart_printf(CONSOLE, "[train-%d] stopped -- planning from %s\r\n", params.trn, current_node->name);
             // ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
 
@@ -637,7 +639,6 @@ static void train_tc(void) {
 
         if (stopped && reversed) {
             // return to regular state only if we had to stop
-            uart_printf(CONSOLE, "[train-%d] return back to forward dir\r\n", params.trn);
             track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
             reversed = false;
         }
