@@ -88,8 +88,8 @@ static void do_action(int tc_tid, int locking_tid, uint8_t trn, routing_action *
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         case SENSOR:
-            // uart_printf(CONSOLE, "[train] Free sensor %c%d\r\n",
-            //     SENSOR_MOD(action->sensor_num) - 1 + 'A', SENSOR_NO(action->sensor_num));
+            // uart_printf(CONSOLE, "[train] Free segment %d\r\n",
+            //     track[action->sensor_num].reverse->segmentId);
             uassert(action->sensor_num != SENSOR_NONE);
             track_server_free_segment(locking_tid, track[action->sensor_num].reverse->segmentId, trn);
             break;
@@ -364,13 +364,16 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
     memcpy(&msg.payload.locking_action.decision_pt, &cur_route->decision_pt, sizeof(decision_pt));
     msg.payload.locking_action.trn = trn;
 
+    // uart_printf(CONSOLE, "[train %d] try-locking", trn);
     msg.payload.locking_action.no_segments = 0;
     for (deque_itr it = deque_begin(&next_route->segments);
         msg.payload.locking_action.no_segments < deque_size(&next_route->segments);
         it = deque_itr_next(it)) {
         msg.payload.locking_action.segmentIDs[msg.payload.locking_action.no_segments++] =
             deque_itr_get(&next_route->segments, it);
+        // uart_printf(CONSOLE, " %d", deque_itr_get(&next_route->segments, it));
     }
+    // uart_printf(CONSOLE, "\r\n");
 
     Send(notif_tid, (char *)&msg, sizeof(train_msg), (char *)&msg, sizeof(train_msg));
     uassert(msg.type == MSG_TRAIN_ACK);
@@ -410,10 +413,6 @@ static bool execute_plan(route *cur_route, route *next_route,
         }
     }
 
-    // start-up locking notifier (separate from any other route actions)
-    if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
-        wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
-
     // set next_segment (because of when we timeout, can guarantee)
     routing_action_queue_pop_back(&cur_route->path, &routing_action);
     *next_segment = &track[routing_action.sensor_num];
@@ -421,6 +420,10 @@ static bool execute_plan(route *cur_route, route *next_route,
     // plan next route
     plan_in_progress_route(*next_segment, params->end, params->offset,
         params->trn, params->spd, locking_server_tid, next_route);
+
+    // start-up locking notifier (separate from any other route actions)
+    if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
+        wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
 
     for (;;) {
         // do actions until we can't anymore
@@ -579,7 +582,8 @@ static void train_tc(void) {
     for (;;) {
         // uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
-            ULOG("[train] stopped\r\n");
+            uart_printf("[train-%d] stopped -- planning from %s\r\n", current_node->name);
+            // ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
 
             // reset both routes

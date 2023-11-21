@@ -143,7 +143,7 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
 
 static void gather_branches(route *route, deque *branches, track_node *node);
 
-static const int32_t DECISION_PT_OFFSET = -100 * MM_TO_UM;
+static const int32_t DECISION_PT_OFFSET = -200 * MM_TO_UM;
 static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
 // main method for path finding
