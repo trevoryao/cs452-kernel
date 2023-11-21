@@ -567,7 +567,7 @@ static void train_tc(void) {
     track_server_register_train(locking_server_tid, params.start->reverse->segmentId, params.trn);
 
     // use two routes at all times
-    // either use cur as current in use route and prev := 1 - cur
+    // either use cur as current in use route and next := 1 - cur
     // OR: use both from stopped
     route routes[2];
     routing_actions_init(&routes[0]);
@@ -576,14 +576,14 @@ static void train_tc(void) {
     int8_t cur = 0; // current index in routes array
 
     // in "previous" itr, locked only starting segment
-    deque_push_back(&routes[1 - cur].segments, params.start->reverse->segmentId);
+    // deque_push_back(&routes[1 - cur].segments, params.start->reverse->segmentId);
 
     track_node *current_node = params.start;
 
     for (;;) {
         // uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
-            uart_printf(CONSOLE, "[train-%d] stopped -- planning from %s\r\n", current_node->name);
+            uart_printf(CONSOLE, "[train-%d] stopped -- planning from %s\r\n", params.trn, current_node->name);
             // ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
 
