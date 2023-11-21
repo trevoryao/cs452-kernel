@@ -278,6 +278,7 @@ static void train_locking_notifier(void) {
     train_msg msg;
 
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
+    int clock_tid = WhoIs(CLOCK_SERVER_NAME);
     int console_tid = WhoIs(CONSOLE_SERVER_NAME);
     int locking_server_tid = WhoIs(TS_SERVER_NAME);
 
@@ -349,6 +350,11 @@ static void train_locking_notifier(void) {
             track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
             track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
             track_control_set_train_speed(tc_server_tid, action.trn, SP_STOP); // to properly display
+
+            if (trn_hash(action.trn) > 0) {
+                // delay 0, 2, 4 seconds based on which train we are -- create separation between trains
+                uassert(Delay(clock_tid, 2 * trn_hash(action.trn) * 100) >= 0);
+            }
         }
 
         msg.type = res ? MSG_TRAIN_NOTIFY_LOCKING_SUCCESS : MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT;
