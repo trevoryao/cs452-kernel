@@ -122,7 +122,7 @@ void routing_actions_reset(route *actions) {
 
 #define SW_DELAY_TICKS 75
 #define SPD_REACH_WINDOW 10
-#define IN_USE_PENALTY 2 // double length
+#define IN_USE_PENALTY 15 // length multiplier
 
 static inline uint8_t calculate_nbhd_size(node_type type) {
     switch (type) {

@@ -534,7 +534,7 @@ static void train_tc(void) {
 
     route_notifier = Create(P_MED, train_route_notifier);
     spd_notifier = Create(P_VHIGH, train_speed_notifier);
-    lock_notifier = Create(P_HIGH, train_locking_notifier);
+    lock_notifier = Create(P_VIP, train_locking_notifier);
 
     // flags for tracking train attributes
     bool stopped = true;
