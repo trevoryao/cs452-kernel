@@ -44,6 +44,7 @@ int track_server_lock_one_segment(int tid, deque *segmentIDs, uint16_t trainNo);
  * Frees lock on all segments specified
  */
 void track_server_free_segments(int tid, deque *segmentIDs, uint16_t trainNo);
+void track_server_free_segment(int tid, uint16_t segmentID, uint16_t trainNo);
 
 // returns true if the given segmentID is locked, false otherwise
 bool track_server_segment_is_locked(int tid, int segmentID, uint16_t trainNo);
