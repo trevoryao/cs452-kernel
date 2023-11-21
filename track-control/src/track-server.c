@@ -384,9 +384,13 @@ void track_server_main() {
             case MSG_TS_FREE_ALL: {
                 // zero all segments for that train
                 int train_id = msg_received.trainNo;
+                int curr_segment = -1;
+                if (msg_received.no_segments == 1){
+                    curr_segment = msg_received.segmentIDs[0];
+                }
 
                 for (int i = 0; i < N_SEGMENTS; i++) {
-                    if (lock_sectors[i] == train_id) {
+                    if ((lock_sectors[i] == train_id) && (i != curr_segment)) {
                         lock_sectors[i] = 0;
                         update_segment(console, i, train_id);
                     }
@@ -397,6 +401,16 @@ void track_server_main() {
                 Reply(senderTid, NULL, 0);
                 break;
             }
+
+            case MSG_TS_TRAIN_REGISTER: {
+                // lock that one segment 
+                lock_sectors[msg_received.segmentIDs[0]] = msg_received.trainNo;
+                update_segment(console, msg_received.segmentIDs[0], msg_received.trainNo);
+
+                Reply(senderTid, NULL, 0);
+                break;
+            }
+
 
             default: {
                 replyError(senderTid);

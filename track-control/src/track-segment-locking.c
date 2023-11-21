@@ -183,10 +183,17 @@ int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second
     return msg_reply.segmentIDs[0];
 }
 
-void track_server_free_all(int tid, uint16_t trainNo) {
+void track_server_free_all(int tid, int16_t segmentId, uint16_t trainNo) {
     struct msg_ts_server msg_request;
     msg_request.type = MSG_TS_FREE_ALL;
     msg_request.trainNo = trainNo;
+
+    if (segmentId == -1) {
+        msg_request.no_segments = 0;
+    } else {
+        msg_request.no_segments = 1;
+        msg_request.segmentIDs[0] = segmentId;
+    }
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_request, sizeof(struct msg_ts_server));
 }
@@ -200,6 +207,17 @@ void track_server_free_segment(int tid, uint16_t segmentID, uint16_t trainNo) {
 
     msg_request.no_segments = 1;
     msg_request.segmentIDs[0] = segmentID;
+
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+}
+
+void track_server_register_train(int tid, uint16_t segementId, uint16_t trainNo) {
+     struct msg_ts_server msg_request, msg_reply;
+    msg_request.type = MSG_TS_TRAIN_REGISTER;
+    msg_request.trainNo = trainNo;
+
+    msg_request.no_segments = 1;
+    msg_request.segmentIDs[0] = segementId;
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
