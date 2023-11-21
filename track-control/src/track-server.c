@@ -60,6 +60,7 @@ static void lockAll_Unsafe(int console, uint16_t *lock_segments, uint16_t *reque
         update_segment(console, segment, trainNo);
 
         next_segment[segment] = train_data->curr_index;
+        uart_printf(CONSOLE, "Set next to id %d\r\n", train_data->curr_index);
         train_data->curr_index += 1;
     }
 }
@@ -115,10 +116,10 @@ static void copyTrainData(train_locking_structure *train_data, msg_ts_server *ms
 }
 
 int getNextCurrSegment(uint16_t *lock_sectors, uint8_t *next_sector, int trainNo, int segmentId) {
-    int currId =  lock_sectors[segmentId];
+    int currId =  next_sector[segmentId];
     for (int i = 0; i < N_SEGMENTS; i++) {
-        if ((next_sector[i] == (currId +1)) && (lock_sectors[i] == trainNo)) {
-            uart_printf(CONSOLE, "train %d moving to segment %d", trainNo, i);
+        if ((next_sector[i] == (currId + 1)) && (lock_sectors[i] == trainNo)) {
+            uart_printf(CONSOLE, "train %d moving to segment %d\r\n", trainNo, i);
             return i;
         }
     }
@@ -301,11 +302,13 @@ void track_server_main() {
                 for (int i = 0; i < msg_received.no_segments; i++) {
                     int index = msg_received.segmentIDs[i];
                     if (lock_sectors[index] == msg_received.trainNo) {
+                        train_data[train_hash].curr_segment = getNextCurrSegment(lock_sectors, next_sector, msg_received.trainNo, index);
+                        
                         lock_sectors[index] = 0;
                         update_segment(console, index, 0);
 
                         // update the trains curr segment
-                        train_data[train_hash].curr_index = getNextCurrSegment(lock_sectors, next_sector, msg_received.trainNo, index);
+                        
                         next_sector[index] = 0;
                     } else {
                         ULOG("sector was not locked for train %d", msg_received.trainNo);
@@ -407,13 +410,20 @@ void track_server_main() {
             case MSG_TS_FREE_ALL: {
                 // zero all segments for that train
                 int train_id = msg_received.trainNo;
+                int train_hash = trn_hash(train_id);
+
 
                 for (int i = 0; i < N_SEGMENTS; i++) {
-                    if (lock_sectors[i] == train_id) {
+                    if ((lock_sectors[i] == train_id) && (i != train_data[train_hash].curr_segment)) {
                         lock_sectors[i] = 0;
-                        update_segment(console, i, train_id);
+                        next_sector[i] = 0;
+                        update_segment(console, i, 0);
                     }
                 }
+
+                // reset curr segment to start
+                next_sector[train_data[train_hash].curr_segment] = 1;
+                train_data[train_hash].curr_index = 2;
 
                 // set train to idle
                 train_data[trn_hash(train_id)].t_state = train_idle;

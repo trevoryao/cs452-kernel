@@ -157,6 +157,8 @@ void track_control_coordinator_main() {
             case MSG_TC_TRAIN_DONE: {
                 int8_t trn_idx = trn_hash(msg_received.data.trn_register.trn_no);
 
+                uart_printf(CONSOLE, "TRAIN DONE --- Should free all segment\r\n");
+
                 if (trn_idx < 0 || registered_trns[trn_idx].tid == 0) {
                     replyError(senderTid);
                 } else {
@@ -169,6 +171,8 @@ void track_control_coordinator_main() {
                     msg_received.data.trn_register.trn_no);
                 trn_position_reset(&pos,
                     msg_received.data.trn_register.trn_no);
+
+                track_server_free_all(tsTid, msg_received.data.trn_register.trn_no);
 
                 break;
             }
