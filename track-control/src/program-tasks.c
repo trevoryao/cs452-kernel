@@ -19,8 +19,11 @@
 #include "track.h"
 #include "track-control.h"
 #include "track-control-coordinator.h"
+#include "track-data.h"
 #include "track-segment-locking.h"
 #include "train.h"
+
+extern track_node track[];
 
 // pass to worker task to prevent perf hit of multiple syscalls
 typedef struct msg_rv {
@@ -146,6 +149,38 @@ void cmd_task_main(void) {
                     track_control_set_train_speed(tcc_tid, cmd.params[0], SPD_STP);
                     track_server_free_all(ts_tid, cmd.params[0]);
                     break;
+                case CMD_RUN: {
+                    int offset = 0;
+                    int trn1 = 24;
+                    int spd1 = SPD_LO;
+                    track_node *start1 = &track[0];
+                    track_node *end1 = &track[78];
+
+                    trains[trn_hash(trn1)] = CreateControlledTrain(
+                        trn1,
+                        start1,
+                        end1,
+                        offset,
+                        spd1
+                    );
+                    print_tc_params(console_tid, start1->num, end1->num, offset, trn1);
+
+                    int trn2 = 58;
+                    int spd2 = SPD_LO;
+                    track_node *start2 = &track[16];
+                    track_node *end2 = &track[14];
+
+                    trains[trn_hash(trn2)] = CreateControlledTrain(
+                        trn2,
+                        start2,
+                        end2,
+                        offset,
+                        spd2
+                    );
+                    print_tc_params(console_tid, start2->num, end2->num, offset, trn2);
+
+                    break;
+                }
                 case CMD_GO:
                     track_go(marklin_tid);
                     break;

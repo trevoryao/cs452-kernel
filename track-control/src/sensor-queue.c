@@ -78,7 +78,7 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 
     struct sensor_queue_entry *head = sq->sensors[act_sensor_mod][act_sensor_no];
 
-    // head->data.expected_time > activation_time + TIMEOUT_TICKS
+    // || head->data.expected_time > activation_time + TIMEOUT_TICKS
     if (head == NULL) {
         return SENSOR_QUEUE_DONE;
     }
