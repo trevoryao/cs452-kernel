@@ -282,6 +282,10 @@ void trn_position_reached_sensor(trn_position *pos, uint8_t trn,
         trn_data->sensor_dist = 0;
     } else {
         // final sensor
-        upanic("Hit Final Sensor! Const spd not notified");
+        // assume we have hit constant spd
+        trn_data->last_timestamp = activation_time;
+        trn_data->sensor_dist = 0;
+
+        // upanic("Hit Final Sensor! Const spd not notified");
     }
 }
