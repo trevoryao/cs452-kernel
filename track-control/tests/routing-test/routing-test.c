@@ -40,8 +40,8 @@ void user_main(void) {
 
     route *chosen_route;
 
-    track_node *start = &track[0];
-    track_node *end = &track[11];
+    track_node *start = &track[45];
+    track_node *end = &track[1];
     uint8_t trn = 77;
     uint8_t spd = SPD_MED;
 
@@ -61,8 +61,6 @@ void user_main(void) {
 
     uart_printf(CONSOLE, "Backward:\r\n");
     track_node *rv_next_segment = print_segment_route(&rv_route);
-
-    rv_next_segment = NULL; // throwaway
 
     // determine which route to take
     if (fwd_next_segment != NULL) {
