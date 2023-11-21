@@ -418,13 +418,16 @@ static bool execute_plan(route *cur_route, route *next_route,
     *next_segment = &track[routing_action.sensor_num];
 
     // plan next route
-    uart_printf(CONSOLE, "[train-%d] planning next from %s\r\n", params->trn, (*next_segment)->name);
-    plan_in_progress_route(*next_segment, params->end, params->offset,
-        params->trn, params->spd, locking_server_tid, next_route);
+    if (cur_route->state != FINAL_SEGMENT) {
+        plan_in_progress_route(*next_segment, params->end, params->offset,
+            params->trn, params->spd, locking_server_tid, next_route);
 
-    // start-up locking notifier (separate from any other route actions)
-    if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
-        wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
+        // start-up locking notifier (separate from any other route actions)
+        if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
+            wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
+    } else {
+        waiting_lock = false; // not ever waiting on lock
+    }
 
     for (;;) {
         // do actions until we can't anymore
@@ -514,7 +517,7 @@ static bool execute_plan(route *cur_route, route *next_route,
         }
 
         // check exit condition
-        uart_printf(CONSOLE, "[train-%d] exit: waiting_route=%d waiting_spd=%d waiting_lock=%d spd_changes_size=%d path_size=%d", params->trn, waiting_route, waiting_spd, waiting_lock, routing_action_queue_size(&cur_route->speed_changes), routing_action_queue_size(&cur_route->path));
+        uart_printf(CONSOLE, "[train-%d] exit: waiting_route=%d waiting_spd=%d waiting_lock=%d spd_changes_size=%d path_size=%d\r\n", params->trn, waiting_route, waiting_spd, waiting_lock, routing_action_queue_size(&cur_route->speed_changes), routing_action_queue_size(&cur_route->path));
         if (!waiting_route && !waiting_spd && !waiting_lock &&
             routing_action_queue_empty(&cur_route->speed_changes) &&
             routing_action_queue_empty(&cur_route->path)) {
@@ -588,11 +591,6 @@ static void train_tc(void) {
             // ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
 
-            if (routes[cur].state == FINAL_SEGMENT) {
-                uart_printf(CONSOLE, "finished\r\n");
-                break;
-            }
-
             // reset both routes
             routing_actions_reset(&routes[0]);
             routing_actions_reset(&routes[1]);
@@ -642,6 +640,10 @@ static void train_tc(void) {
             uart_printf(CONSOLE, "[train-%d] return back to forward dir\r\n", params.trn);
             track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
             reversed = false;
+        }
+
+        if (routes[cur].state == FINAL_SEGMENT) {
+            break;
         }
 
         // prime for next itr
