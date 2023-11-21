@@ -423,7 +423,11 @@ static bool execute_plan(route *cur_route, route *next_route,
 
     // set next_segment (because of when we timeout, can guarantee)
     routing_action_queue_pop_back(&cur_route->path, &routing_action);
-    *next_segment = &track[routing_action.sensor_num];
+    if (cur_route->state != FINAL_SEGMENT) {
+        *next_segment = &track[routing_action.sensor_num];
+    } else {
+        *next_segment = params->end;
+    }
 
     // plan next route
     if (cur_route->state != FINAL_SEGMENT) {
@@ -643,10 +647,16 @@ static void train_tc(void) {
             locking_server_tid, &params, &current_node, route_notifier,
             spd_notifier, lock_notifier);
 
-        if (stopped && reversed) {
-            // return to regular state only if we had to stop
-            track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
-            reversed = false;
+        if (stopped) {
+            // free all segments but our current segment
+            // uart_printf(CONSOLE, "[train %d] free all but segment %d (at sensor %s)\r\n", params.trn, current_node->reverse->segmentId, current_node->name);
+            track_server_free_all(locking_server_tid, current_node->reverse->segmentId, params.trn);
+
+            if (reversed) {
+                // return to regular state only if we had to stop
+                track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
+                reversed = false;
+            }
         }
 
         if (routes[cur].state == FINAL_SEGMENT) {

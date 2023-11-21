@@ -392,7 +392,7 @@ void track_server_main() {
                 for (int i = 0; i < N_SEGMENTS; i++) {
                     if ((lock_sectors[i] == train_id) && (i != curr_segment)) {
                         lock_sectors[i] = 0;
-                        update_segment(console, i, train_id);
+                        update_segment(console, i, 0);
                     }
                 }
 
@@ -403,7 +403,7 @@ void track_server_main() {
             }
 
             case MSG_TS_TRAIN_REGISTER: {
-                // lock that one segment 
+                // lock that one segment
                 lock_sectors[msg_received.segmentIDs[0]] = msg_received.trainNo;
                 update_segment(console, msg_received.segmentIDs[0], msg_received.trainNo);
 
