@@ -373,13 +373,13 @@ void track_server_main() {
                     // special case
                     if (train_data[train_hash].t_state == train_blocked_timeout_two) {
 
-                        bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo);
+                        bool success = lockAll_Safe(console, lock_sectors, msg_received.segmentIDs, msg_received.no_segments, msg_received.trainNo,  next_sector, &train_data[train_hash]);
                         if (success) {
                             // reply that the first one was successfull
                             replySegment(train_data[train_hash].requesterTid, 0);
                         } else {
                             // try to lock the second one
-                            success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo);
+                            success = lockAll_Safe(console, lock_sectors, msg_received.second_segmentIDs, msg_received.second_no_segments, msg_received.trainNo,  next_sector, &train_data[train_hash]);
                             if (success) {
                                 // reply the second on
                                 replySegment(train_data[train_hash].requesterTid, 1);
@@ -389,10 +389,10 @@ void track_server_main() {
                         }
 
                     } else if (train_data[train_hash].all_segments_required) {
-                        bool success = lockAll_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        bool success = lockAll_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo, next_sector, &train_data[train_hash]);
                         reply(train_data[train_hash].requesterTid, success);
                     } else {
-                        int lockedSegment = lockOne_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo);
+                        int lockedSegment = lockOne_Safe(console, lock_sectors, train_data[train_hash].segmentIDs, train_data[train_hash].no_segments, train_data[train_hash].trainNo, next_sector, &train_data[train_hash]);
                         replySegment(train_data[train_hash].requesterTid, lockedSegment);
                     }
 
@@ -437,6 +437,7 @@ void track_server_main() {
                 uart_printf(CONSOLE, "registered train %d at sector %d", msg_received.trainNo, msg_received.segmentIDs[0]);
 
                 Reply(senderTid, NULL, 0);
+                break;
             }
 
             default: {

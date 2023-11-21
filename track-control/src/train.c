@@ -563,6 +563,7 @@ static void train_tc(void) {
 
     // lock initial segment
     // -> updates the current position of the train
+    uart_printf(CONSOLE, "Started train -> trying to lock inital\r\n");
     track_server_register_train(locking_server_tid, params.start->reverse->segmentId, params.trn);
 
     // use two routes at all times
