@@ -88,11 +88,13 @@ static void do_action(int tc_tid, int locking_tid, uint8_t trn, routing_action *
             track_control_set_train_speed(tc_tid, trn, action->action.spd);
             break;
         case SENSOR:
+            // uart_printf(CONSOLE, "[train] Free sensor %c%d\r\n",
+            //     SENSOR_MOD(action->sensor_num) - 1 + 'A', SENSOR_NO(action->sensor_num));
             uassert(action->sensor_num != SENSOR_NONE);
             track_server_free_segment(locking_tid, track[action->sensor_num].reverse->segmentId, trn);
             break;
         default:
-            // uart_printf(CONSOLE, "[train] no action (%d)\r\n", action->action_type);
+            uart_printf(CONSOLE, "[train] no action (%d)\r\n", action->action_type);
             break; // none needed for any other actions
     }
 }
@@ -166,6 +168,7 @@ static void train_speed_notifier(void) {
         }
 
         // perform action immediately
+        // uart_printf(CONSOLE, "[train-speed-notifier] do_action #0 (queued)\r\n");
         do_action(tc_server_tid, locking_server_tid, action.trn, &action.routing_action);
 
         // finished, let server perform action
@@ -339,6 +342,13 @@ static void train_locking_notifier(void) {
             &segments, action.trn, action.decision_pt.ticks);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
+        if (!res) {
+            uart_printf(CONSOLE, "** EMERGENCY STOP **\r\n");
+            track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
+            track_control_set_train_speed(tc_server_tid, action.trn, SP_REVERSE);
+            track_control_set_train_speed(tc_server_tid, action.trn, SP_STOP); // to properly display
+        }
+
         msg.type = res ? MSG_TRAIN_NOTIFY_LOCKING_SUCCESS : MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT;
         Send(ptid, (char *)&msg, sizeof(train_msg), NULL, 0);
     }
@@ -371,7 +381,7 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
 // updates next_segment to point to the start of the next desired segment
 // even in emergency stop, to keep up to date on our current position
 // (the planner will handle any possible reversing for us)
-static bool execute_plan(route *cur_route, route *next_route, deque *prev_segments,
+static bool execute_plan(route *cur_route, route *next_route,
     int tc_server_tid, int locking_server_tid, train_params *params,
     track_node **next_segment, int route_notifier,
     int spd_notifier, int locking_notifier) {
@@ -391,16 +401,14 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
         if (routing_action.info.delay_ticks == 0 &&
             routing_action.sensor_num == SENSOR_NONE) {
             // pre-start switch?
+            // uart_printf(CONSOLE, "[train] do_action #1 (cur_route->path %d)\r\n",
+            //     routing_action_queue_size(&cur_route->path));
             do_action(tc_server_tid, locking_server_tid, params->trn, &routing_action);
             routing_action_queue_pop_front(&cur_route->path, NULL);
         } else {
             break; // no more
         }
     }
-
-    // plan next route
-    plan_in_progress_route(*next_segment, params->end, params->offset,
-        params->trn, params->spd, locking_server_tid, next_route);
 
     // start-up locking notifier (separate from any other route actions)
     if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
@@ -410,6 +418,10 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
     routing_action_queue_pop_back(&cur_route->path, &routing_action);
     *next_segment = &track[routing_action.sensor_num];
 
+    // plan next route
+    plan_in_progress_route(*next_segment, params->end, params->offset,
+        params->trn, params->spd, locking_server_tid, next_route);
+
     for (;;) {
         // do actions until we can't anymore
         while (!waiting_spd && !routing_action_queue_empty(&cur_route->speed_changes)) {
@@ -417,6 +429,8 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
             if (routing_action.info.delay_ticks == 0 &&
                 routing_action.sensor_num == SENSOR_NONE) {
                 // no delay or notif, can just do it
+                // uart_printf(CONSOLE, "[train] do_action #2 (cur_route->speed_changes %d)\r\n",
+                //     routing_action_queue_size(&cur_route->speed_changes));
                 do_action(tc_server_tid, locking_server_tid, params->trn, &routing_action);
             } else {
                 // will do action for us
@@ -441,14 +455,20 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
                 // uart_printf(CONSOLE, "[train] got next lock, continuing\r\n");
 
                 // throw next route's switches
+                //uart_printf(CONSOLE, "[train] do_action #3\r\n");
                 while (!routing_action_queue_empty(&cur_route->path)) {
                     routing_action_queue_front(&cur_route->path, &routing_action);
                     if (routing_action.info.delay_ticks == 0 &&
                         routing_action.sensor_num == SENSOR_NONE) {
                         // pre-start switch?
+                        // uart_printf(CONSOLE, "cur_route->path size before %d\r\n",
+                        //     routing_action_queue_size(&cur_route->path));
                         do_action(tc_server_tid, locking_server_tid, params->trn, &routing_action);
                         routing_action_queue_pop_front(&cur_route->path, NULL);
+                        // uart_printf(CONSOLE, "cur_route->path size after %d\r\n",
+                        //     routing_action_queue_size(&cur_route->path));
                     } else {
+                        //uart_printf(CONSOLE, "do_action #3 done\r\n");
                         break; // no more
                     }
                 }
@@ -457,11 +477,7 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
                 break;
             }
             case MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT: {
-                // emergency stop
-                uart_printf(CONSOLE, "** EMERGENCY STOP **\r\n");
-                track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
-                track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
-
+                // emergency stop (notifier sends)
                 return true;
             }
             case MSG_TRAIN_NOTIFY_ROUTE: {
@@ -471,6 +487,8 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
                 routing_action_queue_front(&cur_route->path, &routing_action);
                 while (routing_action.sensor_num == msg.payload.route_action.sensor_num) {
                     // only pop off if actually equal
+                    // uart_printf(CONSOLE, "[train] do_action #3 (cur_route->path %d)\r\n",
+                    //     routing_action_queue_size(&cur_route->path));
                     routing_action_queue_pop_front(&cur_route->path, NULL);
                     do_action(tc_server_tid, locking_server_tid, params->trn, &routing_action);
 
@@ -532,7 +550,7 @@ static void train_tc(void) {
     // create notifiers
     int route_notifier, spd_notifier, lock_notifier;
 
-    route_notifier = Create(P_MED, train_route_notifier);
+    route_notifier = Create(P_HIGH, train_route_notifier);
     spd_notifier = Create(P_VHIGH, train_speed_notifier);
     lock_notifier = Create(P_VIP, train_locking_notifier);
 
@@ -556,16 +574,9 @@ static void train_tc(void) {
     // in "previous" itr, locked only starting segment
     deque_push_back(&routes[1 - cur].segments, params.start->reverse->segmentId);
 
-    deque prev_segments; // used after stopping
-    deque_init(&prev_segments, 3);
-
     track_node *current_node = params.start;
 
     for (;;) {
-        // save segments we need to unlock after determining a route
-        deque_move(&prev_segments, &routes[1 - cur].segments);
-        uassert(deque_empty(&routes[1 - cur].segments));
-
         // uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
             ULOG("[train] stopped\r\n");
@@ -611,7 +622,7 @@ static void train_tc(void) {
 
         routing_actions_reset(&routes[1 - cur]); // reset for next iteration
         // execute itr
-        stopped = execute_plan(&routes[cur], &routes[1 - cur], &prev_segments, tc_server_tid,
+        stopped = execute_plan(&routes[cur], &routes[1 - cur], tc_server_tid,
             locking_server_tid, &params, &current_node, route_notifier,
             spd_notifier, lock_notifier);
 
@@ -644,7 +655,7 @@ int CreateControlledTrain(uint8_t trn, track_node *start,
     uassert(track <= start || start < track + TRACK_MAX);
     uassert(track <= end || end < track + TRACK_MAX);
 
-    uint16_t tc_tid = Create(P_MED, train_tc);
+    uint16_t tc_tid = Create(P_HIGH, train_tc);
 
     train_msg msg;
     msg.type = MSG_TRAIN_PARAMS;

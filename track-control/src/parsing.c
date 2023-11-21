@@ -242,7 +242,8 @@ void parse_cmd(struct deque *in, cmd_s *out) {
             } else { RET_ERR }
         }
         case 'r': {
-            if ((char)deque_pop_front(in) == 'v') { // valid cmd?
+            c = (char)deque_pop_front(in);
+            if (c == 'v') { // valid cmd?
                 // get train no
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 int tr_no; // train no
@@ -252,6 +253,11 @@ void parse_cmd(struct deque *in, cmd_s *out) {
 
                 out->kind = CMD_RV;
                 break; // check end
+            } else if (c == 'u') {
+                if ((char)deque_pop_front(in) == 'n') {
+                    out->kind = CMD_RUN;
+                    break;
+                } else { RET_ERR }
             } else { RET_ERR }
         }
         case 's': {

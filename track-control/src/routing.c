@@ -242,18 +242,6 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     // ULOG("stopping_dist: %dmm accel_dist: %dmm\r\n", stopping_dist / MM_TO_UM, accel_dist / MM_TO_UM);
 
-    // check short move:
-    // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
-    // in either case, if within short move params, we do a short move
-    if (start_spd == SPD_STP) {
-        // need to check if we have space to accelerate & stop
-        if (dist[HASH(end_node)] * MM_TO_UM < accel_dist + MIN_ROLL_DIST + stopping_dist) {
-            ULOG("Short move! -- Not yet implemented\r\n");
-            route->state = ERR_NO_ROUTE;
-            return;
-        }
-    }
-
     // queueing branch nodes for each segment
     // futher along nodes are at the front, closer nodes are at the back
     deque branches;
@@ -379,7 +367,56 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
             node = next_sensor; // prime for next itr
         }
-    } else if (start_spd == SPD_STP) { // guarantee can't be both in short move check
+    } else if (start_spd == SPD_STP) {
+        // check short move:
+        // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
+        // in either case, if within short move params, we do a short move
+        if (DIST_TRAVELLED(true_starting_node, end_node) < accel_dist + MIN_ROLL_DIST + stopping_dist) {
+            ULOG("Short move! -- Not yet implemented\r\n");
+
+            for (;;) {
+                if (node == end_node) {
+                    // add speed info
+                    action.sensor_num = SENSOR_NONE;
+                    action.action_type = SPD_CHANGE;
+                    action.action.spd = SPD_STP;
+                    action.info.delay_ticks = get_short_move_delay(&spd_data, trn,
+                        DIST_TRAVELLED(true_starting_node, end_node));
+                    routing_action_queue_push_front(&route->speed_changes, &action);
+
+                    action.sensor_num = SENSOR_NONE;
+                    action.action_type = SPD_CHANGE;
+                    action.action.spd = SPD_LO; // short move speed
+                    action.info.delay_ticks = 0;
+                    routing_action_queue_push_front(&route->speed_changes, &action);
+
+                    // gather all the branches
+                    gather_branches(route, &branches, node);
+
+                    route->state = FINAL_SEGMENT;
+
+                    // no decision point
+                    route->decision_pt.sensor_num = SENSOR_NONE;
+
+                    route->state = ERR_NO_ROUTE; // don't support (for now)
+                    route->total_path_dist = dist[HASH(end_node)];
+                    return;
+                }
+
+                // don't add any sensor nodes to wait on
+                // positioning doesn't apply
+                routing_action_queue_pop_front(&sensor_path, &action);
+                next_sensor = &track[action.sensor_num];
+
+                // check for segment change
+                if (node->segmentId != next_sensor->segmentId) {
+                    deque_push_back(&route->segments, node->segmentId);
+                }
+
+                node = next_sensor; // prime for next itr
+            }
+        }
+
         // travel to the end of our acceleration distance
         for (;;) {
             // ULOG("[routing] accel checking %dmm (%s)\r\n", (DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM)) / MM_TO_UM, node->name);

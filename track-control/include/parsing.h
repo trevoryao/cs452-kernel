@@ -19,6 +19,7 @@ enum CMD_KIND {
     CMD_SW,
     CMD_TC,
     CMD_ST,
+    CMD_RUN,
     CMD_GO,
     CMD_HLT,
     CMD_Q,
