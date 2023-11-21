@@ -154,11 +154,11 @@ void cmd_task_main(void) {
                     int trn1 = 24;
                     int spd1 = SPD_LO;
 
-                    track_node *start1 = &track[15];
-                    track_node *end1 = &track[0];
+                    // track_node *start1 = &track[15];
+                    // track_node *end1 = &track[0];
 
-                    // track_node *start1 = &track[0];
-                    // track_node *end1 = &track[78];
+                    track_node *start1 = &track[0];
+                    track_node *end1 = &track[78];
 
                     trains[trn_hash(trn1)] = CreateControlledTrain(
                         trn1,
