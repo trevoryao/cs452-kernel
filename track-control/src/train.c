@@ -89,8 +89,7 @@ static void do_action(int tc_tid, int locking_tid, uint8_t trn, routing_action *
             break;
         case SENSOR:
             uassert(action->sensor_num != SENSOR_NONE);
-            uart_printf(CONSOLE, "trying to free %d (hit %s)\r\n", track[action->sensor_num].reverse->segmentId, track[action->sensor_num].name);
-            track_server_free_segment(locking_tid, trn, track[action->sensor_num].reverse->segmentId);
+            track_server_free_segment(locking_tid, track[action->sensor_num].reverse->segmentId, trn);
             break;
         default:
             // uart_printf(CONSOLE, "[train] no action (%d)\r\n", action->action_type);
@@ -459,7 +458,7 @@ static bool execute_plan(route *cur_route, route *next_route, deque *prev_segmen
             }
             case MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT: {
                 // emergency stop
-                // uart_printf(CONSOLE, "[train] lock timed out, returning true\r\n");
+                uart_printf(CONSOLE, "** EMERGENCY STOP **\r\n");
                 track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
                 track_control_set_train_speed(tc_server_tid, params->trn, SP_REVERSE);
 
@@ -571,6 +570,10 @@ static void train_tc(void) {
         if (stopped) {
             ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
+
+            // reset both routes
+            routing_actions_reset(&routes[0]);
+            routing_actions_reset(&routes[1]);
 
             // plan both routes
             plan_stopped_route(current_node, params.end, params.offset, params.trn,
