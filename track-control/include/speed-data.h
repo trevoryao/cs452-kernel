@@ -4,12 +4,15 @@
 #include "speed.h"
 
 #define REVERSE_OFFSET 120 // mm
+#define SHORT_MOVE_MIN 200000 // = 20cm
+#define SHORT_MOVE_MAX 800000 // = 80cm
 
 typedef struct speed_data {
     // all data in um/s / um/s2
     uint32_t velocity_data[N_TRNS][N_SPDS];
     int32_t acceleration_data[N_TRNS][N_SPDS][N_SPDS]; // start, stop speeds
     int32_t stopping_data[N_TRNS][N_SPDS]; // all from spd -> 0
+    uint32_t short_moves[N_TRNS][N_SHORT_MOVES];
 } speed_data;
 
 void speed_data_init(speed_data *data);
@@ -55,5 +58,8 @@ estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
 uint32_t
 estimate_final_time_acceleration(speed_data *data, uint16_t trn,
     uint8_t original_init_spd, uint8_t final_spd, int32_t short_dist);
+
+// takes um and returns clock_ticks
+int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal);
 
 #endif

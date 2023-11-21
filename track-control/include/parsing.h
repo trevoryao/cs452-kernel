@@ -19,12 +19,13 @@ enum CMD_KIND {
     CMD_SW,
     CMD_TC,
     CMD_ST,
+    CMD_RUN,
     CMD_GO,
     CMD_HLT,
     CMD_Q,
 };
 
-#define MAX_CMD_PARAMS 2
+#define MAX_CMD_PARAMS 3
 
 // organised multi-value return struct
 typedef struct cmd_s {
