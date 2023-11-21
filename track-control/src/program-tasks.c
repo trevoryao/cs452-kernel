@@ -147,7 +147,7 @@ void cmd_task_main(void) {
                     KillChild(trains[trn_hash(cmd.params[0])]);
                     track_control_end_train(tcc_tid, cmd.params[0]); // deregister on behalf of killed train
                     track_control_set_train_speed(tcc_tid, cmd.params[0], SPD_STP);
-                    track_server_free_all(ts_tid, cmd.params[0]);
+                    track_server_free_all(ts_tid, -1, cmd.params[0]);
                     break;
                 case CMD_RUN: {
                     int offset = 0;
