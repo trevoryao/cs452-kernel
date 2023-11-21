@@ -333,53 +333,14 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
     // ULOG("[routing] next_sensor dist: %dmm end_node dist: %dmm \r\n", dist[HASH(next_sensor)], dist[HASH(end_node)]);
 
-    if (DIST_TRAVELLED(next_sensor, end_node) + (offset * MM_TO_UM) < stopping_dist) {
-        // stopping node
-        // combine all our nodes into one single queue on route->path
-        // segment change is now forward direction
-
-        // ULOG("[routing] Stopping case\r\n");
-
-        // already popped off for first sensor, so weird iteration
-        for (;;) {
-            if (node == end_node) {
-                // add speed info
-                int32_t sensor_dist = DIST_TRAVELLED(true_starting_node, end_node) + (offset * MM_TO_UM);
-
-                action.sensor_num = true_starting_node->num;
-                action.action_type = SPD_CHANGE;
-                action.action.spd = SPD_STP;
-                action.info.delay_ticks = calculate_stopping_delay(trn, stopping_dist, sensor_dist, target_spd);
-                routing_action_queue_push_front(&route->speed_changes, &action);
-
-                // gather all the branches
-                gather_branches(route, &branches, node);
-
-                route->state = FINAL_SEGMENT;
-
-                // include final node for holding reservation
-                break;
-            }
-
-            // don't need to add for last one
-            routing_action_queue_pop_front(&sensor_path, &action);
-            routing_action_queue_push_back(&route->path, &action); // push back for next itr
-            next_sensor = &track[action.sensor_num];
-
-            // check for segment change
-            if (node->segmentId != next_sensor->segmentId) {
-                deque_push_back(&route->segments, node->segmentId);
-            }
-
-            node = next_sensor; // prime for next itr
-        }
-    } else if (start_spd == SPD_STP) {
+    if (start_spd == SPD_STP) {
         // check short move:
         // a short move can only happen if we cannot have time to accelerate and get up to speed and then stop on our path
         // in either case, if within short move params, we do a short move
-        if (DIST_TRAVELLED(true_starting_node, end_node) < accel_dist + MIN_ROLL_DIST + stopping_dist ||
+        if ((DIST_TRAVELLED(true_starting_node, end_node) + (offset * MM_TO_UM) < accel_dist + MIN_ROLL_DIST + stopping_dist) ||
             next_sensor == end_node) {
-            ULOG("Short move! -- Not yet implemented\r\n");
+
+            ULOG("short move\r\n");
 
             for (;;) {
                 if (node == end_node) {
@@ -390,7 +351,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
                     action.info.delay_ticks = get_short_move_delay(&spd_data, trn,
                         DIST_TRAVELLED(true_starting_node, end_node));
                     routing_action_queue_push_front(&route->speed_changes, &action);
-
+                    
                     action.sensor_num = SENSOR_NONE;
                     action.action_type = SPD_CHANGE;
                     action.action.spd = SPD_LO; // short move speed
@@ -456,6 +417,46 @@ plan_direct_route(track_node *start_node, track_node *end_node,
             routing_action_queue_push_back(&route->path, &action); // push back for next itr
             next_sensor = &track[action.sensor_num];
             ULOG("pushed back %s\r\n", next_sensor->name);
+
+            // check for segment change
+            if (node->segmentId != next_sensor->segmentId) {
+                deque_push_back(&route->segments, node->segmentId);
+            }
+
+            node = next_sensor; // prime for next itr
+        }
+    } else if (DIST_TRAVELLED(next_sensor, end_node) + (offset * MM_TO_UM) < stopping_dist) {
+        // stopping node
+        // combine all our nodes into one single queue on route->path
+        // segment change is now forward direction
+
+        // ULOG("[routing] Stopping case\r\n");
+
+        // already popped off for first sensor, so weird iteration
+        for (;;) {
+            if (node == end_node) {
+                // add speed info
+                int32_t sensor_dist = DIST_TRAVELLED(true_starting_node, end_node) + (offset * MM_TO_UM);
+
+                action.sensor_num = true_starting_node->num;
+                action.action_type = SPD_CHANGE;
+                action.action.spd = SPD_STP;
+                action.info.delay_ticks = calculate_stopping_delay(trn, stopping_dist, sensor_dist, target_spd);
+                routing_action_queue_push_front(&route->speed_changes, &action);
+
+                // gather all the branches
+                gather_branches(route, &branches, node);
+
+                route->state = FINAL_SEGMENT;
+
+                // include final node for holding reservation
+                break;
+            }
+
+            // don't need to add for last one
+            routing_action_queue_pop_front(&sensor_path, &action);
+            routing_action_queue_push_back(&route->path, &action); // push back for next itr
+            next_sensor = &track[action.sensor_num];
 
             // check for segment change
             if (node->segmentId != next_sensor->segmentId) {
