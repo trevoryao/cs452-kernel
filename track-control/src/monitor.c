@@ -103,7 +103,7 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
     (void)x_off;
     (void)y_off;
     (void)col;
-    uart_printf(CONSOLE, fmt, sw, dir_ch);
+    Printf(tid, fmt, sw, dir_ch);
     #else
     Printf(tid, fmt,
         CURS_SAVE CURS_HIDE,
@@ -210,7 +210,7 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
 
     #if LOGGING
     (void)tid;
-    uart_printf(CONSOLE, "[speed] TR%d: %d\r\n", tr, speed_display_get(spd_t, tr));
+    Printf(tid, "[speed] TR%d: %d\r\n", tr, speed_display_get(spd_t, tr));
     #else
 
     char *col;
@@ -357,7 +357,7 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
     #if LOGGING
     (void)tid;
     (void)q;
-    uart_printf(CONSOLE, "[sensor trigger] %c%d\r\n", 'A' + sen_mod, sen_no);
+    Printf(tid, "[sensor trigger] %c%d\r\n", 'A' + sen_mod, sen_no);
     #else
 
     deque_itr it = deque_begin(q);

@@ -376,7 +376,7 @@ void track_server_main() {
                     train_data[train_hash].t_state = train_idle;
                 } else {
                     // ignore startup message -> being able to reply
-                    uart_printf(CONSOLE, "received startup msg from notifier of train \r\n");
+                    // uart_printf(CONSOLE, "received startup msg from notifier of train \r\n");
                 }
                 break;
             }
