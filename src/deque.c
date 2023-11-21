@@ -1,6 +1,8 @@
 #include "deque.h"
 
 #include "util.h"
+#include "uassert.h"
+#include "rpi.h"
 
 int deque_init(deque *q, uint16_t size) {
     if (size > 10) return -1; // check over 1024 limit
@@ -12,7 +14,7 @@ int deque_init(deque *q, uint16_t size) {
     q->back = 0;
 
     // don't want to, but can cause issues on boot up for some reason
-    memset(q->buf, 0, BUF_SIZE * sizeof(int16_t));
+    memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
     return 0;
 }
 
@@ -20,6 +22,18 @@ void deque_reset(deque *q) {
     q->size = 0;
     q->front = 0;
     q->back = 0;
+}
+
+void deque_move(deque *q, deque *other) {
+    deque_reset(q);
+    q->max_size = other->max_size;
+
+    // don't want to, but can cause issues on boot up for some reason
+    memset(q->buf, 0, BUF_SIZE * sizeof(int32_t));
+
+    while (!deque_empty(other)) {
+        deque_push_back(q, deque_pop_front(other));
+    }
 }
 
 int16_t deque_empty(deque *q) { return q->size == 0; }

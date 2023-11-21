@@ -24,7 +24,7 @@ struct sensor_queue_entry {
 };
 
 typedef struct timeout_struct {
-    uint32_t expected_time;
+    int32_t expected_time;
     uint16_t module_no;
     uint16_t sensor_no;
 } timeout_struct;

@@ -8,6 +8,7 @@
 #include "uart-server.h"
 #include "uassert.h"
 
+#include "clock.h"
 #include "control-msgs.h"
 #include "monitor.h"
 #include "program-tasks.h"
@@ -15,6 +16,7 @@
 #include "track.h"
 #include "track-control-coordinator.h"
 #include "track-data.h"
+#include "track-server.h"
 
 speed_data spd_data;
 track_node track[TRACK_MAX];
@@ -42,10 +44,14 @@ void init_track_data(uint16_t console) {
 
 void user_main(void) {
     // start up clock, uart servers
-    Create(P_SERVER_HI, clockserver_main);
+    uint16_t clock_tid = Create(P_SERVER_HI, clockserver_main);
 
     uint16_t console_tid = Create(P_SERVER_LO, console_server_main);
     uint16_t marklin_tid = Create(P_SERVER_HI, marklin_server_main);
+
+    Create(P_SERVER_HI, track_server_main);
+    // init_track delays enough
+    Delay(clock_tid, 50);
 
     // init before coordinator
     speed_data_init(&spd_data);

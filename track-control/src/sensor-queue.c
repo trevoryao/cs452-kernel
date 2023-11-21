@@ -104,7 +104,7 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     head->next = sq->freelist;
     sq->freelist = head;
 
-    ULOG("[sensor get] activation: %u expected: %u timeout: %u\r\n",
+    uart_printf(CONSOLE, "[sensor get] activation: %u expected: %u timeout: %u\r\n",
         activation_time, data->expected_time, TIMEOUT_TICKS);
 
     if (data->expected_time == TIME_NONE)
@@ -204,7 +204,7 @@ void sensor_queue_free_train(sensor_queue *sq, uint16_t trn) {
 
 int sensor_queue_check_timeout(sensor_queue *sq, int8_t train_hash, uint32_t activation_time) {
     // check if that trainNo is empty    
-    if (sq->timeout[train_hash].expected_time == 0) {
+    if (sq->timeout[train_hash].expected_time <= 0) {
         return SENSOR_QUEUE_DONE;
     } 
     
@@ -212,6 +212,7 @@ int sensor_queue_check_timeout(sensor_queue *sq, int8_t train_hash, uint32_t act
     if (sq->timeout[train_hash].expected_time + TIMEOUT_TICKS < activation_time) {
         // Case that we actually have a timeout
         // pop it off and return -> train needs to wait on the next sensor
+        //uart_printf(CONSOLE, "Expected time: %d, activation time %d\r\n", sq->timeout[train_hash].expected_time, activation_time);
         return SENSOR_QUEUE_TIMEOUT;
     } else {
         return SENSOR_QUEUE_DONE;

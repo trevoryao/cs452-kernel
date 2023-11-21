@@ -15,6 +15,7 @@
 #include "uassert.h"
 #include "speed-data.h"
 #include "position.h"
+#include "track-segment-locking.h"
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
@@ -43,8 +44,8 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
                 msg_reply.type = MSG_TC_ERROR; // let train deal
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-
-                uart_printf(CONSOLE, "Late sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+                int diff = activation_ticks - data.expected_time;
+                uart_printf(CONSOLE, "Late sensor %d,%d (trn %d) diff: %d\r\n", sensor_mod, sensor_no, data.trn, diff);
 
                 break;
             }
@@ -65,8 +66,8 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
                 msg_reply.type = MSG_TC_ERROR; // let train deal
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
-
-                uart_printf(CONSOLE, "Early sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+                int diff = activation_ticks - data.expected_time;
+                uart_printf(CONSOLE, "Early sensor %d,%d (trn %d) diff: %d\r\n", sensor_mod, sensor_no, data.trn, diff);
 
                 break;
             }
@@ -234,7 +235,6 @@ void track_control_coordinator_main() {
                 break;
             }
             case MSG_TC_TRAIN_PUT: {
-                /* code */
                 train_mod_speed(marklinTid, &spd_t, msg_received.data.trn_cmd.trn_no, msg_received.data.trn_cmd.spd);
                 uint32_t speed_change_time = Time(clockTid);
                 replyTrainSpeed(&spd_t, msg_received.data.trn_cmd.trn_no, senderTid);
@@ -252,8 +252,8 @@ void track_control_coordinator_main() {
                     int state = sensor_queue_check_timeout(&sensor_queue, i, msg_received.clockTick);
 
                     if (state == SENSOR_QUEUE_TIMEOUT) {
-                        replyWaitingProcess(&sensor_queue, sensor_queue.timeout[i].module_no, sensor_queue.timeout[i].sensor_no, 
-                            msg_received.clockTick, &pos, &registered_trns);
+                        //replyWaitingProcess(&sensor_queue, sensor_queue.timeout[i].module_no, sensor_queue.timeout[i].sensor_no, 
+                           // msg_received.clockTick, &pos, registered_trns);
                     }
                 }
                 
