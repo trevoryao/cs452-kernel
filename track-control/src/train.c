@@ -423,11 +423,7 @@ static bool execute_plan(route *cur_route, route *next_route,
 
     // set next_segment (because of when we timeout, can guarantee)
     routing_action_queue_pop_back(&cur_route->path, &routing_action);
-    if (cur_route->state != FINAL_SEGMENT) {
-        *next_segment = &track[routing_action.sensor_num];
-    } else {
-        *next_segment = params->end;
-    }
+    *next_segment = &track[routing_action.sensor_num];
 
     // plan next route
     if (cur_route->state != FINAL_SEGMENT) {

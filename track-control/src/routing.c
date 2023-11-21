@@ -357,8 +357,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
 
                 route->state = FINAL_SEGMENT;
 
-                // pop off final end node
-                routing_action_queue_pop_back(&route->path, NULL);
+                // include final node for holding reservation
                 break;
             }
 

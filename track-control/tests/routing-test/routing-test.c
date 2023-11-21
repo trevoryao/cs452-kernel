@@ -40,8 +40,8 @@ void user_main(void) {
 
     route *chosen_route;
 
-    track_node *start = &track[45];
-    track_node *end = &track[1];
+    track_node *start = &track[15];
+    track_node *end = &track[0];
     uint8_t trn = 77;
     uint8_t spd = SPD_MED;
 
