@@ -582,7 +582,7 @@ static void train_tc(void) {
     for (;;) {
         // uart_printf(CONSOLE, "[train] planning route from %s (stopped=%d)\r\n", current_node->name, stopped);
         if (stopped) {
-            uart_printf("[train-%d] stopped -- planning from %s\r\n", current_node->name);
+            uart_printf(CONSOLE, "[train-%d] stopped -- planning from %s\r\n", current_node->name);
             // ULOG("[train] stopped\r\n");
             // plan double segment and wait until either free
 
