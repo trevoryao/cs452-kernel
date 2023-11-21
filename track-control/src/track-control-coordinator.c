@@ -16,6 +16,7 @@
 #include "speed-data.h"
 #include "position.h"
 #include "track-segment-locking.h"
+#include "track-server.h"
 
 #define N_SENSOR_MODULES 5
 #define N_SENSORS 16
@@ -114,6 +115,7 @@ void track_control_coordinator_main() {
     int clockTid = WhoIs(CLOCK_SERVER_NAME);
     int marklinTid = WhoIs(MARKLIN_SERVER_NAME);
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
+    int tsTid = WhoIs(TS_SERVER_NAME);
 
     // start up a sensorWorker
     Create(P_HIGH, sensor_worker_main);
@@ -144,6 +146,9 @@ void track_control_coordinator_main() {
                     replyError(senderTid);
                 } else {
                     memcpy(&registered_trns[trn_idx], &msg_received.data.trn_register, sizeof(trn_data));
+                    
+                    
+
                     Reply(senderTid, (char *)&msg_received, sizeof(msg_tc_server)); // echo
                 }
 

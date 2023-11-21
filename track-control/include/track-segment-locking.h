@@ -57,4 +57,6 @@ int track_server_lock_two_all_segments_timeout(int tid, deque *segmentIDs, deque
 
 void track_server_free_all(int tid, uint16_t trainNo);
 
+void track_server_register_train(int tid, uint16_t segementId, uint16_t trainNo);
+
 #endif

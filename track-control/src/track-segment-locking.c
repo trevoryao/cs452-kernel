@@ -203,3 +203,14 @@ void track_server_free_segment(int tid, uint16_t segmentID, uint16_t trainNo) {
 
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
+
+void track_server_register_train(int tid, uint16_t segementId, uint16_t trainNo) {
+     struct msg_ts_server msg_request, msg_reply;
+    msg_request.type = MSG_TS_TRAIN_REGISTER;
+    msg_request.trainNo = trainNo;
+
+    msg_request.no_segments = 1;
+    msg_request.segmentIDs[0] = segementId;
+
+    Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
+}

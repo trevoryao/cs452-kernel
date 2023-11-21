@@ -541,8 +541,8 @@ static void train_tc(void) {
     bool reversed = false;
 
     // lock initial segment
-    // guarantee that we are the only train in our segment (i hope)
-    track_server_lock_segment(locking_server_tid, params.start->reverse->segmentId, params.trn);
+    // -> updates the current position of the train
+    track_server_register_train(locking_server_tid, params.start->reverse->segmentId, params.trn);
 
     // use two routes at all times
     // either use cur as current in use route and prev := 1 - cur

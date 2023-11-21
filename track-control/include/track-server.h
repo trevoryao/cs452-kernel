@@ -18,6 +18,7 @@ enum TS_MSG_TYPE {
     MSG_TS_REQUEST_SEGMENTS_AND_OR_NO_TIMEOUT,
     MSG_TS_FREE_SEGMENTS,
     MSG_TS_ASK_SEGMENT_FREE,
+    MSG_TS_TRAIN_REGISTER,
     MSG_TS_REQUEST_SUCCESS,
     MSG_TS_REQUEST_FAIL,
     MSG_TS_FREE_ALL,
@@ -48,7 +49,9 @@ typedef struct train_locking_structure {
     enum train_state t_state;
     uint8_t trainNo;
     uint16_t requesterTid;
-
+    int8_t curr_segment;
+    uint8_t curr_index;
+    
     uint16_t segmentIDs[MAX_SEGMENTS_MSG];
     uint8_t no_segments;
 
