@@ -81,13 +81,13 @@ void handle_interrupt(event_queue *eq) {
             uint32_t handled_interrupts = 0;
 
             if ((marklin_interrupt & UART_I_CTS) == UART_I_CTS) {
-                KLOG("CTS(%d)\r\n", uart_get_cts_status(MARKLIN));
+                // KLOG("CTS(%d)\r\n", uart_get_cts_status(MARKLIN));
                 event_queue_unblock_one(eq, MARKLIN_CTS, uart_get_cts_status(MARKLIN));
                 handled_interrupts |= UART_I_CTS;
             }
 
             if ((marklin_interrupt & UART_I_RX) == UART_I_RX) {
-                KLOG("RX\r\n");
+                // KLOG("RX\r\n");
                 event_queue_unblock_one(eq, MARKLIN_RX, uart_getc_nb(MARKLIN));
                 handled_interrupts |= UART_I_RX;
             }
@@ -97,7 +97,7 @@ void handle_interrupt(event_queue *eq) {
 
             // handle console interrupt (only RTIM)
             if ((uart_get_interrupts(CONSOLE) & UART_I_RTIM) == UART_I_RTIM) {
-                KLOG("RTIM\r\n");
+                // KLOG("RTIM\r\n");
                 event_queue_unblock_one(eq, CONSOLE_RX, 0);
                 uart_clear_interrupt(CONSOLE, UART_I_RTIM);
             }

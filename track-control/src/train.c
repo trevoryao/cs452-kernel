@@ -152,12 +152,22 @@ static void train_speed_notifier(void) {
                 SENSOR_NO(action.sensor_num),
                 action.sensor_dist,
                 action.trn, false); // don't update position for speed
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.sensor_num) - 1,
-                    SENSOR_NO(action.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -228,12 +238,22 @@ static void train_route_notifier(void) {
                 action.sensor_dist,
                 action.trn,
                 true); // update position for route
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.sensor_num) - 1,
-                    SENSOR_NO(action.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -309,7 +329,8 @@ static void train_locking_notifier(void) {
 
         // wait for sensor activation
         if (action.decision_pt.sensor_num != SENSOR_NONE) {
-            // uart_printf(CONSOLE, "[train-notifier-locking] wait on sensor %c%d\r\n",
+            // uart_printf(CONSOLE, "[train-notifier-locking %d] wait on sensor %c%d\r\n",
+            //     action.trn,
             //     SENSOR_MOD(action.decision_pt.sensor_num) - 1 + 'A',
             //     SENSOR_NO(action.decision_pt.sensor_num));
             // Delay(clock_tid, 10);
@@ -319,12 +340,22 @@ static void train_locking_notifier(void) {
                 SENSOR_NO(action.decision_pt.sensor_num),
                 0,
                 action.trn, false); // don't update position for speed
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.decision_pt.sensor_num) - 1,
-                    SENSOR_NO(action.decision_pt.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -332,17 +363,17 @@ static void train_locking_notifier(void) {
         deque_init(&segments, 3);
 
         // acquire lock with given timeout
-        // uart_printf(CONSOLE, "[train-notifier-locking (%d)] locking w/ timeout %dms:\r\n",
+        // uart_printf(CONSOLE, "[train-notifier-locking (%d)] locking w/ timeout %dms: ",
         //     action.trn, action.decision_pt.ticks * 10);
         for (uint8_t i = 0; i < action.no_segments; ++i) {
-            //uart_printf(CONSOLE, " %d", action.segmentIDs[i]);
+            // uart_printf(CONSOLE, " %d", action.segmentIDs[i]);
             deque_push_back(&segments, action.segmentIDs[i]);
         }
-        //uart_printf(CONSOLE, "\r\n");
+        // uart_printf(CONSOLE, "\r\n");
 
-            // return result back to server
+        // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
-            &segments, action.trn, action.decision_pt.ticks);
+            &segments, action.trn, 0);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
         if (!res) {
@@ -355,6 +386,9 @@ static void train_locking_notifier(void) {
                 // delay 0, 2, 4 seconds based on which train we are -- create separation between trains
                 uassert(Delay(clock_tid, 2 * trn_hash(action.trn) * 100) >= 0);
             }
+        } else {
+            // uart_printf(CONSOLE, "[train-notifier-locking (%d)] acquired\r\n",
+            //action.trn);
         }
 
         msg.type = res ? MSG_TRAIN_NOTIFY_LOCKING_SUCCESS : MSG_TRAIN_NOTIFY_LOCKING_TIMEOUT;
@@ -607,12 +641,17 @@ static void train_tc(void) {
             plan_stopped_route(current_node, params.end, params.offset, params.trn,
                 params.spd, locking_server_tid, &routes[0], &routes[1]);
 
+            // uart_printf(CONSOLE, "[train %d] stopped route states: %d, %d\r\n",
+            //     params.trn, routes[0].state, routes[1].state);
+
             if (routes[0].state != ERR_NO_ROUTE && routes[1].state != ERR_NO_ROUTE) {
                 // wait on either forward or reverse
                 // returns index of whichever one was acquired
                 cur = track_server_lock_two_all_segments(locking_server_tid,
                     &routes[0].segments, &routes[1].segments, params.trn);
                 uassert(cur != -1);
+                // uart_printf(CONSOLE, "[train %d] got %d dir segment lock (front %d)\r\n", params.trn,
+                //     cur, deque_front(&routes[cur].segments));
 
                 reversed = (cur == 1); // save for done
             } else if (routes[0].state != ERR_NO_ROUTE) {

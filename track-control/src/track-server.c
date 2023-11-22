@@ -126,13 +126,15 @@ void track_server_main() {
 
     // Start three notifiers and safe them in the train structure
     for (int i = 0; i < N_TRNS; i++) {
-        train_data[i].notifierTid = Create(P_NOTIF, track_server_timeout_notifier);
+        train_data[i].notifierTid = Create(P_NOTIF_HI, track_server_timeout_notifier);
         Delay(clock, 10);
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
     }
 
     for(;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(struct msg_ts_server));
+
+        //uart_printf(CONSOLE, "Tid %d, Train %d, no segs %d, segment %d \r\n", senderTid, msg_received.trainNo, //msg_received.no_segments, msg_received.segmentIDs[0]);
 
         switch (msg_received.type) {
             case MSG_TS_ASK_SEGMENT_FREE: {
@@ -436,7 +438,10 @@ void track_server_timeout_notifier(void) {
 
     for (;;) {
         // Receive message on how long to wait
+        // uart_printf(CONSOLE, "timeout notifier %d \r\n", msg.timeout);
         Delay(clock, msg.timeout);
+
+        // uart_printf(CONSOLE, "timeout notifier\r\n");
 
         Send(parent, (char*)&msg, sizeof(msg_ts_server), (char*)&msg, sizeof(msg_ts_server));
     }

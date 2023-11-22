@@ -143,7 +143,6 @@ static inline int32_t calculate_stopping_delay(uint16_t trn, int32_t stopping_di
 
 static void gather_branches(route *route, deque *branches, track_node *node);
 
-static const int32_t DECISION_PT_OFFSET = -200 * MM_TO_UM;
 static const int32_t MIN_ROLL_DIST = 50 * MM_TO_UM; // um (5cm)
 
 // main method for path finding
@@ -351,7 +350,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
                     action.info.delay_ticks = get_short_move_delay(&spd_data, trn,
                         DIST_TRAVELLED(true_starting_node, end_node));
                     routing_action_queue_push_front(&route->speed_changes, &action);
-                    
+
                     action.sensor_num = SENSOR_NONE;
                     action.action_type = SPD_CHANGE;
                     action.action.spd = SPD_LO; // short move speed
@@ -498,8 +497,8 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         // ULOG("[routing] no decision point for stopping\r\n");
         route->decision_pt.sensor_num = SENSOR_NONE;
     } else {
-        int32_t decision_dist = DIST_TRAVELLED(true_starting_node,
-            node) + DECISION_PT_OFFSET;
+        int32_t decision_dist = (DIST_TRAVELLED(true_starting_node,
+            node) >> 3);
 
         uint32_t decision_delay_time;
         if (start_spd == target_spd) {

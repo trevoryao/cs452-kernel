@@ -14,6 +14,7 @@
 #include "control-msgs.h"
 #include "monitor.h"
 #include "parsing.h"
+#include "preset-program.h"
 #include "sensors.h"
 #include "speed.h"
 #include "track.h"
@@ -97,6 +98,9 @@ void cmd_task_main(void) {
 
     uint16_t trains[N_TRNS]; // stores last created for killing (may not be still active)
 
+    preset_program program;
+    init_preset_program(&program);
+
     for (;;) {
         c = Getc(console_tid);
 
@@ -149,42 +153,11 @@ void cmd_task_main(void) {
                     track_control_set_train_speed(tcc_tid, cmd.params[0], SPD_STP);
                     track_server_free_all(ts_tid, -1, cmd.params[0]);
                     break;
-                case CMD_RUN: {
-                    int offset = 0;
-                    int trn1 = 24;
-                    int spd1 = SPD_LO;
-
-                    // track_node *start1 = &track[15];
-                    // track_node *end1 = &track[0];
-
-                    track_node *start1 = &track[0];
-                    track_node *end1 = &track[78];
-
-                    trains[trn_hash(trn1)] = CreateControlledTrain(
-                        trn1,
-                        start1,
-                        end1,
-                        offset,
-                        spd1
-                    );
-                    print_tc_params(console_tid, start1->num, end1->num, offset, trn1);
-
-                    int trn2 = 58;
-                    int spd2 = SPD_LO;
-                    track_node *start2 = &track[16];
-                    track_node *end2 = &track[14];
-
-                    trains[trn_hash(trn2)] = CreateControlledTrain(
-                        trn2,
-                        start2,
-                        end2,
-                        offset,
-                        spd2
-                    );
-                    print_tc_params(console_tid, start2->num, end2->num, offset, trn2);
-
+                case CMD_RUN:
+                    print_prompt(console_tid);
+                    run_preset_program(&program, cmd.params[0], trains, console_tid,
+                        tcc_tid, ts_tid, clock_tid);
                     break;
-                }
                 case CMD_GO:
                     track_go(marklin_tid);
                     break;
