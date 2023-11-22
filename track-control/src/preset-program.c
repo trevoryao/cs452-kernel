@@ -84,7 +84,6 @@ void init_preset_program(preset_program *program) {
 #define PRESET_FWD 1
 #define PRESET_REDO 2
 static int preset_wait_loop(int console_tid) {
-
     for (;;) {
         switch (Getc(console_tid)) {
             case 'n': return PRESET_FWD;

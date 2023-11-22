@@ -498,8 +498,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         route->decision_pt.sensor_num = SENSOR_NONE;
     } else {
         int32_t decision_dist = (DIST_TRAVELLED(true_starting_node,
-            node) >> 1) + (DIST_TRAVELLED(true_starting_node,
-            node) >> 2);
+            node) >> 3);
 
         uint32_t decision_delay_time;
         if (start_spd == target_spd) {

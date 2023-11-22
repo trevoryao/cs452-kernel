@@ -343,7 +343,7 @@ static void train_locking_notifier(void) {
 
         // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
-            &segments, action.trn, 0);
+            &segments, action.trn, action.decision_pt.ticks);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
         if (!res) {
