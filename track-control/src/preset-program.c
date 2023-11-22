@@ -57,7 +57,7 @@ void init_preset_program(preset_program *program) {
     program->presets[2].trns[1].spd = SPD_LO;
 
     // triple insanity (3)
-    program->presets[3].num_of_trns = 2;
+    program->presets[3].num_of_trns = 3;
 
     // trn 24
     program->presets[3].trns[0].trn = 24;
@@ -72,10 +72,10 @@ void init_preset_program(preset_program *program) {
     program->presets[3].trns[1].spd = SPD_LO;
 
     // trn 77
-    // program->presets[3].trns[1].trn = 77;
-    // program->presets[3].trns[1].start = &track[79]; // E16
-    // program->presets[3].trns[1].end = &track[0]; // A1
-    // program->presets[3].trns[1].spd = SPD_MED;
+    program->presets[3].trns[2].trn = 58;
+    program->presets[3].trns[2].start = &track[79]; // E16
+    program->presets[3].trns[2].end = &track[0]; // A1
+    program->presets[3].trns[2].spd = SPD_MED;
 }
 
 // see return codes
