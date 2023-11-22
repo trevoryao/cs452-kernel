@@ -223,12 +223,27 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 else if (trn_hash(tr_no) == -1) { RET_ERR } // invalid
                 out->params[1] = tr_no;
 
+                // get desired spd
+                if (strip_ws(in) == 0) { RET_ERR } // no ws?
+                c = (char)deque_pop_front(in);
+                if (c == 'l') {
+                    if (deque_pop_front(in) == 'o') {
+                        out->params[2] = SPD_LO;
+                    } else { RET_ERR }
+                } else if (c == 'm') {
+                    if (deque_pop_front(in) == 'e' &&
+                        deque_pop_front(in) == 'd') {
+                        out->params[2] = SPD_MED;
+                    } else { RET_ERR }
+                } else { RET_ERR }
+
                 out->kind = CMD_TC;
                 break;
             } else { RET_ERR }
         }
         case 'r': {
-            if ((char)deque_pop_front(in) == 'v') { // valid cmd?
+            c = (char)deque_pop_front(in);
+            if (c == 'v') { // valid cmd?
                 // get train no
                 if (strip_ws(in) == 0) { RET_ERR } // no ws?
                 int tr_no; // train no
@@ -238,6 +253,16 @@ void parse_cmd(struct deque *in, cmd_s *out) {
 
                 out->kind = CMD_RV;
                 break; // check end
+            } else if (c == 'u') {
+                if ((char)deque_pop_front(in) == 'n') {
+                    if (strip_ws(in) == 0) { RET_ERR } // no ws?
+
+                    int num; // test num
+                    if ((num = parse_num(in)) < 0) { RET_ERR } // not a num
+                    out->params[0] = num;
+                    out->kind = CMD_RUN;
+                    break;
+                } else { RET_ERR }
             } else { RET_ERR }
         }
         case 's': {

@@ -58,6 +58,9 @@ void reset_tc_params(uint16_t tid, uint16_t trn);
 void update_sensor_prediction(uint16_t tid, int8_t trainNo, int32_t diff);
 
 void print_missed_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no);
+void print_early_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no);
 void clear_missed_sensor(uint16_t tid, uint16_t trn);
+
+void update_segment(uint16_t tid, int segmentID, uint16_t trainNo);
 
 #endif

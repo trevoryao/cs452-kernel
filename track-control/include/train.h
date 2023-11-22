@@ -18,6 +18,6 @@ typedef struct track_node track_node;
  */
 
 int CreateControlledTrain(uint8_t trn, track_node *start,
-    track_node *end, int32_t offset);
+    track_node *end, int32_t offset, enum SPEEDS spd);
 
 #endif

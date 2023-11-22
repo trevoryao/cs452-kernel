@@ -95,8 +95,14 @@ int track_control_wait_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no, 
 
     if (ret < 0 || msg.type == MSG_TC_ERROR) {
         return -1;
+    } else if (msg.type == MSG_TC_SENSOR_GET) {
+        return SENSOR_OK;
+    } else if (msg.type == MSG_TC_EARLY) {
+        return SENSOR_EARLY;
+    } else if (msg.type == MSG_TC_LATE) {
+        return SENSOR_LATE;
     } else {
-        return 0;
+        return -1;
     }
 }
 

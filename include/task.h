@@ -13,14 +13,17 @@ enum PRIORITY {
     P_LOW,
     P_MED,
     P_HIGH,
+    P_SENSOR_WORKER,
     P_VHIGH,
+    P_VIP,
     P_SERVER_LO,
     P_SERVER_HI,
     P_NOTIF,
+    P_NOTIF_HI,
     N_PRIORITY
 };
 
-#define N_SERVER_PRIORITY 3
+#define N_SERVER_PRIORITY 4
 
  /*
  * allocates and initializes a task descriptor, using the given priority, and the

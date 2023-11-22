@@ -17,7 +17,7 @@
 
 // dummy routine to handle end of user function
 void user_start(void (*function)(void)) {
-    KLOG("task-%x start\r\n", function);
+    // KLOG("task-%x start\r\n", function);
     function();
     Exit();
 }
@@ -75,7 +75,7 @@ uint8_t task_activate(task_t *t, kernel_state *k) {
 
 void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc,
     task_queue *tq, event_queue *eq, stopwatch *stopwatch) {
-    KLOG("task-%d SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
+    // KLOG("task-%d SYSCALL(%d) %x %x %x %x %x\r\n", t->tid, t->x0, t->x1, t->x2, t->x3, t->x4, t->x5);
 
     switch (t->x0) {
         case SYS_CREAT:
@@ -121,7 +121,7 @@ void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc,
             break;
         case SYS_KILL: {
             task_t *child = task_queue_get(tq, t->x1);
-            if (child && child->parent == t) {
+            if (child && (child->parent == t || t->priority >= P_SERVER_LO)) {
                 child->ready_state = STATE_KILLED;
                 task_queue_kill_children(tq, child->tid);
                 t->x0 = 0;

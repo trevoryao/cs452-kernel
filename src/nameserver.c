@@ -142,7 +142,7 @@ void nameserver_main() {
         // copy the name over
         strncpy(msg_reply.name, msg_received.name, MAX_NAME_LENGTH);
 
-        // send the response msg
+        // send the response msg    
         response = Reply(senderTid, (char *)&msg_reply, sizeof(struct msg_nameserver));
 
         // error handle

@@ -26,6 +26,8 @@ typedef struct deque {
 int deque_init(deque *q, uint16_t size);
 void deque_reset(deque *q);
 
+void deque_move(deque *q, deque *other); // like C++ move ctor
+
 int16_t deque_empty(deque *q);
 int16_t deque_full(deque *q);
 uint16_t deque_size(deque *q);
