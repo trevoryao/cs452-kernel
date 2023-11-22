@@ -19,6 +19,8 @@ enum TC_MSG_TYPE {
     MSG_TC_SENSOR_GET,
     MSG_TC_SENSOR_PUT,
     MSG_TC_ERROR,
+    MSG_TC_EARLY,
+    MSG_TC_LATE,
     MSG_TC_MAX
 };
 

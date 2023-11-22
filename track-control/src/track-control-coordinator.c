@@ -41,7 +41,7 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
         switch (ret) {
             case SENSOR_QUEUE_DONE: return; // exit
             case SENSOR_QUEUE_TIMEOUT: {
-                msg_reply.type = MSG_TC_ERROR; // let train deal
+                msg_reply.type = MSG_TC_LATE; // let train deal
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 
@@ -54,15 +54,24 @@ static void replyWaitingProcess(struct sensor_queue *sensor_queue, uint16_t sens
                 msg_reply.requesterTid = data.tid;
                 Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
 
-                if (data.pos_rqst) {
-                    trn_position_reached_sensor(pos, data.trn, activation_ticks);
-                }
-
                 // ULOG("Replying to tid %d for sensor mod %d and sensor no %d (trn %d)\r\n", data.tid, sensor_mod, sensor_no, data.trn);
 
                 break;
             }
+            case SENSOR_QUEUE_EARLY: {
+                msg_reply.type = MSG_TC_EARLY; // let train deal
+                msg_reply.requesterTid = data.tid;
+                Reply(data.tid, (char *)&msg_reply, sizeof(struct msg_tc_server));
+
+                ULOG("Dropping sensor %d,%d (trn %d)", sensor_mod, sensor_no, data.trn);
+
+                break;
+            }
             default: upanic("Unknown result from sensor_queue_get %d\r\n", ret);
+        }
+
+        if (data.pos_rqst) {
+            trn_position_reached_sensor(pos, data.trn, activation_ticks);
         }
     }
 }

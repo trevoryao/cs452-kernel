@@ -40,6 +40,7 @@ void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
 #define SENSOR_QUEUE_DONE 0
 #define SENSOR_QUEUE_TIMEOUT -1
 #define SENSOR_QUEUE_FOUND 1
+#define SENSOR_QUEUE_EARLY 2
 
 int sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     uint16_t sensor_no, uint32_t activation_time, sensor_data *data);

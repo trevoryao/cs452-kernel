@@ -98,9 +98,17 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     if (data->expected_time == TIME_NONE)
         return SENSOR_QUEUE_FOUND;
 
-    return (activation_time - TIMEOUT_TICKS <= data->expected_time
-        && data->expected_time <= activation_time + TIMEOUT_TICKS)
-        ? SENSOR_QUEUE_FOUND : SENSOR_QUEUE_TIMEOUT;
+    if (data->pos_rqst) {
+        if (data->expected_time + TIMEOUT_TICKS < activation_time) {
+            return SENSOR_QUEUE_TIMEOUT;
+        } else if (data->expected_time - TIMEOUT_TICKS > activation_time) {
+            return SENSOR_QUEUE_EARLY;
+        } else {
+            return SENSOR_QUEUE_FOUND;
+        }
+    } else {
+        return SENSOR_QUEUE_FOUND;
+    }
 }
 
 void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,

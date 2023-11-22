@@ -152,12 +152,22 @@ static void train_speed_notifier(void) {
                 SENSOR_NO(action.sensor_num),
                 action.sensor_dist,
                 action.trn, false); // don't update position for speed
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.sensor_num) - 1,
-                    SENSOR_NO(action.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -228,12 +238,22 @@ static void train_route_notifier(void) {
                 action.sensor_dist,
                 action.trn,
                 true); // update position for route
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.sensor_num) - 1,
-                    SENSOR_NO(action.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.sensor_num) - 1,
+                        SENSOR_NO(action.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -320,12 +340,22 @@ static void train_locking_notifier(void) {
                 SENSOR_NO(action.decision_pt.sensor_num),
                 0,
                 action.trn, false); // don't update position for speed
-            if (ret < 0) {
-                print_missed_sensor(console_tid, action.trn,
-                    SENSOR_MOD(action.decision_pt.sensor_num) - 1,
-                    SENSOR_NO(action.decision_pt.sensor_num) - 1);
-            } else {
-                clear_missed_sensor(console_tid, action.trn);
+
+            uassert(ret != -1);
+            switch (ret) {
+                case SENSOR_EARLY:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                    break;
+                case SENSOR_LATE:
+                    print_missed_sensor(console_tid, action.trn,
+                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                    break;
+                default:
+                    clear_missed_sensor(console_tid, action.trn);
+                    break;
             }
         }
 
@@ -343,7 +373,7 @@ static void train_locking_notifier(void) {
 
         // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
-            &segments, action.trn, action.decision_pt.ticks);
+            &segments, action.trn, 0);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
         if (!res) {
