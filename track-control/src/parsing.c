@@ -255,6 +255,11 @@ void parse_cmd(struct deque *in, cmd_s *out) {
                 break; // check end
             } else if (c == 'u') {
                 if ((char)deque_pop_front(in) == 'n') {
+                    if (strip_ws(in) == 0) { RET_ERR } // no ws?
+
+                    int num; // test num
+                    if ((num = parse_num(in)) < 0) { RET_ERR } // not a num
+                    out->params[0] = num;
                     out->kind = CMD_RUN;
                     break;
                 } else { RET_ERR }
