@@ -497,32 +497,38 @@ plan_direct_route(track_node *start_node, track_node *end_node,
         // ULOG("[routing] no decision point for stopping\r\n");
         route->decision_pt.sensor_num = SENSOR_NONE;
     } else {
-        int32_t decision_dist = (DIST_TRAVELLED(true_starting_node,
-            node) >> 3);
+        // 75% of travel distance - offset (CRUCIAL FOR REVERSING)
+        int32_t decision_dist = ((DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM)) >> 1) +
+            ((DIST_TRAVELLED(true_starting_node, node) + (offset * MM_TO_UM)) >> 2);
 
         uint32_t decision_delay_time;
-        if (start_spd == target_spd) {
-            // assume constant
-            decision_delay_time = get_time_from_velocity_um(&spd_data, trn,
-                decision_dist, target_spd);
-        } else {
-            // do we reach constant spd before hand?
-            int32_t accel_dist = get_distance_from_acceleration(&spd_data,
-                trn, start_spd, target_spd);
 
-            if (accel_dist < decision_dist) {
-                // add accel and const times
-                decision_delay_time =
-                    get_time_from_acceleration(&spd_data, trn,
-                        start_spd, target_spd) +
-                    get_time_from_velocity_um(&spd_data, trn,
-                        decision_dist - accel_dist, target_spd);
+        if (decision_dist > 0) {
+            if (start_spd == target_spd) {
+                // assume constant
+                decision_delay_time = get_time_from_velocity_um(&spd_data, trn,
+                    decision_dist, target_spd);
             } else {
-                // estimate at full const
-                decision_delay_time =
-                    estimate_initial_time_acceleration(&spd_data, trn,
-                        start_spd, target_spd, decision_dist);
+                // do we reach constant spd before hand?
+                int32_t accel_dist = get_distance_from_acceleration(&spd_data,
+                    trn, start_spd, target_spd);
+
+                if (accel_dist < decision_dist) {
+                    // add accel and const times
+                    decision_delay_time =
+                        get_time_from_acceleration(&spd_data, trn,
+                            start_spd, target_spd) +
+                        get_time_from_velocity_um(&spd_data, trn,
+                            decision_dist - accel_dist, target_spd);
+                } else {
+                    // estimate at full const
+                    decision_delay_time =
+                        estimate_initial_time_acceleration(&spd_data, trn,
+                            start_spd, target_spd, decision_dist);
+                }
             }
+        } else {
+            decision_delay_time = 0;
         }
 
         // add decision pt to queue
@@ -570,9 +576,10 @@ void plan_stopped_route(track_node *start_node, track_node *end_node,
     int16_t offset, int16_t trn, enum SPEEDS spd, int track_server_tid,
     route *fwd_route, route *rv_route) {
     ULOG("Forward Route:\r\n");
-    plan_direct_route(start_node, end_node, offset, trn, SPD_STP, spd, true, track_server_tid, fwd_route);
+    plan_direct_route(start_node, end_node, offset,
+        trn, SPD_STP, spd, true, track_server_tid, fwd_route);
 
     ULOG("Reverse Route:\r\n");
-    plan_direct_route(start_node->reverse, end_node, offset, trn, SPD_STP, spd, false, track_server_tid, rv_route);
-    // reverse in the route?
+    plan_direct_route(start_node->reverse, end_node, offset - REVERSE_OFFSET,
+        trn, SPD_STP, spd, false, track_server_tid, rv_route);
 }
