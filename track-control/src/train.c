@@ -58,6 +58,7 @@ typedef struct spd_notif_action {
 typedef struct locking_notif_action {
     decision_pt decision_pt;
     uint8_t trn;
+    bool reverse;
 
     uint16_t segmentIDs[MAX_SEGMENTS_MSG];
     uint8_t no_segments;
@@ -378,7 +379,8 @@ static void train_locking_notifier(void) {
 
         // simulate delay_until
         int64_t pre_locking_time = Time(clock_tid);
-        uint32_t delay_time = max((pre_locking_time - sensor_activation_time) - action.decision_pt.ticks, 0);
+        if (action.reverse) action.decision_pt.ticks -= 75;
+        uint32_t delay_time = max(action.decision_pt.ticks - (pre_locking_time - sensor_activation_time), 0);
 
         // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
@@ -406,7 +408,7 @@ static void train_locking_notifier(void) {
 }
 
 inline static void
-wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
+wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn, bool reverse) {
     // uart_printf(CONSOLE, "[train] sending to notifier\r\n");
 
     train_msg msg;
@@ -426,6 +428,8 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
     }
     // uart_printf(CONSOLE, "\r\n");
 
+    msg.payload.locking_action.reverse = reverse;
+
     Send(notif_tid, (char *)&msg, sizeof(train_msg), (char *)&msg, sizeof(train_msg));
     uassert(msg.type == MSG_TRAIN_ACK);
 }
@@ -435,7 +439,7 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
 // updates next_segment to point to the start of the next desired segment
 // even in emergency stop, to keep up to date on our current position
 // (the planner will handle any possible reversing for us)
-static bool execute_plan(route *cur_route, route *next_route,
+static bool execute_plan(route *cur_route, route *next_route, bool reverse,
     int tc_server_tid, int locking_server_tid, train_params *params,
     track_node **next_segment, int route_notifier,
     int spd_notifier, int locking_notifier) {
@@ -475,7 +479,7 @@ static bool execute_plan(route *cur_route, route *next_route,
 
         // start-up locking notifier (separate from any other route actions)
         if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
-            wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
+            wait_decision_pt(locking_notifier, cur_route, next_route, params->trn, reverse);
     } else {
         waiting_lock = false; // not ever waiting on lock
     }
@@ -588,7 +592,7 @@ static void train_tc(void) {
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
     int console_server_tid = WhoIs(CONSOLE_SERVER_NAME);
     int locking_server_tid = WhoIs(TS_SERVER_NAME);
-    int clock_tid = WhoIs(CLOCK_SERVER_NAME);
+    // int clock_tid = WhoIs(CLOCK_SERVER_NAME);
 
     if (Receive(&ptid, (char *)&msg, sizeof(train_msg)) != sizeof(train_msg)) { // error, did not fully rcv?
         msg.type = MSG_TRAIN_ERROR;
@@ -688,7 +692,7 @@ static void train_tc(void) {
 
         routing_actions_reset(&routes[1 - cur]); // reset for next iteration
         // execute itr
-        stopped = execute_plan(&routes[cur], &routes[1 - cur], tc_server_tid,
+        stopped = execute_plan(&routes[cur], &routes[1 - cur], reversed, tc_server_tid,
             locking_server_tid, &params, &current_node, route_notifier,
             spd_notifier, lock_notifier);
 
@@ -697,7 +701,7 @@ static void train_tc(void) {
             // uart_printf(CONSOLE, "[train %d] free all but segment %d (at sensor %s)\r\n", params.trn, current_node->reverse->segmentId, current_node->name);
             track_server_free_all(locking_server_tid, current_node->reverse->segmentId, params.trn);
 
-            if (reversed && routes[cur].state != FINAL_SEGMENT) {
+            if (reversed) {
                 // return to regular state only if we had to stop
                 track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
                 reversed = false;
@@ -712,12 +716,12 @@ static void train_tc(void) {
         cur = 1 - cur;
     }
 
-    if (reversed) {
-        // return to regular state only if we had to stop
-        Delay(clock_tid, RV_WAIT_TIME); // prevent emergency stop before finished moving
-        track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
-        reversed = false;
-    }
+    // if (reversed) {
+    //     // return to regular state only if we had to stop
+    //     Delay(clock_tid, RV_WAIT_TIME); // prevent emergency stop before finished moving
+    //     track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
+    //     reversed = false;
+    // }
 
     // shut down notifiers
     msg.type = MSG_TRAIN_QUIT;

@@ -118,7 +118,7 @@ void routing_actions_reset(route *actions) {
 
 #define HASH(node) ((node) - track)
 
-#define DIST_TRAVELLED(n1, n2) ((dist[HASH(n2)] - dist[HASH(n1)]) * MM_TO_UM)
+#define DIST_TRAVELLED(n1, n2) (int64_t)((dist[HASH(n2)] - dist[HASH(n1)]) * MM_TO_UM)
 
 #define SW_DELAY_TICKS 75
 #define SPD_REACH_WINDOW 10
@@ -348,7 +348,7 @@ plan_direct_route(track_node *start_node, track_node *end_node,
                     action.action_type = SPD_CHANGE;
                     action.action.spd = SPD_STP;
                     action.info.delay_ticks = get_short_move_delay(&spd_data, trn,
-                        DIST_TRAVELLED(true_starting_node, end_node));
+                        DIST_TRAVELLED(true_starting_node, end_node) + (offset * MM_TO_UM));
                     routing_action_queue_push_front(&route->speed_changes, &action);
 
                     action.sensor_num = SENSOR_NONE;
