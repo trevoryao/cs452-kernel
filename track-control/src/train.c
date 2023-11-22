@@ -58,6 +58,7 @@ typedef struct spd_notif_action {
 typedef struct locking_notif_action {
     decision_pt decision_pt;
     uint8_t trn;
+    bool reverse;
 
     uint16_t segmentIDs[MAX_SEGMENTS_MSG];
     uint8_t no_segments;
@@ -293,6 +294,8 @@ wait_action(int notif_tid, train_msg *msg, uint8_t trn, routing_action *action) 
     uassert(msg->type == MSG_TRAIN_ACK);
 }
 
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
 static void train_locking_notifier(void) {
     int ptid;
     train_msg msg;
@@ -326,37 +329,40 @@ static void train_locking_notifier(void) {
         Reply(ptid, (char *)&msg, sizeof(train_msg)); // ACK/ERROR
 
         if (rcvd_type == MSG_TRAIN_QUIT) break; // EXIT: quit
+        if (action.decision_pt.sensor_num == SENSOR_NONE) {
+            // invalid
+            continue;
+        }
 
         // wait for sensor activation
-        if (action.decision_pt.sensor_num != SENSOR_NONE) {
-            // uart_printf(CONSOLE, "[train-notifier-locking %d] wait on sensor %c%d\r\n",
-            //     action.trn,
-            //     SENSOR_MOD(action.decision_pt.sensor_num) - 1 + 'A',
-            //     SENSOR_NO(action.decision_pt.sensor_num));
-            // Delay(clock_tid, 10);
+        // uart_printf(CONSOLE, "[train-notifier-locking %d] wait on sensor %c%d\r\n",
+        //     action.trn,
+        //     SENSOR_MOD(action.decision_pt.sensor_num) - 1 + 'A',
+        //     SENSOR_NO(action.decision_pt.sensor_num));
+        // Delay(clock_tid, 10);
 
-            int ret = track_control_wait_sensor(tc_server_tid,
-                SENSOR_MOD(action.decision_pt.sensor_num),
-                SENSOR_NO(action.decision_pt.sensor_num),
-                0,
-                action.trn, false); // don't update position for speed
+        int ret = track_control_wait_sensor(tc_server_tid,
+            SENSOR_MOD(action.decision_pt.sensor_num),
+            SENSOR_NO(action.decision_pt.sensor_num),
+            0,
+            action.trn, false); // don't update position for speed
+        int64_t sensor_activation_time = Time(clock_tid);
 
-            uassert(ret != -1);
-            switch (ret) {
-                case SENSOR_EARLY:
-                    print_missed_sensor(console_tid, action.trn,
-                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
-                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
-                    break;
-                case SENSOR_LATE:
-                    print_missed_sensor(console_tid, action.trn,
-                        SENSOR_MOD(action.decision_pt.sensor_num) - 1,
-                        SENSOR_NO(action.decision_pt.sensor_num) - 1);
-                    break;
-                default:
-                    clear_missed_sensor(console_tid, action.trn);
-                    break;
-            }
+        uassert(ret != -1);
+        switch (ret) {
+            case SENSOR_EARLY:
+                print_missed_sensor(console_tid, action.trn,
+                    SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                    SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                break;
+            case SENSOR_LATE:
+                print_missed_sensor(console_tid, action.trn,
+                    SENSOR_MOD(action.decision_pt.sensor_num) - 1,
+                    SENSOR_NO(action.decision_pt.sensor_num) - 1);
+                break;
+            default:
+                clear_missed_sensor(console_tid, action.trn);
+                break;
         }
 
         deque segments;
@@ -371,9 +377,14 @@ static void train_locking_notifier(void) {
         }
         // uart_printf(CONSOLE, "\r\n");
 
+        // simulate delay_until
+        int64_t pre_locking_time = Time(clock_tid);
+        if (action.reverse) action.decision_pt.ticks -= 75;
+        uint32_t delay_time = max(action.decision_pt.ticks - (pre_locking_time - sensor_activation_time), 0);
+
         // return result back to server
         bool res = track_server_lock_all_segments_timeout(locking_server_tid,
-            &segments, action.trn, 0);
+            &segments, action.trn, delay_time);
         // uart_printf(CONSOLE, "[train-notifier-locking] locking returned %d\r\n", res);
 
         if (!res) {
@@ -397,7 +408,7 @@ static void train_locking_notifier(void) {
 }
 
 inline static void
-wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
+wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn, bool reverse) {
     // uart_printf(CONSOLE, "[train] sending to notifier\r\n");
 
     train_msg msg;
@@ -417,6 +428,8 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
     }
     // uart_printf(CONSOLE, "\r\n");
 
+    msg.payload.locking_action.reverse = reverse;
+
     Send(notif_tid, (char *)&msg, sizeof(train_msg), (char *)&msg, sizeof(train_msg));
     uassert(msg.type == MSG_TRAIN_ACK);
 }
@@ -426,7 +439,7 @@ wait_decision_pt(int notif_tid, route *cur_route, route *next_route, int trn) {
 // updates next_segment to point to the start of the next desired segment
 // even in emergency stop, to keep up to date on our current position
 // (the planner will handle any possible reversing for us)
-static bool execute_plan(route *cur_route, route *next_route,
+static bool execute_plan(route *cur_route, route *next_route, bool reverse,
     int tc_server_tid, int locking_server_tid, train_params *params,
     track_node **next_segment, int route_notifier,
     int spd_notifier, int locking_notifier) {
@@ -466,7 +479,7 @@ static bool execute_plan(route *cur_route, route *next_route,
 
         // start-up locking notifier (separate from any other route actions)
         if (cur_route->decision_pt.sensor_num != SENSOR_NONE)
-            wait_decision_pt(locking_notifier, cur_route, next_route, params->trn);
+            wait_decision_pt(locking_notifier, cur_route, next_route, params->trn, reverse);
     } else {
         waiting_lock = false; // not ever waiting on lock
     }
@@ -678,7 +691,7 @@ static void train_tc(void) {
 
         routing_actions_reset(&routes[1 - cur]); // reset for next iteration
         // execute itr
-        stopped = execute_plan(&routes[cur], &routes[1 - cur], tc_server_tid,
+        stopped = execute_plan(&routes[cur], &routes[1 - cur], reversed, tc_server_tid,
             locking_server_tid, &params, &current_node, route_notifier,
             spd_notifier, lock_notifier);
 
@@ -701,6 +714,13 @@ static void train_tc(void) {
         // prime for next itr
         cur = 1 - cur;
     }
+
+    // if (reversed) {
+    //     // return to regular state only if we had to stop
+    //     Delay(clock_tid, RV_WAIT_TIME); // prevent emergency stop before finished moving
+    //     track_control_set_train_speed(tc_server_tid, params.trn, SP_REVERSE);
+    //     reversed = false;
+    // }
 
     // shut down notifiers
     msg.type = MSG_TRAIN_QUIT;
