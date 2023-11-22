@@ -16,7 +16,7 @@ EXEC:=position-test
 # -ffunction-sections causes each function to be in a separate section (linker script relies on this)
 WARNINGS=-Wall -Wextra -Wpedantic -Wno-unused-const-variable
 CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
-	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only \
+	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only -DUSERLOG \
 	-I$(ROOT)/$(INCLUDES) -I$(ROOT)/$(KDIR)/$(INCLUDES) -I$(ROOT)/$(TDIR)/$(INCLUDES)
 
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces

@@ -24,6 +24,7 @@
 #include "speed.h"
 #include "speed-data.h"
 #include "track-data.h"
+#include "track-server.h"
 
 // starting coordinates for various ui elements
 
@@ -39,8 +40,11 @@
 #define SEN_START_X 50
 #define SEN_START_Y 6
 
+#define SEC_START_X 1
+#define SEC_START_Y 29
+
 #define PRMT_START_X 1
-#define PRMT_START_Y 30
+#define PRMT_START_Y 38
 
 #define POS_START_X 1
 #define POS_START_Y 30
@@ -50,13 +54,14 @@ static const uint16_t SW1_START_Y = (N_SW0 / 4) + 1;
 static const uint16_t SPD_START_Y = SEN_START_Y + 10;
 #define SPD_START_X SEN_START_X
 
-static const uint16_t IDLE_START_Y = SPD_START_Y + 3 * N_TRNS + 3;
+static const uint16_t IDLE_START_Y = SEC_START_Y + 6;
 #define IDLE_START_X 7
 
 #define TC_START_Y SPD_START_Y
 static const uint16_t TC_START_X = SPD_START_X + 12;
 
 #define SW_TAB 10 // tab distance
+#define SEC_TAB 9
 
 extern speed_data spd_data;
 
@@ -98,7 +103,7 @@ static void update_single_switch(uint16_t tid, uint16_t sw, enum SWITCH_DIR dir)
     (void)x_off;
     (void)y_off;
     (void)col;
-    uart_printf(CONSOLE, fmt, sw, dir_ch);
+    Printf(tid, fmt, sw, dir_ch);
     #else
     Printf(tid, fmt,
         CURS_SAVE CURS_HIDE,
@@ -151,6 +156,11 @@ void init_monitor(uint16_t tid) {
     // idle
     Printf(tid, CURS_MOV COL_YEL "Idle:" COL_RST, IDLE_START_Y, IDLE_START_X - 6);
 
+    // sensors
+    Printf(tid, CURS_MOV COL_YEL "Sectors:" COL_RST, SEC_START_Y - 1, SEC_START_X);
+    for (uint16_t i = 0; i <  N_SEGMENTS; ++i) // SW0
+        update_segment(tid, i, 0);
+
     // no triggered sensors
     print_prompt(tid);
 
@@ -200,7 +210,7 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
 
     #if LOGGING
     (void)tid;
-    uart_printf(CONSOLE, "[speed] TR%d: %d\r\n", tr, speed_display_get(spd_t, tr));
+    Printf(tid, "[speed] TR%d: %d\r\n", tr, speed_display_get(spd_t, tr));
     #else
 
     char *col;
@@ -223,11 +233,12 @@ void update_speed(uint16_t tid, speed_t *spd_t, uint16_t tr) {
 
 void print_tc_params(uint16_t tid, int sen_track_num_start, int sen_track_num_end, int16_t offset, uint16_t trn) {
     #if LOGGING
-    (void)tid;
-    (void)sen_track_num_start;
-    (void)sen_track_num_end;
-    (void)offset;
-    (void)trn;
+    Printf(tid, "trn %d: %c%d -> %c%d (%dmm)", trn,
+        SENSOR_MOD(sen_track_num_start) - 1 + 'A',
+        SENSOR_NO(sen_track_num_start),
+        SENSOR_MOD(sen_track_num_end) - 1 + 'A',
+        SENSOR_NO(sen_track_num_end),
+        offset);
     #else
     int8_t trn_hash_no = trn_hash(trn);
     if (trn_hash_no < 0) return;
@@ -241,7 +252,7 @@ void print_tc_params(uint16_t tid, int sen_track_num_start, int sen_track_num_en
         SENSOR_MOD(sen_track_num_end) - 1 + 'A',
         SENSOR_NO(sen_track_num_end),
         offset);
-#endif
+    #endif
 }
 
 void reset_tc_params(uint16_t tid, uint16_t trn) {
@@ -253,25 +264,22 @@ void reset_tc_params(uint16_t tid, uint16_t trn) {
     if (trn_hash_no < 0) return;
 
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
-        CURS_DOWN DEL_LINE
+        CURS_DOWN DEL_LINE CURS_DOWN DEL_LINE
         CURS_UNSAVE CURS_SHOW,
         TC_START_Y + 3 * trn_hash_no, TC_START_X);
     #endif
 }
 
-void update_sensor_prediction(uint16_t tid, int8_t trainNo, int8_t spd, int32_t diff) {
+void update_sensor_prediction(uint16_t tid, int8_t trainNo, int32_t diff) {
     // assume diff is in clock ticks (10ms)
     int32_t diff_time = diff * TICK_MS;
-    int64_t diff_dist = get_distance_from_velocity(&spd_data, trainNo, diff, spd) / MM_TO_UM;
 
     #if LOGGING
-    Printf(tid, "[Prediction] %dms / %dmm\r\n",
-        diff_time, diff_dist);
+    Printf(tid, "[Prediction] train %d: %dms\r\n",
+        trainNo, diff_time);
     #else
     int8_t trn_hash_no = trn_hash(trainNo);
     if (trn_hash_no < 0) return;
-
-
 
     char *col;
     if (-5 <= diff && diff <= 5) {
@@ -283,11 +291,57 @@ void update_sensor_prediction(uint16_t tid, int8_t trainNo, int8_t spd, int32_t 
     }
 
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
-        "%s%d" COL_RST "ms / %s%d" COL_RST "mm"
+        "%s%d" COL_RST "ms"
         CURS_UNSAVE CURS_SHOW,
         TC_START_Y + 3 * trn_hash_no + 1, TC_START_X,
-        col, diff_time, col, diff_dist);
+        col, diff_time);
 
+    #endif
+}
+
+void print_missed_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no) {
+    #if LOGGING
+    Printf(tid, "[Prediction] train %d missed sensor %c%d\r\n",
+        trn, sen_mod + 'A', sen_no + 1);
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%c%d:" COL_RED "MISSED" COL_RST
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X,
+        sen_mod + 'A', sen_no + 1);
+    #endif
+}
+
+void print_early_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no) {
+    #if LOGGING
+    Printf(tid, "[Prediction] train %d missed sensor %c%d\r\n",
+        trn, sen_mod + 'A', sen_no + 1);
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%c%d:" COL_RED " EARLY" COL_RST
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X,
+        sen_mod + 'A', sen_no + 1);
+    #endif
+}
+
+void clear_missed_sensor(uint16_t tid, uint16_t trn) {
+    #if LOGGING
+    (void)tid;
+    (void)trn;
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X);
     #endif
 }
 
@@ -319,11 +373,11 @@ void update_triggered_sensor(uint16_t tid, deque *q, uint16_t sen_mod, uint16_t 
     #if LOGGING
     (void)tid;
     (void)q;
-    uart_printf(CONSOLE, "[sensor trigger] %c%d\r\n", 'A' + sen_mod, sen_no);
+    Printf(tid, "[sensor trigger] %c%d\r\n", 'A' + sen_mod, sen_no);
     #else
 
     deque_itr it = deque_begin(q);
-    for (uint16_t offset = 0; it != deque_end(q); ++offset) {
+    for (uint16_t offset = 0; offset < (deque_size(q) >> 1); ++offset) {
         char mod = 'A' + deque_itr_get(q, it); // module number
         it = deque_itr_next(it);
         uint16_t no = deque_itr_get(q, it); // sensor number (in module)
@@ -364,4 +418,27 @@ void reset_error_message(uint16_t tid) {
 void print_train_time(uint16_t tid, int8_t trainNo, int32_t diff_time, int32_t diff_distance) {
     Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE "Train %d reached sensor with %d clock tick diff and %d um difference" CURS_UNSAVE CURS_SHOW,
             POS_START_Y, POS_START_X, trainNo, diff_time, diff_distance);
+}
+
+
+void update_segment(uint16_t tid, int segmentID, uint16_t trainNo) {
+    uint16_t x_off, y_off;
+    x_off = (segmentID & 7) * SEC_TAB; // mod 8
+    y_off = segmentID >> 3;
+
+    char *col;
+    char *clear_char;
+    if (trainNo == 0) {
+        col = COL_GRN;
+        clear_char = " ";
+    } else {
+        col = COL_CYN;
+        clear_char = "";
+    }
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV
+        "S%d: %s%d%s"
+        COL_RST CURS_UNSAVE CURS_SHOW,
+        (SEC_START_Y + y_off), (SEC_START_X + x_off),
+        segmentID, col, trainNo, clear_char);
 }

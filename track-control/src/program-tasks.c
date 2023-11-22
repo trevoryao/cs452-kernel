@@ -14,12 +14,17 @@
 #include "control-msgs.h"
 #include "monitor.h"
 #include "parsing.h"
+#include "preset-program.h"
 #include "sensors.h"
 #include "speed.h"
 #include "track.h"
 #include "track-control.h"
 #include "track-control-coordinator.h"
+#include "track-data.h"
+#include "track-segment-locking.h"
 #include "train.h"
+
+extern track_node track[];
 
 // pass to worker task to prevent perf hit of multiple syscalls
 typedef struct msg_rv {
@@ -83,6 +88,7 @@ void cmd_task_main(void) {
     uint16_t console_tid = WhoIs(CONSOLE_SERVER_NAME);
     uint16_t marklin_tid = WhoIs(MARKLIN_SERVER_NAME);
     uint16_t tcc_tid = WhoIs(TC_SERVER_NAME);
+    uint16_t ts_tid = WhoIs(TS_SERVER_NAME);
 
     deque console_in; // entered command deque
     deque_init(&console_in, 10);
@@ -91,6 +97,9 @@ void cmd_task_main(void) {
     cmd_s cmd; // for parsing
 
     uint16_t trains[N_TRNS]; // stores last created for killing (may not be still active)
+
+    preset_program program;
+    init_preset_program(&program);
 
     for (;;) {
         c = Getc(console_tid);
@@ -131,10 +140,10 @@ void cmd_task_main(void) {
                 case CMD_TC:
                     trains[trn_hash(cmd.params[1])] = CreateControlledTrain(
                         cmd.params[1],
-                        cmd.params[2],
                         cmd.path[0],
                         cmd.path[1],
-                        cmd.params[0]
+                        cmd.params[0],
+                        cmd.params[2]
                     );
                     print_tc_params(console_tid, cmd.path[0]->num, cmd.path[1]->num, cmd.params[0], cmd.params[1]);
                     break;
@@ -142,6 +151,12 @@ void cmd_task_main(void) {
                     KillChild(trains[trn_hash(cmd.params[0])]);
                     track_control_end_train(tcc_tid, cmd.params[0]); // deregister on behalf of killed train
                     track_control_set_train_speed(tcc_tid, cmd.params[0], SPD_STP);
+                    track_server_free_all(ts_tid, -1, cmd.params[0]);
+                    break;
+                case CMD_RUN:
+                    print_prompt(console_tid);
+                    run_preset_program(&program, cmd.params[0], trains, console_tid,
+                        tcc_tid, ts_tid, clock_tid);
                     break;
                 case CMD_GO:
                     track_go(marklin_tid);

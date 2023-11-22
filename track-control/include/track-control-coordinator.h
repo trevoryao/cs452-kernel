@@ -19,6 +19,8 @@ enum TC_MSG_TYPE {
     MSG_TC_SENSOR_GET,
     MSG_TC_SENSOR_PUT,
     MSG_TC_ERROR,
+    MSG_TC_EARLY,
+    MSG_TC_LATE,
     MSG_TC_MAX
 };
 
@@ -32,10 +34,10 @@ typedef struct msg_tc_server {
     enum TC_MSG_TYPE type;
     uint16_t requesterTid;
     uint64_t clockTick;
-    uint32_t distance_to_next_sensor_in_um;
+    uint32_t distance_to_next_sensor;
     uint16_t trainNo;
     bool positionRequest;
-    
+
     union data {
         sensor sensor;      // request for sensor
         struct {
