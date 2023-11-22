@@ -315,6 +315,22 @@ void print_missed_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t 
     #endif
 }
 
+void print_early_sensor(uint16_t tid, uint16_t trn, uint16_t sen_mod, uint16_t sen_no) {
+    #if LOGGING
+    Printf(tid, "[Prediction] train %d missed sensor %c%d\r\n",
+        trn, sen_mod + 'A', sen_no + 1);
+    #else
+    int8_t trn_hash_no = trn_hash(trn);
+    if (trn_hash_no < 0) return;
+
+    Printf(tid, CURS_SAVE CURS_HIDE CURS_MOV DEL_LINE
+        "%c%d:" COL_RED " EARLY" COL_RST
+        CURS_UNSAVE CURS_SHOW,
+        TC_START_Y + 3 * trn_hash_no + 2, TC_START_X,
+        sen_mod + 'A', sen_no + 1);
+    #endif
+}
+
 void clear_missed_sensor(uint16_t tid, uint16_t trn) {
     #if LOGGING
     (void)tid;
