@@ -620,8 +620,8 @@ static void train_tc(void) {
                 cur = track_server_lock_two_all_segments(locking_server_tid,
                     &routes[0].segments, &routes[1].segments, params.trn);
                 uassert(cur != -1);
-                uart_printf(CONSOLE, "[train %d] got %d dir segment lock (front %d)\r\n", params.trn,
-                    cur, deque_front(&routes[cur].segments));
+                // uart_printf(CONSOLE, "[train %d] got %d dir segment lock (front %d)\r\n", params.trn,
+                //     cur, deque_front(&routes[cur].segments));
 
                 reversed = (cur == 1); // save for done
             } else if (routes[0].state != ERR_NO_ROUTE) {

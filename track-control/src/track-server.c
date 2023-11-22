@@ -440,7 +440,7 @@ void track_server_timeout_notifier(void) {
         // Receive message on how long to wait
         Delay(clock, msg.timeout);
 
-        uart_printf(CONSOLE, "timeout notifier\r\n");
+        // uart_printf(CONSOLE, "timeout notifier\r\n");
 
         Send(parent, (char*)&msg, sizeof(msg_ts_server), (char*)&msg, sizeof(msg_ts_server));
     }

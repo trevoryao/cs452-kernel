@@ -194,9 +194,9 @@ int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second
     // copy second segments
     copySecondSegmentIDs(&msg_request, second_segmentIDs);
 
-    uart_printf(CONSOLE, "waiting on two segments\r\n");
+    // uart_printf(CONSOLE, "waiting on two segments\r\n");
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
-    uart_printf(CONSOLE, "lock return %d\r\n", msg_reply.segmentIDs[0]);
+    // uart_printf(CONSOLE, "lock return %d\r\n", msg_reply.segmentIDs[0]);
     return msg_reply.segmentIDs[0];
 }
 
