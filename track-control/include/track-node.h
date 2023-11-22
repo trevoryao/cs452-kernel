@@ -10,6 +10,13 @@ typedef enum {
   NODE_EXIT,
 } node_type;
 
+enum direction_lock {
+  DIR_A = 0, // Clock wise
+  DIR_B, // Counter clock
+  DIR_NONE, 
+  DIR_EMPTY
+};
+
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
 #define DIR_CURVED 1
@@ -38,6 +45,7 @@ struct track_node {
   int num;              /* sensor or switch number */
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
+  int segmentId;
 };
 
 #endif

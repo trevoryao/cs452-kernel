@@ -79,7 +79,7 @@ int16_t track_control_get_train_speed(int tid, uint16_t trainNo) {
     }
 }
 
-void track_control_wait_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no, uint32_t distance_to_next_sensor_in_um, int16_t trainNo, bool positionUpdate) {
+int track_control_wait_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no, uint32_t distance_to_next_sensor, int16_t trainNo, bool positionUpdate) {
     uint16_t my_tid = MyTid();
 
     struct msg_tc_server msg;
@@ -89,16 +89,30 @@ void track_control_wait_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no,
     msg.data.sensor.mod_num = sensor_no;
     msg.trainNo = trainNo;
     msg.positionRequest = positionUpdate;
-    msg.distance_to_next_sensor_in_um = distance_to_next_sensor_in_um * 1000;
+    msg.distance_to_next_sensor = distance_to_next_sensor * MM_TO_UM;
 
-    Send(tid, (char *)&msg, sizeof(struct msg_tc_server), (char *)&msg, sizeof(struct msg_tc_server));
+    int ret = Send(tid, (char *)&msg, sizeof(struct msg_tc_server), (char *)&msg, sizeof(struct msg_tc_server));
+
+    if (ret < 0 || msg.type == MSG_TC_ERROR) {
+        return -1;
+    } else if (msg.type == MSG_TC_SENSOR_GET) {
+        return SENSOR_OK;
+    } else if (msg.type == MSG_TC_EARLY) {
+        return SENSOR_EARLY;
+    } else if (msg.type == MSG_TC_LATE) {
+        return SENSOR_LATE;
+    } else {
+        return -1;
+    }
 }
-void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no) {
+
+void track_control_put_sensor(int tid, uint16_t sensor_mod, uint16_t sensor_no, uint32_t activation_ticks) {
     uint16_t my_tid = MyTid();
 
     struct msg_tc_server msg;
     msg.type = MSG_TC_SENSOR_PUT;
     msg.requesterTid = my_tid;
+    msg.clockTick = activation_ticks;
     msg.data.sensor.mod_num = sensor_mod;
     msg.data.sensor.mod_sensor = sensor_no;
 

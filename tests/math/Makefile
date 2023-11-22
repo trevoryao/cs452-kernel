@@ -5,26 +5,25 @@ XBINDIR:=$(XDIR)/bin
 CC:=$(XBINDIR)/$(TRIPLE)-gcc
 OBJCOPY:=$(XBINDIR)/$(TRIPLE)-objcopy
 OBJDUMP:=$(XBINDIR)/$(TRIPLE)-objdump
-ROOT:=../../..
+ROOT:=../..
 SRC:=src
 INCLUDES:=include
 KDIR:=kernel
-TDIR:=track-control
-EXEC:=sensor-test
+EXEC:=math-test
 
 # COMPILE OPTIONS
 # -ffunction-sections causes each function to be in a separate section (linker script relies on this)
 WARNINGS=-Wall -Wextra -Wpedantic -Wno-unused-const-variable
 CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
-	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only -DUSERLOG\
-	-I$(ROOT)/$(INCLUDES) -I$(ROOT)/$(KDIR)/$(INCLUDES) -I$(ROOT)/$(TDIR)/$(INCLUDES)
+	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only \
+	-I$(ROOT)/$(INCLUDES) -I$(ROOT)/$(KDIR)/$(INCLUDES)
 
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces
 # doing this rather than calling the linker ourselves simplifies the compilation procedure
 LDFLAGS:=-Wl,-nmagic -Wl,-T$(ROOT)/linker.ld
 
 # Source files and include dirs
-SOURCES := $(EXEC).c $(shell find $(ROOT)/$(SRC) $(ROOT)/$(KDIR)/$(SRC) $(ROOT)/$(TDIR)/$(SRC) -type f ! -name main.c -name '*.c' -o -name '*.S')
+SOURCES := $(EXEC).c $(shell find $(ROOT)/$(SRC) $(ROOT)/$(KDIR)/$(SRC) -name '*.c' -o -name '*.S')
 
 # Create .o and .d files for every .cc and .S (hand-written assembly) file
 OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))
