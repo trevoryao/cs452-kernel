@@ -86,6 +86,7 @@ int kernel_main(void *kernel_end) {
             goto CURR_TASK_KILLED;
         } else { // ready
             curr_user_task->ready_state = STATE_RUNNING;
+            KLOG("scheduling tid-%d\r\n", curr_user_task->tid);
         }
 
         enum STPWS stpw_t = (curr_user_task->tid == idle_task_tid) ? STPW_IDLE_TASK : STPW_USER_TASK;

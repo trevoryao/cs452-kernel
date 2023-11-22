@@ -33,31 +33,31 @@ void init_preset_program(preset_program *program) {
     program->presets[2].num_of_trns = 2;
 
     // trn 24
-    program->presets[1].trns[0].trn = 24;
-    program->presets[1].trns[0].start = &track[35]; // C4
+    program->presets[1].trns[0].trn = 77;
+    program->presets[1].trns[0].start = &track[58]; // D11
     program->presets[1].trns[0].end = &track[71]; // E8
     program->presets[1].trns[0].spd = SPD_LO;
 
     // trn 58
-    program->presets[1].trns[1].trn = 58;
+    program->presets[1].trns[1].trn = 24;
     program->presets[1].trns[1].start = &track[38]; // C7
     program->presets[1].trns[1].end = &track[2]; // A3
     program->presets[1].trns[1].spd = SPD_LO;
 
     // trn 24
-    program->presets[2].trns[0].trn = 24;
+    program->presets[2].trns[0].trn = 77;
     program->presets[2].trns[0].start = &track[71]; // E8
-    program->presets[2].trns[0].end = &track[35]; // C4
+    program->presets[2].trns[0].end = &track[58]; // D11
     program->presets[2].trns[0].spd = SPD_LO;
 
     // trn 58
-    program->presets[2].trns[1].trn = 58;
+    program->presets[2].trns[1].trn = 24;
     program->presets[2].trns[1].start = &track[2]; // A3
     program->presets[2].trns[1].end = &track[38]; // C7
     program->presets[2].trns[1].spd = SPD_LO;
 
     // triple insanity (3)
-    program->presets[3].num_of_trns = 3;
+    program->presets[3].num_of_trns = 2;
 
     // trn 24
     program->presets[3].trns[0].trn = 24;
@@ -66,16 +66,16 @@ void init_preset_program(preset_program *program) {
     program->presets[3].trns[0].spd = SPD_LO;
 
     // trn 58
-    program->presets[3].trns[1].trn = 58;
+    program->presets[3].trns[1].trn = 77;
     program->presets[3].trns[1].start = &track[15]; // A16
     program->presets[3].trns[1].end = &track[79]; // E16
     program->presets[3].trns[1].spd = SPD_LO;
 
     // trn 77
-    program->presets[3].trns[1].trn = 77;
-    program->presets[3].trns[1].start = &track[79]; // E16
-    program->presets[3].trns[1].end = &track[0]; // A1
-    program->presets[3].trns[1].spd = SPD_MED;
+    // program->presets[3].trns[1].trn = 77;
+    // program->presets[3].trns[1].start = &track[79]; // E16
+    // program->presets[3].trns[1].end = &track[0]; // A1
+    // program->presets[3].trns[1].spd = SPD_MED;
 }
 
 // see return codes

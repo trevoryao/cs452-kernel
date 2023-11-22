@@ -7,25 +7,33 @@
 #include "deque.h"
 #include "rpi.h"
 
+#include "uassert.h"
+
 // TODO -> sanity check if segment is in allowed range!!!!
 void copySegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->no_segments = 0;
 
+    // uart_printf(CONSOLE, "segment0:");
     for (deque_itr it = deque_begin(segments); msg->no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
         msg->segmentIDs[msg->no_segments] = value;
+        // uart_printf(CONSOLE, " %d", msg->segmentIDs[msg->no_segments]);
         msg->no_segments += 1;
     }
+    // uart_printf(CONSOLE, "\r\n");
 }
 
 void copySecondSegmentIDs(msg_ts_server *msg, deque *segments) {
     msg->second_no_segments = 0;
 
+    // uart_printf(CONSOLE, "segment1:");
     for (deque_itr it = deque_begin(segments); msg->second_no_segments < deque_size(segments); it = deque_itr_next(it)) {
         int value = deque_itr_get(segments, it);
+        // uart_printf(CONSOLE, " %d", value);
         msg->second_segmentIDs[msg->second_no_segments] = value;
         msg->second_no_segments += 1;
     }
+    // uart_printf(CONSOLE, "\r\n");
 }
 
 bool track_server_lock_segment_timeout(int tid, uint16_t segmentID, uint16_t trainNo,
@@ -65,6 +73,8 @@ bool track_server_lock_all_segments_timeout(int tid, deque *segmentIDs, uint16_t
     msg_request.timeout = timeout_ticks;
     msg_request.trainNo = trainNo;
 
+    // uassert(!deque_empty(segmentIDs));
+
     // copy over the segments
     copySegmentIDs(&msg_request, segmentIDs);
 
@@ -80,8 +90,11 @@ void track_server_lock_all_segments(int tid, deque *segmentIDs, uint16_t trainNo
     msg_request.timeout = 0;
     msg_request.trainNo = trainNo;
 
+    // uassert(!deque_empty(segmentIDs));
+
     copySegmentIDs(&msg_request, segmentIDs);
 
+    // uart_printf(CONSOLE, "waiting on one segment\r\n");
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
 }
 
@@ -172,14 +185,18 @@ int track_server_lock_two_all_segments(int tid, deque *segmentIDs, deque *second
     msg_request.trainNo = trainNo;
     msg_request.timeout = 0;
 
+    // uassert(!deque_empty(segmentIDs));
+    // uassert(!deque_empty(second_segmentIDs));
+
     // copy over the segments
     copySegmentIDs(&msg_request, segmentIDs);
 
     // copy second segments
     copySecondSegmentIDs(&msg_request, second_segmentIDs);
 
+    uart_printf(CONSOLE, "waiting on two segments\r\n");
     Send(tid, (char *)&msg_request, sizeof(struct msg_ts_server), (char *)&msg_reply, sizeof(struct msg_ts_server));
-
+    uart_printf(CONSOLE, "lock return %d\r\n", msg_reply.segmentIDs[0]);
     return msg_reply.segmentIDs[0];
 }
 

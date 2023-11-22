@@ -116,7 +116,7 @@ void track_control_coordinator_main() {
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
 
     // start up a sensorWorker
-    Create(P_HIGH, sensor_worker_main);
+    Create(P_SENSOR_WORKER, sensor_worker_main);
 
     /*
     *
