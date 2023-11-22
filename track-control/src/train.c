@@ -592,7 +592,6 @@ static void train_tc(void) {
     int tc_server_tid = WhoIs(TC_SERVER_NAME);
     int console_server_tid = WhoIs(CONSOLE_SERVER_NAME);
     int locking_server_tid = WhoIs(TS_SERVER_NAME);
-    // int clock_tid = WhoIs(CLOCK_SERVER_NAME);
 
     if (Receive(&ptid, (char *)&msg, sizeof(train_msg)) != sizeof(train_msg)) { // error, did not fully rcv?
         msg.type = MSG_TRAIN_ERROR;
