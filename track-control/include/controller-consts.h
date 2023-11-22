@@ -39,7 +39,7 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define TIME_NONE -1
 
 // time consts
-#define RV_WAIT_TIME    200 // 2s
+#define RV_WAIT_TIME    320 // 3.2s
 #define REFRESH_TIME    9   // refresh clock every 90ms
 #define IDLE_REFRESH_TIME 500 // 5s
 
