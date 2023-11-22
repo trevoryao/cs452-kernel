@@ -121,7 +121,7 @@ void task_svc_handle(task_t *t, task_alloc *talloc, stack_alloc *salloc,
             break;
         case SYS_KILL: {
             task_t *child = task_queue_get(tq, t->x1);
-            if (child && child->parent == t) {
+            if (child && (child->parent == t || t->priority >= P_SERVER_LO)) {
                 child->ready_state = STATE_KILLED;
                 task_queue_kill_children(tq, child->tid);
                 t->x0 = 0;
