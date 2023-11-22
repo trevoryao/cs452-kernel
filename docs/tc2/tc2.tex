@@ -95,8 +95,8 @@
         \item \verb`tr <train number> <train speed>`: Set the speed of the specified train. The train number must be a valid supported train (i.e. listed in the interface), and the speed must be an integer in the range $[0,14] \cup [16,30]$, where the latter is used to toggle the light status.
         \item \verb`rv <train number>`: Change the direction of the specified train to reverse. When run, the train will stop, before reversing at the same speed as before. Preserves the status of headlights.
         \item \verb`sw <switch number> <switch direction>`: Throw the given switch in the given direction (\verb`s`/\verb`S` or \verb`c`/\verb`C`). The switch number must exist on the track.
-        \item \verb`init`: Initialises the track by learning the positions of any of the supported trains on the track. Must be called before the \verb`tc` command.
-        \item \verb`tc <end> <offset> <train number> <speed>`: Route the specified train from the start to end track nodes, stopping offset mm after (if positive) or before (if negative) at the specified speed. The track nodes must match their names in the track data (i.e. case sensitive). The speed is specified as one of \verb`lo`/\verb`med`. Note that the start node must be in the forward direction of the train.
+        \item \verb`run <test-number>`: Runs a preset test case for testing collision avoidance.
+        \item \verb`tc <start> <end> <offset> <train number> <speed>`: Route the specified train from the start to end track nodes, stopping offset mm after (if positive) or before (if negative) at the specified speed. The track nodes must match their names in the track data (i.e. case sensitive). The speed is specified as one of \verb`lo`/\verb`med`. Note that the start node must be in the forward direction of the train.
         \item \verb`st <train number>`: Stops the train mid-route. Useful for force quitting.
         \item \verb`go`: Send the `Go' signal to the track.
         \item \verb`hlt`: Send the `Stop' signal to the track.
@@ -105,7 +105,7 @@
 
     \subsection{Submission SHA}
 
-    The repository for the kernel is \href{https://git.uwaterloo.ca/t27yao/cs452-kernel}{ist-git@git.uwaterloo.ca:t27yao/cs452-kernel.git}. The submission SHA is $\langle$SHA$\rangle$.
+    The repository for the kernel is \href{https://git.uwaterloo.ca/t27yao/cs452-kernel}{ist-git@git.uwaterloo.ca:t27yao/cs452-kernel.git}. The submission SHA is ce9f5ac51e64ea281290cf3b62b8e929b172a86f.
 
     \subsection{Program Structure}
 
@@ -113,7 +113,7 @@
 
     The root directory \verb`include/` and \verb`src/` directories contain system library code, which is used by user-level programs to interact with the kernel, and also any shared data structures between the kernel and user programs. These include interfaces for using any kernel-provided functionalities (i.e. syscalls, interrupt events, message passing). The interfaces for interacting with the Raspberry Pis, as well as assorted utility functions (string/memory interactions) are also found in the system library, and are used by both the kernel and user-level programs. The system library directory also holds the implementation of user-level servers, including the Name Server, Clock Server, and two I/O Servers, as well as their respective APIs. Finally, the system library also contains the deque (double-ended queue) and binary heap data structures.
 
-    All the user-level code needed to implement train control is contained in the \verb`track-control/` directory.\footnote{It was only realised when writing this document that this directory was indeed misnamed.} The contents of this directory are all discussed in detail throughout this document.
+    All the user-level code needed to implement train control is contained in the \verb`track-control/` directory. The contents of this directory are all discussed in detail throughout this document, as well as the documentation for TC1.
 
     \section{Execution}
 
@@ -124,15 +124,44 @@ make XDIR=/u/cs452/public/xdev
     
     \section{Routing}
     
+    The routing interfaces, including the concept of \verb`routing-action`'s remain from TC1. However, the old interfaces returned a full route in the form of a queue for the speed and path actions. In order to accommodate the required constant route recalculations for accomplishing collision avoidance, and the sectors for locking/reserving parts of the track (see Section \ref{sec:locking}), the previous speed and path action queues are encapsulated in a \verb`route` structure, which also contain a deque which hold the segments which need to be acquired by the train before performing any actions in the route (i.e. speed changes, heading towards specified sensors, throwing switches in the segment), as well as the decision point for the next sector (see Section \ref{sec:decision-pts}). Finally, the route includes metadata for the distance the path will take to the end of the needed sectors, and the state returned by the planning algorithm (i.e. if the route planning failed due to no path existing, if we have reached the destination, or if there are still segments remaining until we reach the destination). This is because the route planning methods no longer return the full route, and this state helps the train determine if it needs to continue pathfinding and moving, or if it has reached the original destination. 
+    
+    We again split the primary \verb`plan_direct_route` method into two wrapper methods, one which plans a single forward route assuming we have already reached constant speed at our specified speed, and one which plans both a forwards and backwards route from a stopped position, assuming we are accelerating to the specified speed. This is to better accommodate our trains and how they desire to move, which is discussed further in Section \ref{sec:train}. In general, we attempt to maintain whichever direction that we started moving in (be it forwards and backwards) until we are forced to stop in our route due to a conflict. When a train stops, it then reevaluates, and may continue in the same direction, or in the opposite -- this is completely determined randomly by the locking server (Section \ref{sec:locking}) and the positions of other trains on the track.
+    
+    In terms of the actual shortest path finding algorithm, we still use Dijkstra's Algorithm with a binary heap for the primary path finding portion on the given digraph (without considering reverse routes). However, in order to discourage trains from taking occupied routes, we modified the algorithm to multiply the distance of any currently in-use segments by a fixed penalty multiplier. This does not stop trains from attempting to route along currently occupied track segments, but encourages them to take an alternate route if possible. This fixed penalty value was determined through experimentation, as we wanted some conflicts to occur while avoiding unnecessary conflict. Too high a penalty resulted in trains getting stuck finding a route or taking very long alternate loops, and too low a penalty resulted in trains unnecessarily getting into conflicts even with an obvious alternate route available. In the end, our fixed penalty multiplier resulted in a segment's distance being half the distance of a full loop around the track, which we found to be a good balance. This modified distance was used during Dijkstra's Algorithm to determine our path, while we also saved the real distance of the path for any modelling calculations.
+    
+    The backtracking algorithm is slightly more straightforward in comparison to the one used in TC1. We are unable to backtrack in a single passthrough since if we happen to be accelerating/stopping, we may need multiple segments and sensors, depending on the distance between them. Since we also require segment locks before executing any actions, we also needed to change how the ordering that switches were returned (i.e. at the beginning). Finally, with the reversing case, we required to skip the starting node which would then lie behind the train when reversing, and this would be required for all calculations. Combined with the work done needed to calculate exactly which segments we would be traversing in the current step of the route, the single pass-over backtracking algorithm got incredibly complicated and impossible to read, with even more bugs. Given this experience, we scrapped the more efficient single passthrough with a slight backtrack.
+    
+    The algorithm first does a traditional backtrack, collecting the sensor nodes which we will visit in the theoretical path to the end, and any branches (and their needed direction) along the way in two separate queues. It then determines the ``true'' starting node of the path (again, dependent on the new direction of the train) and determines which state we are in (in relation to the overall route). If we are stopped, it traverses the path until we have passed our modelled acceleration distance, and stops -- collecting the segments used on the way. Another added feature as part of TC2 is the ability for a short move between sensors, and it is also calculated if this is required (i.e. the distance to our end node is less than the distance it takes to accelerate, reach constant speed, and stop, or we only traverse a single sensor). This is discussed more in Section \ref{sec:short-moves}. Otherwise, it calculates the stopping distance, and if we are the closest node to this stopping distance, we stop as in TC1, while yet again calculating what segments we traverse. Otherwise, we traverse a single segment and return the path needed to reach the end of the segment.
+    
+    \subsection{Decision Points}
+    \label{sec:decision-pts}
+    
+    A decision point is the point in our current segment that we need to have acquired the locks for the next segment in order to proceed with our route (i.e. throwing any necessary switches or entering the physical part of the track). If this decision point passes, the train must immediately stop (since it cannot further proceed) and recalculate based on the new state of the track. It may wait for the segment to free, or it may simply go around if deemed worth it (i.e. see the discussion above about the fixed point penalty). The decision point also needs to be temporally ahead ``enough'' of the next segment to allow us to throw the switches in the segment before we enter it, even in the worst case (i.e. acquire the lock as late as possible), in order to make sure that the switches in the segment are in the correct position for our route. 
+    
+    The decision point is calculated in the routing algorithm using our models, and takes into account possible acceleration (this is why during acceleration, we make sure that the segment contains the entire acceleration distance/time), as well as the direction of the train, since if reversing, we require a negative offset to make sure we don't enter the segment by accident. In general, we calculate a decision distance by taking three quarters of the distance we travel in the segment (including any possible offset), and calculate the time needed to travel this distance, taking into account any possible acceleration. The train administrator then uses this decision point time (relative to the first sensor in the segment) to handle locking (Section \ref{sec:train}).
+    
+    \subsection{Short Moves}
+    \label{sec:short-moves}
+    % niclas
+    
     \section{Sensor Attribution}
+    % niclas
     
     \section{Track Locking}
+    \label{sec:locking}
+    % niclas
+    
+    % justify why we can't have a deadlock when we use only timeout-locking and double-or locking
     
     \section{Train Control Design}
     
     \subsection{Position Modelling}
+    % trevor
     
     \subsection{Train Administrator}
+    \label{sec:train}
+    % trevor
     
     % Notes
     % You may find that creating a track server, which maintains the current state of the track, including reservations, and which answers questions about the track from other components, is an effective way of minimizing communication overhead.
