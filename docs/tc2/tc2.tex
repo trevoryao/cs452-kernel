@@ -218,8 +218,64 @@ make XDIR=/u/cs452/public/xdev
     \section{Track Locking}
     \label{sec:locking}
     % niclas
+    \subsection{Segmentation of the track}
+    In our train control system, we use track segments and their corresponding locking mechanisms as a key strategy to prevent collisions. 
+    To optimize this approach, we explored various methods of dividing the track into segments.
+
+    Our final decision was to use the locations of sensors as the boundaries for these segments. 
+    This design choice has its drawbacks, notably the uneven sizes of the segments. 
+    For instance, some segments are as short as 20 cm, while others encompass up to four switches (as illustrated in the accompanying image). 
+    Despite this uneven distribution, a significant advantage of this method is the precise tracking of a train's entry and exit from a segment. 
+    This accuracy is based on the assumption of sensor robustness, eliminating the need for speculative predictions.
+
+    Consequently, this design resulted in a total of 31 segments on track A and 30 on track B. 
+    We manually updated the \verb'track-data.c' file, ensuring that each node is assigned a \verb'segmentId'. 
+    This identifier simplifies the process of determining a node's corresponding segment. 
+    In our system, switches are straightforward to assign as they are always located between sensors. 
+    The sensors themselves are assigned the \verb'segmentId' of the segment towards which they are oriented — essentially, the segment a train enters upon triggering the sensor. 
+    Correspondingly, the reverse sensor is assigned the \verb'segmentId' of the sector the train is exiting.
+
+    \subsection{Track Locking Server}
+    In our train control system, we have implemented a 'Track Server' to effectively manage segment locks. 
+    This server maintains an array detailing each segment and the specific train it is currently assigned to.
+
+    The Track Server offers three primary functions to facilitate segment locking for trains:
+    \begin{itemize}
+        \item Lock an Array of Segments (With or Without Timeout): 
+        This function allows a train to request locks on a specified array of segments. The server will only lock these segments if all of them are available, ensuring atomicity and preventing race conditions. 
+        
+        The function can operate in two modes:
+        Blocking Mode: Without a timeout, the server waits until all requested segments are free, then locks them simultaneously and returns control.
+        Timeout Mode: With a timeout, the server attempts to lock the segments within the specified period, potentially returning a failure if the timeout elapses before all segments are free.
+
+        \item Lock Either of Two Segment Arrays (With or Without Timeout): 
+        Similar to the first function, this one allows a train to submit two different arrays of segments, representing two possible routes. 
+        The server attempts to lock any one of the arrays, enabling a train to concurrently wait for availability on two routes.
+
+        \item Free All Locks Except the Current Position: 
+        This crucial function allows a train to release all its segment locks except for the one it currently occupies. 
+        This action is vital in scenarios where a train is blocked, as it helps prevent deadlock situations (as described in Section \ref{sec:deadlock}).
+    \end{itemize}
+
+    \subsection{Deadlock Prevention}
+    \label{sec:deadlock}
+    In our design, we focused on active prevention of any deadlock situation instead of deadlock detection. 
+    To do so, we force the trains to do two crucial things, when trying to acquire a lock:
     
-    % justify why we can't have a deadlock when we use only timeout-locking and double-or locking
+    1. Use of Timeout Requests and Segment Freeing: 
+    When in motion, trains are required to employ timeout requests for segment locking. 
+    If a train fails to acquire the next necessary lock, it must execute an emergency stop and then recalculate its path. 
+    Following this recalculation, the train switches to acquiring locks without timeouts. 
+    However, before it can do so, it is mandatory for the train to release all its locks except for the segment it is physically in. 
+    This approach ensures that a stopped train does not inadvertently hold onto multiple segments.
+   
+    2. Dual Route Waiting Post-Emergency Stop: 
+    In case of an emergency stop (or startup), if possible, trains should wait for locks on two potential routes – both forward and backward. 
+    This means that whenever there are alternative routes available, the train will attempt to secure the 'next required locks' for both directions and proceed along the route it successfully locks.
+    
+    This design philosophy ensures that in any given track position, there is always the possibility for at least one train to move backwards, thereby preventing deadlock situations. 
+    Moreover, since stationary trains only maintain a lock on their physical position, one of the routes is always guaranteed to be unlocked.
+    Following these rules, it is impossible to generate any deadlock and hence there is no need for deadlock detection. 
     
     \section{Train Control Design}
     
