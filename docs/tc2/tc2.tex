@@ -146,7 +146,29 @@ make XDIR=/u/cs452/public/xdev
     \subsection{Short Moves}
     \label{sec:short-moves}
     % niclas
+    Short moves describes the challenge of moving the train over short distances, which are insufficient for it to reach a constant speed before braking. 
+    Initially, we considered using a linear model to simulate the acceleration and deceleration phases. 
+    However, our observations revealed that the trains' behavior was highly non-linear under these conditions.
+
+    To address this, we used the much simpler experimental approach presented in the lecture. 
+    We conducted a series of tests, using a straight on the track and the measuring tape. 
+    We began each test by accelerating the train to a speed of 7, maintained this speed for a predetermined duration, and stopping the train. 
+    This process was repeated with time intervals ranging from 1.5 to 5.75 seconds, increasing in 0.25-second increments. 
+    After each test, we recorded the distance covered by the train in an array.
+
+    For executing a short move, we now use a straightforward linear interpolation between the two data points closest to the desired distance. 
+    Our \verb'speed-data' library therefore offers a function, which takes the trainNo and the desired distance, and returns the required delay for the routing.
     
+    We further found out, that it is most precise to use short moves for distances below 80 cm for all trains. 
+    While some trains may reach their constant speed within these short distances, the duration is too brief to apply the standard braking distance.
+
+    Interestingly, the 'short move' performance varied significantly among different trains. 
+    For instance, Train 24 displayed minimal variation, with a deviation of about 0.5 cm for identical time delays. 
+    In contrast, Train 77 exhibited up to a 5 cm difference in traveled distance under the same conditions. 
+    However, our calibration program is only based on the clock server and a simple control loop with DelayUntil for operation.
+    Hence, the delays / inaccuracies caused by scheduling / our program are neglectable.
+
+
     \section{Sensor Attribution}
     \label{sec:sensor-attribution}
     
@@ -156,6 +178,42 @@ make XDIR=/u/cs452/public/xdev
     
     \subsection{Sensor Robustness}
     \label{sec:sensor-robustness}
+    The foundation for sensor robustness is the knowledge about which sensor we expect at which time. 
+    As described in TC1, we have a sufficticated senosr queue which keeps track of the expected sensors.    
+    The train will always only on the next expected sensor and pass an expected time to the sensor queue. 
+    Further, we changed our sensor worker (the task who reads the sensor data), to periodically wake up the sensor queue, even if there were no sensor activations. 
+
+
+    This setup, combined with a simple state machine, equips our sensor queue to efficiently manage four key scenarios:
+    \begin{itemize}
+        \item Unexpected sensor (= no process is waiting on this sensor)
+        \item Sensor is early
+        \item Sensor is late / missing
+        \item Sensor is in expected time frame
+    \end{itemize}
+    Unexpected sensor activation, are sensor activation, on which no train is waiting. 
+    Due to dynamic routing and on the fly switching, a random sensor is hard to attribute to any train. 
+    However, there are only two cases when a unexpected sensor can occur. 
+    First, it was a false activation, which should be ignored. 
+    Or second, some train took an unexpected route due to a malfunctioning switch. In this second case, however, the train will miss its 'expected sensor'. 
+    Hence, this second case is handled in our software through 'late/missing sensors' and we are ignoring unexpected sensor activations.
+
+    An early sensor activation, means that a train is waiting on a sensor activation, but the sensor was triggered earlier than expected. 
+    Respectively, it might be a wrong activation or an inaccurate prediction. 
+    Hence, we return this early sensor with an error message to the train and set the sensor state for this train to \verb'SENSOR_EARLY'.
+    If we get the next sensor activation in time, we assume it was just an inaccurate prediction and reset the train's state to \'SENSOR_OK'.
+    If however, the next sensor is missing, late or also early, we assume there is something wrong with the train. 
+    Hence, we will stop the train. 
+
+    A late sensor activation is similarly handled as an early activation. 
+    However, to detect a late/missing sensor activation we need to periodically check if there is an expected sensor activation which has not yet occurred. 
+    To do so, the sensor worker takes over the part of a notifier and periodically wakes the sensor queue up, even if there was no sensor activation. 
+    Similar to the early case, we will also stop the train after two missing/faulty sensor activations. 
+
+    Unfortunately, our positioning algorithm is currently not able to recover after emergency stops. 
+    Hence, we had too many faulty predictions causing the trains to stop although they perform the expected action.
+    Hence, we had to deactivate our sensor robustness for the demonstration.
+
     
     \section{Track Locking}
     \label{sec:locking}
@@ -166,6 +224,7 @@ make XDIR=/u/cs452/public/xdev
     \section{Train Control Design}
     
     \subsection{Position Modelling}
+    \label{sec:positioning}
     
     In TC1, our implementation of position modelling supported only sensor predictions at constant speed. In order to enable sensor robustness (Section \ref{sec:sensor-robustness}), we required model the expected trigger time for the next sensor in all cases (i.e. including acceleration). We make these sensor predictions in the \verb`trn_position` class for each train, which is maintained by the Track Control Coordinator. This class implements a finite state machine for each train based on if it is currently waiting for a sensor (i.e. the TCC calls the \verb`trn_position_set_sensor` method), or if it has just hit the sensor it was previously waiting for (i.e. the TCC calls the \verb`trn_position_reached_sensor` method). Finally, the finite state machine has a third transition which may be started by the \verb`trn_position_update_speed`, which initialises the new non-constant speed prediction mode.
     
