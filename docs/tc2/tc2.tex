@@ -17,8 +17,8 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning, fit}
 
-\setlist[itemize]{topsep=0pt}
-\setlist[enumerate]{topsep=0pt, label=(\alph*)}
+\setlist[itemize]{topsep=0pt, itemsep=0pt}
+\setlist[enumerate]{topsep=0pt, itemsep=0pt, label=(\alph*)}
 
 \setlength\parindent{0pt}
 \setlength\parskip{6pt}
@@ -126,7 +126,7 @@ make XDIR=/u/cs452/public/xdev
     \section{Routing}
     \label{sec:routing}
     
-    The routing interfaces, including the concept of \verb`routing-action`'s remain from TC1. However, the old interfaces returned a full route in the form of a queue for the speed and path actions. In order to accommodate the required constant route recalculations for accomplishing collision avoidance, and the sectors for locking/reserving parts of the track (see Section \ref{sec:locking}), the previous speed and path action queues are encapsulated in a \verb`route` structure, which also contain a deque which hold the segments which need to be acquired by the train before performing any actions in the route (i.e. speed changes, heading towards specified sensors, throwing switches in the segment), as well as the decision point for the next sector (see Section \ref{sec:decision-pts}). Finally, the route includes metadata for the distance the path will take to the end of the needed sectors, and the state returned by the planning algorithm (i.e. if the route planning failed due to no path existing, if we have reached the destination, or if there are still segments remaining until we reach the destination). This is because the route planning methods no longer return the full route, and this state helps the train determine if it needs to continue pathfinding and moving, or if it has reached the original destination. 
+    The routing interfaces, including the concept of \verb`routing-action`'s remain from TC1. However, the old interfaces returned a full route in the form of a queue for the speed and path actions. In order to accommodate the required constant route recalculations for accomplishing collision avoidance, and the sectors for locking/reserving parts of the track (see Section \ref{sec:locking}), the previous speed and path action queues are encapsulated in a \verb`route` structure, which also contain a deque which hold the segments which need to be acquired by the train before performing any actions in the route (i.e. speed changes, heading towards specified sensors, throwing switches in the segment), as well as the decision point for the next segment (see Section \ref{sec:decision-pts}). Finally, the route includes metadata for the distance the path will take to the end of the needed sectors, and the state returned by the planning algorithm (i.e. if the route planning failed due to no path existing, if we have reached the destination, or if there are still segments remaining until we reach the destination). This is because the route planning methods no longer return the full route, and this state helps the train determine if it needs to continue pathfinding and moving, or if it has reached the original destination. 
     
     We again split the primary \verb`plan_direct_route` method into two wrapper methods, one which plans a single forward route assuming we have already reached constant speed at our specified speed, and one which plans both a forwards and backwards route from a stopped position, assuming we are accelerating to the specified speed. This is to better accommodate our trains and how they desire to move, which is discussed further in Section \ref{sec:train}. In general, we attempt to maintain whichever direction that we started moving in (be it forwards and backwards) until we are forced to stop in our route due to a conflict. When a train stops, it then reevaluates, and may continue in the same direction, or in the opposite -- this is completely determined randomly by the locking server (Section \ref{sec:locking}) and the positions of other trains on the track.
     
@@ -145,137 +145,28 @@ make XDIR=/u/cs452/public/xdev
     
     \subsection{Short Moves}
     \label{sec:short-moves}
-    % niclas
-    Short moves describes the challenge of moving the train over short distances, which are insufficient for it to reach a constant speed before braking. 
+    
+    When trains need to stop shortly before their destination, the distance remaining may not be sufficient for the train to accelerate and reach constant speed, and then stop at it's destination, resulting in a long detour in order to reach a relatively close destination. This kind of action is what we define as a \emph{Short Move}.
     Initially, we considered using a linear model to simulate the acceleration and deceleration phases. 
-    However, our observations revealed that the trains' behavior was highly non-linear under these conditions.
+    However, our observations revealed that train behaviour was highly non-linear under these conditions.
 
-    To address this, we used the much simpler experimental approach presented in the lecture. 
-    We conducted a series of tests, using a straight on the track and the measuring tape. 
+    In order to resolve this, we used the simpler experimental approach presented in lecture. 
+    We conducted a series of tests, using the longest straight on the track and a measuring tape. 
     We began each test by accelerating the train to a speed of 7, maintained this speed for a predetermined duration, and stopping the train. 
-    This process was repeated with time intervals ranging from 1.5 to 5.75 seconds, increasing in 0.25-second increments. 
+    This process was repeated with time intervals ranging from $1.5$ seconds to $5.75$ seconds, increasing in quarter-second increments. 
     After each test, we recorded the distance covered by the train in an array.
 
-    For executing a short move, we now use a straightforward linear interpolation between the two data points closest to the desired distance. 
-    Our \verb'speed-data' library therefore offers a function, which takes the trainNo and the desired distance, and returns the required delay for the routing.
+    For executing a short move, we now use a linear interpolation between the two closest recorded stopping points to the desired distance. 
+    Our \verb'speed_data' singleton class offers the method \verb`get_short_move_delay` which returns the required delay (for routing) needed between accelerating a train to the ``slow move speed'' of 7 and stopping the train based on the desired distance and train.
     
-    We further found out, that it is most precise to use short moves for distances below 80 cm for all trains. 
-    While some trains may reach their constant speed within these short distances, the duration is too brief to apply the standard braking distance.
+    In our testing, we discovered that it was the most precise to use short moves for distances under 80cm.
+    While some trains may reach their constant speed within these short distances, the distance was often too little to have enough sensors on route to apply our standard breaking procedure, which needs a relative sensor between starting and stopping.
 
-    Interestingly, the 'short move' performance varied significantly among different trains. 
-    For instance, Train 24 displayed minimal variation, with a deviation of about 0.5 cm for identical time delays. 
-    In contrast, Train 77 exhibited up to a 5 cm difference in traveled distance under the same conditions. 
-    However, our calibration program is only based on the clock server and a simple control loop with DelayUntil for operation.
-    Hence, the delays / inaccuracies caused by scheduling / our program are neglectable.
-
-
-    \section{Sensor Attribution}
-    \label{sec:sensor-attribution}
-    
-    Sensor Attribution is accomplished via segment locking (Section \ref{sec:locking}). Because we require that each train's administrator task has acquired the respective lock before a train can be in a segment of the track, any sensor activations which occur while a train has the mutual exclusion of sensors in the segment must have been made by the train holding the lock. Moreover, as in TC1, since trains wait on individual locks, spurious non-waited sensors do not affect train progress, and are ignored.
-    
-    % niclas
-    
-    \subsection{Sensor Robustness}
-    \label{sec:sensor-robustness}
-    The foundation for sensor robustness is the knowledge about which sensor we expect at which time. 
-    As described in TC1, we have a sufficticated senosr queue which keeps track of the expected sensors.    
-    The train will always only on the next expected sensor and pass an expected time to the sensor queue. 
-    Further, we changed our sensor worker (the task who reads the sensor data), to periodically wake up the sensor queue, even if there were no sensor activations. 
-
-
-    This setup, combined with a simple state machine, equips our sensor queue to efficiently manage four key scenarios:
-    \begin{itemize}
-        \item Unexpected sensor (= no process is waiting on this sensor)
-        \item Sensor is early
-        \item Sensor is late / missing
-        \item Sensor is in expected time frame
-    \end{itemize}
-    Unexpected sensor activation, are sensor activation, on which no train is waiting. 
-    Due to dynamic routing and on the fly switching, a random sensor is hard to attribute to any train. 
-    However, there are only two cases when a unexpected sensor can occur. 
-    First, it was a false activation, which should be ignored. 
-    Or second, some train took an unexpected route due to a malfunctioning switch. In this second case, however, the train will miss its 'expected sensor'. 
-    Hence, this second case is handled in our software through 'late/missing sensors' and we are ignoring unexpected sensor activations.
-
-    An early sensor activation, means that a train is waiting on a sensor activation, but the sensor was triggered earlier than expected. 
-    Respectively, it might be a wrong activation or an inaccurate prediction. 
-    Hence, we return this early sensor with an error message to the train and set the sensor state for this train to \verb'SENSOR_EARLY'.
-    If we get the next sensor activation in time, we assume it was just an inaccurate prediction and reset the train's state to \'SENSOR_OK'.
-    If however, the next sensor is missing, late or also early, we assume there is something wrong with the train. 
-    Hence, we will stop the train. 
-
-    A late sensor activation is similarly handled as an early activation. 
-    However, to detect a late/missing sensor activation we need to periodically check if there is an expected sensor activation which has not yet occurred. 
-    To do so, the sensor worker takes over the part of a notifier and periodically wakes the sensor queue up, even if there was no sensor activation. 
-    Similar to the early case, we will also stop the train after two missing/faulty sensor activations. 
-
-    Unfortunately, our positioning algorithm is currently not able to recover after emergency stops. 
-    Hence, we had too many faulty predictions causing the trains to stop although they perform the expected action.
-    Hence, we had to deactivate our sensor robustness for the demonstration.
-
-    
-    \section{Track Locking}
-    \label{sec:locking}
-    % niclas
-    \subsection{Segmentation of the track}
-    In our train control system, we use track segments and their corresponding locking mechanisms as a key strategy to prevent collisions. 
-    To optimize this approach, we explored various methods of dividing the track into segments.
-
-    Our final decision was to use the locations of sensors as the boundaries for these segments. 
-    This design choice has its drawbacks, notably the uneven sizes of the segments. 
-    For instance, some segments are as short as 20 cm, while others encompass up to four switches (as illustrated in the accompanying image). 
-    Despite this uneven distribution, a significant advantage of this method is the precise tracking of a train's entry and exit from a segment. 
-    This accuracy is based on the assumption of sensor robustness, eliminating the need for speculative predictions.
-
-    Consequently, this design resulted in a total of 31 segments on track A and 30 on track B. 
-    We manually updated the \verb'track-data.c' file, ensuring that each node is assigned a \verb'segmentId'. 
-    This identifier simplifies the process of determining a node's corresponding segment. 
-    In our system, switches are straightforward to assign as they are always located between sensors. 
-    The sensors themselves are assigned the \verb'segmentId' of the segment towards which they are oriented — essentially, the segment a train enters upon triggering the sensor. 
-    Correspondingly, the reverse sensor is assigned the \verb'segmentId' of the sector the train is exiting.
-
-    \subsection{Track Locking Server}
-    In our train control system, we have implemented a 'Track Server' to effectively manage segment locks. 
-    This server maintains an array detailing each segment and the specific train it is currently assigned to.
-
-    The Track Server offers three primary functions to facilitate segment locking for trains:
-    \begin{itemize}
-        \item Lock an Array of Segments (With or Without Timeout): 
-        This function allows a train to request locks on a specified array of segments. The server will only lock these segments if all of them are available, ensuring atomicity and preventing race conditions. 
-        
-        The function can operate in two modes:
-        Blocking Mode: Without a timeout, the server waits until all requested segments are free, then locks them simultaneously and returns control.
-        Timeout Mode: With a timeout, the server attempts to lock the segments within the specified period, potentially returning a failure if the timeout elapses before all segments are free.
-
-        \item Lock Either of Two Segment Arrays (With or Without Timeout): 
-        Similar to the first function, this one allows a train to submit two different arrays of segments, representing two possible routes. 
-        The server attempts to lock any one of the arrays, enabling a train to concurrently wait for availability on two routes.
-
-        \item Free All Locks Except the Current Position: 
-        This crucial function allows a train to release all its segment locks except for the one it currently occupies. 
-        This action is vital in scenarios where a train is blocked, as it helps prevent deadlock situations (as described in Section \ref{sec:deadlock}).
-    \end{itemize}
-
-    \subsection{Deadlock Prevention}
-    \label{sec:deadlock}
-    In our design, we focused on active prevention of any deadlock situation instead of deadlock detection. 
-    To do so, we force the trains to do two crucial things, when trying to acquire a lock:
-    
-    1. Use of Timeout Requests and Segment Freeing: 
-    When in motion, trains are required to employ timeout requests for segment locking. 
-    If a train fails to acquire the next necessary lock, it must execute an emergency stop and then recalculate its path. 
-    Following this recalculation, the train switches to acquiring locks without timeouts. 
-    However, before it can do so, it is mandatory for the train to release all its locks except for the segment it is physically in. 
-    This approach ensures that a stopped train does not inadvertently hold onto multiple segments.
-   
-    2. Dual Route Waiting Post-Emergency Stop: 
-    In case of an emergency stop (or startup), if possible, trains should wait for locks on two potential routes – both forward and backward. 
-    This means that whenever there are alternative routes available, the train will attempt to secure the 'next required locks' for both directions and proceed along the route it successfully locks.
-    
-    This design philosophy ensures that in any given track position, there is always the possibility for at least one train to move backwards, thereby preventing deadlock situations. 
-    Moreover, since stationary trains only maintain a lock on their physical position, one of the routes is always guaranteed to be unlocked.
-    Following these rules, it is impossible to generate any deadlock and hence there is no need for deadlock detection. 
+    Interestingly, the short move performance varied significantly between trains. 
+    For instance, Train 24 displayed minimal variation, with a deviation of about approximately $\pm0.5$ cm, 
+    In contrast, Train 77 exhibited up to $\pm5$ cm in variance under the same conditions.
+    This is despite our bare-bones calibration program running with only the Clock Server and a simple \verb`DelayUntil` loop, allowing us to conclude that any inaccuracies were not related to any scheduling or program issues. 
+    In general, we found similar performance when running the full train control program.
     
     \section{Train Control Design}
     
@@ -324,6 +215,7 @@ make XDIR=/u/cs452/public/xdev
     In all cases, the work done when the train hits the expected sensor is very little. It consists only of displaying the difference to the UI and resetting/updating any necessary markers used during the actual calculations above.
     
     \subsubsection{Limitations}
+    \label{sec:limits}
     
     We were unable to integrate the debug method with the sensor queue for resetting expected times. If we had been able to do so, in conjunction with the Sensor Robustness resetting, our modelling and sensor robustness would have been resilient to the decision point emergency stopping (Section \ref{sec:train}), allowing us to enter an unknown state before recovering, similar to the state after the train starts from a stationary position. Without these reset methods, our sensor-robustness and positioning failed due to the emergency stop, since it was not made aware that the train had stopped, and thus the expected time of the sensors could be changed to be ignored, as done initially on start-up.
     
@@ -345,4 +237,75 @@ make XDIR=/u/cs452/public/xdev
     The second change to the Train Administrators is related to the changes made to the routing algorithm (Section \ref{sec:routing}). Since the route planning is now incremental, we need to constantly plan a new route to the destination based on our current position in the track. The Train also has to take into account the current speed state of the track. If the train is stopped, it attempts to plan a route in either direction (if available -- if a train is at against an exit/entry node, it will only have one single direction), and based on the segments necessary to proceed which are returned by the routing algorithm for each direction, it performs a blocking wait on either group of segments (see \ref{sec:locking}). When one group of segments become completely free, the locking server unblocks it, and gives it ownership of the segments. 
     
     The train then proceeds to the moving state. In this state, we first plan the route of our next segment, if it exists. We are able to get the starting node of this next segment from our current in-progress route. This next segment will not exist if we will reach the specified end node in our current iteration. If it does exist, it then attempts to acquire these next segments with a timeout via the \verb`locking_notifier`. If it is able to acquire the next segments, it immediately throws any switches (which are at the front of the path now) to ensure that when we do enter the segments, we will be able to proceed. Otherwise, the train returns to the first stopped state and the process repeats. Any other actions such as the routing and speed actions from TC1 remain the same. The state machine then exits when we have executed the final segment and stopped at our destination, ready for any further routing commands.
+
+
+    \section{Sensor Attribution}
+    \label{sec:sensor-attribution}
+    
+    Sensor Attribution is accomplished via segment locking (Section \ref{sec:locking}). Because we require that each train's administrator task has acquired the respective lock before a train can be in a segment of the track, any sensor activations which occur while a train has the mutual exclusion of sensors in the segment must have been made by the train holding the lock. Moreover, as in TC1, since trains wait on individual locks, spurious non-waited sensors do not affect train progress, and are ignored.
+    
+    \subsection{Sensor Robustness}
+    \label{sec:sensor-robustness}
+    
+    In order to implement any kind of sensor robustness into our program, we required to be able to model with accuracy the expected next activation time of a sensor (Section \ref{sec:positioning}). As described in the TC1, we use a sensor queue to keep track of tasks waiting for various sensor activations. This was augmented to include time-based priority for the expected time. As part of our positioning algorithm, when we wait for a sensor, it almost always returns the expected time that we activate said sensor based on the existing state of the track. If it is unable to, the sensor is waited upon without a time, and ignored for timeout calculations. In this case, the positioning algorithm may update the expected time that the sensor will be activated. Our sensor worker task, which polls the Märklin for sensor data, also periodically wakes up the sensor queue to check for any timeouts (i.e. have we missed the expected time of a sensor, with a grace period).
+
+    Our sensor queue was also changed to maintain a simple state machine to handle the following possible scenarios for sensor activation:
+    \begin{enumerate}
+        \item On-time sensor activation;
+        \item Unexpected sensor activation;
+        \item Early sensor activation;
+        \item Late or missing sensor activation.
+    \end{enumerate}
+    
+    An on-time sensor activation is a sensor activation which occurs within an acceptable window of the calculated expected time ($\pm$200 ms), or a sensor that was waited upon without an expected time. We determined this window since we found that most of our predictions tended to lie within this interval on activation.
+    
+    An unexpected sensor activation occurs when a sensor is activated without any trains waiting on it. Due to the dynamic routing and on-the-fly switching our program uses to control trains, random sensor attributions are almost impossible to attribute to any particular train. An unexpected sensor activation may have been a false activation, or a malicious actor physically flicking switches on the track, in which case they can be ignored. Otherwise, this may be due to a train taking an unexpected route due to a malfunctioning or late switch. In this case, the train will miss its expected next sensor. Thus, this second case is handled in the late/missing sensor activation case, and we are able to just ignore any unexpected sensor activations.
+    
+    An early sensor activation occurs when a waited-upon sensor is triggered earlier than the expected window. This could be an incorrect activation, or an inaccurate prediction. In this case, we transition to an early error checking state. If the next sensor activation comes on time, we are able to assume the first prediction was just inaccurate, which can happen if the train gets stuck on the track, and thus return back the normal state. However, if this next sensor activation is also inaccurate (i.e. unexpected, early, late, or missing), we assume there is something wrong with the train and general state of train control, and we stop the train.
+
+    A late sensor activation occurs when the sensor is triggered later than the expected window. This is treated in the same way as an early activation. However, in order to detect a late/missing sensor activation, we periodically check if there is a sensor we are waiting on that has not occurred, and is outside the window. As discussed above, we use the sensor worker to take over the role of a notifier to periodically wake the sensor queue up even without a sensor activation. As in the previous case, we also stop the train after two missing/faulty sensor activations.
+    
+    Unfortunately, our positioning algorithm was unable to properly recover after an emergency stop due to trains being unable to acquire their locks (Section \ref{sec:limits}). This caused an infinite cycle of faulty predictions causing trains to be stopped even after performing the expected action. This scenario only occured with multiple trains on the track, and without multiple sensor activations, our sensor robustness had no issues, but in order to demo the primary features of our program, we had to deactivate our sensor robustness algorithm for the demonstration.
+    
+    \section{Track Locking}
+    \label{sec:locking}
+    
+    Rather than using any position-based avoidance algorithms, we prevent collisions by locking or reserving parts of the track.
+    
+    \subsection{Segments}
+    
+    In order to optimise the number of trains on parts of the track, we needed to choose segments appropriately to prevent multiple trains from colliding, while allowing necessary closeness in order for trains to route between various destinations. After exploring various methods, we decided to define a segment (or sector) as a section of the track without any escape routes for two trains in a head on collision, bounded on each exit and entry point by a sensor (if able, as in the case where a sector ends with an entry/exit node). This is illustrated in Figure \ref{fig:sectors}.
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.9\textwidth]{nice-track-sectors}
+        \caption{Track A Diagram with Sectors.}
+        \label{fig:sectors}
+    \end{figure}
+    
+    This choice has some drawbacks, particularly since the sizes of segments are quite uneven. For instance, some segments are as short as 20 cm, while others can cover up to four switches. Despite this uneven distribution, a significant advantage of this method is that we are able to precisely track when a train enters and exits a segment, eliminating the need for speculative positioning predictions.
+    
+    Using the above segments, we updated our track data nodes to include a \verb`segmentId` field, found in \verb`track-control/include/track-data.h`. This identifier simplifies the process of determining a node's corresponding segment, as this field points to the segment which lies in front of the track node. Merges and branches also are assigned the \verb`segmentId` of the sensors which it lies between. Since sensors are directional, this process is also natural. Consequentially, the sector which a train is exiting can be found by checking the segment of the reverse sensor.
+
+    \subsection{Track Locking Server}
+    
+    In order to effectively manage segments, and guarantee that only one train in a segment at a time, we implemented a \emph{Track Server} to manage locking and unlocking of these segments. This server maintains an array detailing each segment and the specific train it is currently assigned to. The Track Server offers custom locking methods in order to facilitate segment locking for trains on the track, specifically for how we route trains (Section \ref{sec:routing}).
+    
+    First, callers can lock an entire array of segments. The server will only lock these segments if all of the requested are available, and otherwise blocks until all requested segments are available. This all-or-nothing approach helps us avoid deadlocks (Section \ref{sec:deadlock}). Since we use message passing and only respond when all locks are able to be acquired, this preserves atomicity.
+    Callers can also lock either of two arrays of segments. This corresponds to the two directions of possible routes for a stopped train. The server attempts to lock any one of the arrays, enabling a train to concurrently wait for availability on two routes
+    
+    Both of the above functions can be called with timeout. When segments are locked with timeout, the server will unblock the caller after (at least) the timeout period has passed, returning a failure. This is how decision points (Section \ref{sec:decision-pts}) are implemented on the train side. The server uses a notifier on the timeout period, and returns failure to the caller.
+    
+    Callers are also able to free all locks which it holds, except potentially one. This is used to prevent a train from holding multiple segments on the track and blocking other trains when stopping. We allow a train to hold the segment it is currently in. This prevents the hold-and-wait scenario which can cause deadlocks (see Section \ref{sec:deadlock}). Segments are usually freed individually as the train exits segments.
+    
+    When a train attempts to lock segments, the server first checks if all are free, and if so, gives the train the desired locks, and marks it as owned by the train. Otherwise, it does not reply to the train, and whenever segments are freed, it checks if the freed segments are being waited upon, and if any train which was previously blocked is able to acquire all of the sectors, it is then given those sectors.
+
+    \subsection{Deadlock Prevention}
+    \label{sec:deadlock}
+    In our design, we focused on deadlock avoidance instead of deadlock detection. To do so, trains acquiring locks followed conventions that made deadlocks impossible to occur.
+    
+    Trains in motion wait on lock availability with a timeout, and this timeout is pre-calculated to ensure that when a train is at this point, it has not crossed into any sectors which it does not own. If a train fails to acquire the next lock on its path, it executes an emergency stop, and frees all the locks it owns except the segment which the train is physically occupying. Timeout locking prevents an infinite block, and this atomic release prevents trains acquiring locks in the opposite order to enter a deadlock.
+    
+    Stopped trains also wait on two series of locks, corresponding to the forward and backwards routes, when able to move in that direction. This means that if there is an alternative route, trains will always take said alternative route, preventing any deadlock.
+    
+    This design philosophy works since in any place on the track, there will always be at least one train that can move backwards, physically backing out of any deadlock situations. Since stationary trains only maintain a lock on their physical position, one of these routes is always guaranteed to be unlocked.
 \end{document}
