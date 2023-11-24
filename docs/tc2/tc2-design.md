@@ -19,41 +19,19 @@
 - Add flags in the routing to disable certain segments of the track
 
 ## Gameplan
-- Non-constant speed positioning [Tues 14 Nov]
-    - sensor attribution to train, timeouts on sensor activation, detect abort
-    - change waiting queue to include train information
-- Track Server with TC1 (i.e. constant re-computation of our route using a track server) [Thurs 16 Nov]
-    - add segment locking
-        - a segment is a contiguous span of track where there are no branches
-- Test with single train running on TC1 interface [Fri 17 Nov]
-- Create method based on the modelling (i.e. constant/non-constant speed) running on worker task [Sun 19 Nov]
-of TCC to check if there is a collision between any two given trains on the track
-    - collision detection is based on buffer window (example but adjustable 100mm) between trains
-    - if there is a collision, notify trains to adjust speed, take different route
-    - TCC has final authority to emergency-stop (i.e. SPD_REVERSE) train(s) if detecting VERY IMMINENT collision
-    - change TCC during sensor wait to detect if overlap in expected time
-        - reroute if this happens
-- mid-route reversing [Mon 20 Nov]
-- documentation [Tues 21 Nov]
-
-## Gameplan 2
-**As of [Tues 14 Nov]**
-- Non-constant speed position [Wed 15 Nov]
-    - Recalibrate to use SPD_MED/11 as our base speed, acceleration straight to SPD_MED
-        - change routing algorithm
-    - Test non-zero speed change by altering routing algorithm speed change time
-    - Merge and integrate with sensor timeout branch
-        - add ability to change sensor expectation to none on the fly (in case of sudden stopping, etc)
-        - Make sure TCC takes new predictions into account when made by positioning (i.e. change on the fly)
-- Integrating Locking into TC1 [Thurs 16 Nov]
-    - Add constant route re-computation
-        - Calibration for short moves?
-    - Random locking? start with a segment locked
-- Collision Avoidance [Sun 19 Nov]
-    - via Locking
-        - multiple sectors?
-    - via detecting different train sensor timeout overlap
-    - Add better mid-route stopping into routing algorithm
-    - Handling sensor robustness
+- Positioning & Locking [Fri 17 Nov]
+    - Finish sensor timeout testing
+    - New Segment definition
+    - Add deadlock detection to locking server
+    - Changes to routing algorithm:
+        - continuous route re-computation
+        - lockstep locking
+        - speed changes in routing algorithm
+        - reversing mid-route
+        - detect and make short move (expected sensor?)
+- Others [Sun 19 Nov]
+    - Sensor robustness
+        - See notes
+    - Auto-initialisation
+        - Move train until we hit a sensor, get next sensor w/ timeout if not on track
 - Documentation [Mon 20 Nov]
-- Mid-route reversing [Tues 21 Nov]
