@@ -308,4 +308,51 @@ make XDIR=/u/cs452/public/xdev
     Stopped trains also wait on two series of locks, corresponding to the forward and backwards routes, when able to move in that direction. This means that if there is an alternative route, trains will always take said alternative route, preventing any deadlock.
     
     This design philosophy works since in any place on the track, there will always be at least one train that can move backwards, physically backing out of any deadlock situations. Since stationary trains only maintain a lock on their physical position, one of these routes is always guaranteed to be unlocked.
+
+    \begin{tikzpicture}[node distance=2.5cm and 3.5cm, auto]
+
+        % Define styles
+        \tikzstyle{block} = [rectangle, draw, fill=blue!20, text width=6em, text centered, rounded corners, minimum height=4em]
+        \tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm, minimum height=3em]
+        \tikzstyle{line} = [draw]
+        \tikzstyle{notif} = [draw, rectangle, dashed, fill=yellow!20, node distance=2cm, minimum height=2em, text centered]
+    
+        % Place nodes
+        \node [cloud] (marklin) {Marklin Server};
+        \node [block, below=of marklin] (sensorworker) {Sensor Worker};
+        \node [cloud, right=of marklin] (tcc) {TCC Server};
+        \node [block, above=of tcc] (program) {Command Task};
+        \node [cloud, left=of program] (console) {Console Server};
+        \node [block, below=of tcc] (train) {Train};
+        \node [cloud, right=of tcc] (track) {Track Server};
+    
+        % Notifiers
+        \node [notif, left=of marklin] (Read) {Read Notifier};
+        \node [notif, left=of sensorworker] (ctsnotif) {CTS Notifier};
+        \node [notif, below=of train] (speednotif) {Speed Notifier};
+        \node [notif, left=of speednotif] (routenotif) {Route Notifier};
+        \node [notif, right=of speednotif] (locknotif) {Locking Notifier};
+        \node [notif, below=of track] (timeoutnotif) {Timeout Notifier};
+    
+        % Draw edges
+        \path [line] (console) -- (program);
+        \path [line] (marklin) -- (sensorworker);
+        \path [line] (marklin) -- (tcc);
+        \path [line] (sensorworker) -- (tcc);
+        \path [line] (tcc) -- (train);
+        \path [line] (program) -- (tcc);
+        \path [line] (track) -- (tcc);
+        \path [line] (track) -- (train);
+        
+        % Notifier connections
+        \path [line] (Read) -- (marklin);
+        \path [line] (ctsnotif) -- (marklin);
+        \path [line] (speednotif) -- (train);
+        \path [line] (routenotif) -- (train);
+        \path [line] (locknotif) -- (train);
+        \path [line] (timeoutnotif) -- (track);
+    
+    \end{tikzpicture}
+
+
 \end{document}
