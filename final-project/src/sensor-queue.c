@@ -3,175 +3,121 @@
 #include "uassert.h"
 #include "util.h"
 
-#include "controller-consts.h"
-#include "track-control.h"
+#include "speed.h"
+#include "speed-data.h"
+#include "track-data.h"
 
-void sensor_queue_init(sensor_queue *sq) {
-    memset(sq->storage, 0, sizeof(struct sensor_queue_entry) * MAX_WAITING_PROCESSES);
+extern speed_data spd_data;
 
-    for (int i = 0; i < N_SENSOR_MODULES; ++i) {
-        memset(sq->sensors[i], 0, sizeof(sensor_queue_entry*) * N_SENSORS);
+void sensor_data_init(sensor_data *data, uint8_t trn) {
+    data->trn = trn;
+    data->first_activation = TIME_NONE;
+}
 
-    }
+void sensor_queue_init(sensor_queue *sq, speed_t *spd) {
+    memset(sq->storage, 0, sizeof(sensor_queue_entry) *
+        MAX_WAITING_PROCESSES);
+
+    memset(sq->sensors_front, 0, sizeof(sensor_queue_entry) *
+        (NUM_SEN_PER_MOD * NUM_MOD));
+
+    memset(sq->sensors_front, 0, sizeof(sensor_queue_entry) *
+        (NUM_SEN_PER_MOD * NUM_MOD));
+
     sq->freelist = NULL;
 
     for (int i = 0; i < MAX_WAITING_PROCESSES; i++) {
         sq->storage[i].next = sq->freelist;
         sq->freelist = &sq->storage[i];
     }
+
+    sq->spd = spd;
+}
+
+static sensor_queue_entry *
+sensor_queue_alloc_entry(sensor_queue *sq) {
+    if (sq->freelist == NULL) {
+        upanic("sensor queue out of memory\r\n");
+    }
+
+    sensor_queue_entry *ele = sq->freelist;
+    sq->freelist = sq->freelist->next;
+    ele->next = NULL;
+
+    return ele;
 }
 
 static void
-sensor_queue_insert(sensor_queue *sq, uint16_t act_sensor_mod,
-    uint16_t act_sensor_no, struct sensor_queue_entry *element) {
-    // insert in sorted order based on expected time
-    struct sensor_queue_entry *head = sq->sensors[act_sensor_mod][act_sensor_no];
+sensor_queue_free_entry(sensor_queue *sq, sensor_queue_entry *ele) {
+    ele->next = sq->freelist;
+    sq->freelist = ele;
+}
 
-    // case 1: insert at beginning
-    if (head == NULL ||
-        head->data.expected_time > element->data.expected_time) {
-        element->next = head;
-        sq->sensors[act_sensor_mod][act_sensor_no] = element;
+void sensor_queue_wait(sensor_queue *sq, track_node *node, uint8_t trn) {
+    // verify is a sensor
+    uassert(node->num < NUM_SEN_PER_MOD * NUM_MOD);
+
+    sensor_queue_entry *ele = sensor_queue_alloc_entry(sq);
+    sensor_data_init(&ele->data, trn);
+
+    // insert into back of queue
+    if (sq->sensors_back[node->num] == NULL) {
+        // empty queue
+        sq->sensors_front[node->num] = ele;
+        sq->sensors_back[node->num] = ele;
     } else {
-        // iterate until in right position
-        struct sensor_queue_entry *curr = head;
-        while (curr->next != NULL &&
-            curr->next->data.expected_time < element->data.expected_time) {
-            curr = curr->next;
-        }
-
-        element->next = curr->next;
-        curr->next = element;
+        sq->sensors_back[node->num]->next = ele;
+        sq->sensors_back[node->num] = ele;
     }
 }
 
-// add a process to the waiting list
-void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, sensor_data *data) {
-    int act_sensor_mod = sensor_mod - 1;
-    int act_sensor_no = sensor_no - 1;
-    uassert(0 <= act_sensor_mod && act_sensor_mod < N_SENSOR_MODULES);
-    uassert(0 <= act_sensor_no && act_sensor_no < N_SENSORS);
+int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
+    uint32_t activation_time) {
+    uassert(node->num < NUM_SEN_PER_MOD * NUM_MOD);
+    sensor_queue_entry *head = sq->sensors_front[node->num];
 
-    if (sq->freelist == NULL) {
-        // TODO: error message
-        upanic("Cannot enqueue waiting task to sensor queue\r\n");
-    } else {
-        // get new element
-        struct sensor_queue_entry *element = sq->freelist;
-        sq->freelist = sq->freelist->next;
-
-        // copy data
-        memcpy(&element->data, data, sizeof(sensor_data));
-
-        sensor_queue_insert(sq, act_sensor_mod, act_sensor_no, element);
-    }
-}
-
-int
-sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, uint32_t activation_time, sensor_data *data) {
-    int act_sensor_mod = sensor_mod - 1;
-    int act_sensor_no = sensor_no - 1;
-    uassert(0 <= act_sensor_mod && act_sensor_mod < N_SENSOR_MODULES);
-    uassert(0 <= act_sensor_no && act_sensor_no < N_SENSORS);
-
-    struct sensor_queue_entry *head = sq->sensors[act_sensor_mod][act_sensor_no];
-
-    // || head->data.expected_time > activation_time + TIMEOUT_TICKS
     if (head == NULL) {
-        return SENSOR_QUEUE_DONE;
+        // drop, either spurious or rest of train
+        return -1;
     }
 
-    // pop off queue
-    memcpy(data, &head->data, sizeof(sensor_data));
-    sq->sensors[act_sensor_mod][act_sensor_no] = head->next;
+    ULOG("[sensor-queue] got meaningful activation for %s\r\n", node->name);
 
-    // reset the queue entry and add to free list
-    memset(head, 0, sizeof(sensor_queue_entry));
-    head->next = sq->freelist;
-    sq->freelist = head;
+    if (head->data.first_activation == TIME_NONE) {
+        head->data.first_activation = activation_time;
+        ULOG("[sensor-queue] first activation %s\r\n", node->name);
+        return -1;
+    }
 
-    ULOG("[sensor get] activation: %u expected: %u timeout: %u\r\n",
-        activation_time, data->expected_time, TIMEOUT_TICKS);
+    // check if we have timed out, or still the same train
+    uint32_t timeout = get_time_from_velocity(&spd_data, head->data.trn, TRN_LEN_MM, speed_display_get(sq->spd, head->data.trn));
 
-    if (data->expected_time == TIME_NONE)
-        return SENSOR_QUEUE_FOUND;
+    ULOG("[sensor-queue] checking timeout %d ticks (speed %d)\r\n",
+        timeout, speed_display_get(sq->spd, head->data.trn));
 
-    if (data->pos_rqst) {
-        if (data->expected_time + TIMEOUT_TICKS < activation_time) {
-            return SENSOR_QUEUE_TIMEOUT;
-        } else if (data->expected_time - TIMEOUT_TICKS > activation_time) {
-            return SENSOR_QUEUE_EARLY;
+    uint32_t time_from_first = activation_time - head->data.first_activation;
+
+    ULOG("[sensor-queue] offset cmp: %d\r\n", time_from_first);
+
+    if (time_from_first >= timeout) {
+        // timeout -- must be the second train
+        // pop head off and possibly update next value
+        if (head->next != NULL) {
+            sq->sensors_front[node->num] = head->next;
+            // set next activation time (for following)
+            head->next->data.first_activation = activation_time;
         } else {
-            return SENSOR_QUEUE_FOUND;
+            // queue is empty now
+            sq->sensors_front[node->num] = NULL;
+            sq->sensors_back[node->num] = NULL;
         }
+
+        sensor_queue_free_entry(sq, head);
+
+        ULOG("[sensor-queue] new train\r\n");
+        return time_from_first;
     } else {
-        return SENSOR_QUEUE_FOUND;
-    }
-}
-
-void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, uint16_t tid, int64_t expected_time) {
-    int act_sensor_mod = sensor_mod - 1;
-    int act_sensor_no = sensor_no - 1;
-    uassert(0 <= act_sensor_mod && act_sensor_mod < N_SENSOR_MODULES);
-    uassert(0 <= act_sensor_no && act_sensor_no < N_SENSORS);
-
-    struct sensor_queue_entry *curr = sq->sensors[act_sensor_mod][act_sensor_no];
-    struct sensor_queue_entry *prev = NULL;
-
-    while (curr != NULL) {
-        if (curr->data.tid == tid) {
-            // pop off queue
-            if (prev == NULL) {
-                // at head
-                sq->sensors[act_sensor_mod][act_sensor_no] = curr->next;
-            } else {
-                prev->next = curr->next;
-            }
-
-            curr->next = NULL;
-            break;
-        }
-
-        prev = curr;
-        curr = curr->next;
-    }
-
-    if (curr == NULL) return; // no found
-
-    // reinsert in new position
-    curr->data.expected_time = expected_time;
-    sensor_queue_insert(sq, act_sensor_mod, act_sensor_no, curr);
-}
-
-void sensor_queue_free_train(sensor_queue *sq, uint16_t trn) {
-    for (uint8_t i = 0; i < N_SENSOR_MODULES; ++i) {
-        for (uint8_t j = 0; j < N_SENSORS; ++j) {
-            struct sensor_queue_entry *prev = NULL;
-            struct sensor_queue_entry *curr = sq->sensors[i][j];
-
-            while (curr != NULL) {
-                if (curr->data.trn == trn) {
-                    // remove from queue
-                    if (prev == NULL) {
-                        sq->sensors[i][j] = curr->next;
-                    } else {
-                        prev->next = curr->next;
-                    }
-
-                    // reset & add to freelist
-                    memset(curr, 0, sizeof(sensor_queue_entry));
-
-                    curr->next = sq->freelist;
-                    sq->freelist = curr;
-                } else {
-                    prev = curr; // if removing, prev node stays same
-                }
-
-                curr = curr->next;
-            }
-        }
+        ULOG("[sensor-queue] same train, ignoring\r\n");
+        return -1; // same train, don't care
     }
 }

@@ -9,10 +9,10 @@
 #include "uassert.h"
 
 #include "clock.h"
-#include "control-msgs.h"
 #include "monitor.h"
 #include "program-tasks.h"
 #include "speed-data.h"
+#include "snake.h"
 #include "track.h"
 #include "track-data.h"
 
@@ -42,33 +42,26 @@ static void init_track_data(uint16_t console) {
 
 void user_main(void) {
     // start up clock, uart servers
-    uint16_t clock_tid = Create(P_SERVER_HI, clockserver_main);
-
+    Create(P_SERVER_HI, clockserver_main);
     uint16_t console_tid = Create(P_SERVER_LO, console_server_main);
     uint16_t marklin_tid = Create(P_SERVER_HI, marklin_server_main);
 
     speed_data_init(&spd_data);
     init_track_data(console_tid);
 
-    // initialisation commands
     init_track(marklin_tid);
-    init_monitor(console_tid);
+    WaitOutputEmpty(marklin_tid);
 
-    // start all tasks
-    Create(P_HIGH, time_task_main);
-    Create(P_LOW, idle_time_task_main);
+    track_node *test_node = &track[70]; // E7
+    Printf(console_tid, "Testing from %s\r\n", test_node->name);
 
-    // wait for quit control msg from cmd_task
-    int cmd_task_tid;
-    msg_control msg;
-    uassert(Receive(&cmd_task_tid, (char *)&msg, sizeof(msg_control)) == sizeof(msg_control));
-    msg.type = MSG_CONTROL_ACK;
-    uassert(Reply(cmd_task_tid, (char *)&msg, sizeof(msg_control)) == sizeof(msg_control));
+    // start snake
+    uint16_t snake_tid = Create(P_MED, snake_server_main);
 
-    // shutdown all non-server children to exit gracefully
-    KillAllChildren();
+    // pass params
+    snake_server_start(snake_tid, 77, test_node);
+    snake_server_start(snake_tid, 24, test_node);
+    snake_server_start(snake_tid, 58, test_node);
 
-    // send shutdown commands
-    shutdown_monitor(console_tid);
-    shutdown_track(marklin_tid);
+    for (;;); // busy wait
 }

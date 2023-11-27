@@ -43,6 +43,9 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define REFRESH_TIME    9   // refresh clock every 90ms
 #define IDLE_REFRESH_TIME 500 // 5s
 
-#define NUM_MOD_PER_SEN 16
+#define NUM_SEN_PER_MOD 16
+#define NUM_MOD 5
+
+#define TRN_LEN_MM 229
 
 #endif
