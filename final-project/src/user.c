@@ -10,6 +10,9 @@
 
 extern *track[];
 #define N_SWITCHES 24
+#define KEY_LEFT 37
+#define KEY_RIGHT 39
+
 
 // -------------------------------------------------------
 // WRAPPER Methods
@@ -47,6 +50,14 @@ track_node *user_get_next_sensor(int16_t tid) {
     } else {
         return reply.node;
     }
+}
+
+void setNextSwitch(int16_t tid, int8_t dir) {
+    struct msg_us_server msg;
+    msg.type = MSG_US_SENSOR_PUT;
+    msg.switchDir = dir;
+
+    Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
 }
 
 // -------------------------------------------------------
@@ -219,7 +230,17 @@ void user_server_main(void) {
 
 
 void user_input_notifier(void) {
+    int parent = MyParentTid();
+    int console = WhoIs(CONSOLE_SERVER_NAME);
+    int user = WhoIs(USER_SERVER_NAME);
 
+    for (;;) {
+        char c = Getc(console);
+
+        if (c == KEY_LEFT || c == KEY_RIGHT) {
+            setNextSwitch(user, c);
+        }
+    }
 
 }
 
