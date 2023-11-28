@@ -6,8 +6,8 @@
 #include "controller-consts.h"
 
 #define USER_SERVER_NAME "user_server"
-#define LEFT 0
-#define RIGHT 1
+#define LEFT 1
+#define RIGHT 0
 
 enum US_MSG_TYPE {
     MSG_US_SENSOR_PUT,

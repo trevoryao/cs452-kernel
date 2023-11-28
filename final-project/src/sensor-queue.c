@@ -34,6 +34,11 @@ void sensor_queue_init(sensor_queue *sq, speed_t *spd) {
     sq->spd = spd;
 }
 
+bool sensor_queue_is_waiting(sensor_queue *sq, track_node *node) {
+    uassert(node->num < NUM_SEN_PER_MOD * NUM_MOD);
+    return sq->sensors_front[node->num] != NULL;
+}
+
 static sensor_queue_entry *
 sensor_queue_alloc_entry(sensor_queue *sq) {
     if (sq->freelist == NULL) {
@@ -78,7 +83,7 @@ int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
 
     if (head == NULL) {
         // drop, either spurious or rest of train
-        return -1;
+        return ERR_SPURIOUS;
     }
 
     ULOG("[sensor-queue] got meaningful activation for %s\r\n", node->name);
@@ -86,11 +91,11 @@ int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
     if (head->data.first_activation == TIME_NONE) {
         head->data.first_activation = activation_time;
         ULOG("[sensor-queue] first activation %s\r\n", node->name);
-        return -1;
+        return FIRST_ACTIVATION;
     }
 
     // check if we have timed out, or still the same train
-    uint32_t timeout = get_time_from_velocity(&spd_data, head->data.trn, TRN_LEN_MM, speed_display_get(sq->spd, head->data.trn));
+    uint32_t timeout = get_time_from_velocity(&spd_data, head->data.trn, TRN_TIMEOUT_DIST, speed_display_get(sq->spd, head->data.trn));
 
     ULOG("[sensor-queue] checking timeout %d ticks (speed %d)\r\n",
         timeout, speed_display_get(sq->spd, head->data.trn));
@@ -118,6 +123,6 @@ int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
         return time_from_first;
     } else {
         ULOG("[sensor-queue] same train, ignoring\r\n");
-        return -1; // same train, don't care
+        return SAME_TRAIN; // same train, don't care
     }
 }

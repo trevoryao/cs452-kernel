@@ -1,11 +1,13 @@
 #include "snake.h"
 
 #include "clock.h"
+#include "deque.h"
 #include "msg.h"
 #include "nameserver.h"
 #include "uart-server.h"
 #include "uassert.h"
 
+#include "controller-consts.h"
 #include "sensor-queue.h"
 #include "sensor-worker.h"
 #include "speed.h"
@@ -39,12 +41,6 @@ void snake_server_sensor_triggered(int tid, track_node *sensor,
     uassert(Send(tid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
 }
 
-// only for testing
-static void sensor_discard_all(int marklin) {
-    Putc(marklin, S88_BASE + 5);
-    for (int i = 0; i < 10; ++i) Getc(marklin);
-}
-
 #define SNAKE_LEN 2
 
 void snake_server_main(void) {
@@ -64,10 +60,10 @@ void snake_server_main(void) {
     sensor_queue sensor_queue;
     sensor_queue_init(&sensor_queue, &spd_t);
 
-    track_node *next;
-
     int rtid;
     snake_msg msg;
+
+    track_node *next = NULL;
 
     // for now just get two from runner
     snake_head = SNAKE_LEN - 1; // must do backwards for now
@@ -78,13 +74,16 @@ void snake_server_main(void) {
         snake_arr[snake_head - i] = msg.trn;
         train_mod_speed(marklin, &spd_t, msg.trn, SPD_VLO);
 
-        if (i == 0) {
-            next = msg.sensor; // for now just assume single start node
-            user_reached_sensor(user_server, next);
+        if (i == 0) { // for now just assume single start node
+            next = msg.sensor;
+            Printf(console, "First Sensor: %s\r\n", next->name);
+            for (uint8_t i = snake_head; i > 0; --i) {
+                sensor_queue_wait(&sensor_queue, next, snake_arr[i]);
+            }
         }
 
         if (i != snake_head) {
-            Delay(clock, 250); // 2.5s
+            Delay(clock, 75);
         }
 
         Reply(rtid, NULL, 0);
@@ -94,11 +93,6 @@ void snake_server_main(void) {
     Create(P_SENSOR_WORKER, sensor_worker_main);
 
     for (;;) {
-        Printf(console, "[snake] waiting at %s\r\n", next->name);
-        for (uint8_t i = snake_head; i > 0; --i) {
-            sensor_queue_wait(&sensor_queue, next, snake_arr[i]);
-        }
-
         // get data from sensor worker
         int trn_gaps = 0;
         while (trn_gaps < snake_head) {
@@ -112,8 +106,17 @@ void snake_server_main(void) {
                     int64_t time_between = sensor_queue_update(&sensor_queue,
                         msg.sensor, msg.time);
 
-                    if (time_between >= 0) {
-                        Printf(console, "time between trains: %dms\r\n", time_between * 10);
+                    if (time_between == FIRST_ACTIVATION) {
+                        next = user_reached_sensor(user_server, next);
+                        uassert(next);
+                        for (uint8_t i = snake_head; i > 0; --i) {
+                            sensor_queue_wait(&sensor_queue, next, snake_arr[i]);
+                        }
+                    } else if (time_between > 0) {
+                        Printf(console, "time between trains %d <- %d @ %s: %dms\r\n",
+                            snake_arr[snake_head - trn_gaps],
+                            snake_arr[snake_head - trn_gaps - 1],
+                            msg.sensor->name, time_between * 10);
                         ++trn_gaps;
                     }
 
@@ -122,7 +125,5 @@ void snake_server_main(void) {
                 default: upanic("unknown msg type %d from sensor worker", msg.type);
             }
         }
-
-        next = user_reached_sensor(user_server, next);
     }
 }

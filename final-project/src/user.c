@@ -12,6 +12,9 @@
 #include "rpi.h"
 #include "task.h"
 
+#include "control-msgs.h"
+#include "uassert.h"
+
 extern track_node track[];
 
 #define N_SWITCHES 23
@@ -60,7 +63,7 @@ track_node *user_get_next_sensor(int16_t tid) {
 
 void setNextSwitch(int16_t tid, int8_t dir) {
     struct msg_us_server msg;
-    msg.type = MSG_US_SENSOR_PUT;
+    msg.type = MSG_US_SET_SWITCH;
     msg.switchDir = dir;
 
     Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
@@ -394,6 +397,8 @@ void user_server_main(void) {
     Create(P_HIGH, user_input_notifier);
 
 
+    SendParentReady();
+
     // infinite Loop
     for (;;) {
         Receive(&senderTid, (char *)&msg_received, sizeof(msg_us_server));
@@ -455,10 +460,10 @@ void user_input_notifier(void) {
 
     for (;;) {
         char c = Getc(console);
-
-        if (c == KEY_LEFT) {
+        uart_printf(CONSOLE, "received characater %d\r\n", c);
+        if (c == 'a') {
             setNextSwitch(user, LEFT);
-        } else if (c == KEY_RIGHT) {
+        } else if (c == 'd') {
             setNextSwitch(user, RIGHT);
         }
     }
