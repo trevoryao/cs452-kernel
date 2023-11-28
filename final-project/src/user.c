@@ -8,6 +8,8 @@
 #include "track.h"
 #include "util.h"
 #include "track-data.h"
+#include "control-msgs.h"
+#include "uassert.h"
 
 extern track_node track[];
 
@@ -181,6 +183,8 @@ void user_server_main(void) {
     enum SWITCH_DIR next_sw_di = UNKNOWN;
 
     startup(marklinTid);
+
+    SendParentReady();
 
     // infinite Loop
     for (;;) {

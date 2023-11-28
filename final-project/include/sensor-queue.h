@@ -44,6 +44,8 @@ typedef struct sensor_queue {
 
 void sensor_queue_init(sensor_queue *sq, speed_t *spd);
 
+bool sensor_queue_is_waiting(sensor_queue *sq, track_node *node);
+
 // must be called to set variables
 void sensor_queue_wait(sensor_queue *sq, track_node *node, uint8_t trn);
 
@@ -51,6 +53,9 @@ void sensor_queue_wait(sensor_queue *sq, track_node *node, uint8_t trn);
 // and the next one is updated with this information
 // returns the time offset between the two trains, or -1 if
 // (likely) from the same train
+#define FIRST_ACTIVATION 0
+#define SAME_TRAIN -1
+#define ERR_SPURIOUS -2
 int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
     uint32_t activation_time);
 

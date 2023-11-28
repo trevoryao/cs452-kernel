@@ -47,5 +47,6 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define NUM_MOD 5
 
 #define TRN_LEN_MM 229
+static const int32_t TRN_TIMEOUT_DIST = TRN_LEN_MM >> 1; // div 2
 
 #endif
