@@ -7,12 +7,13 @@
 #include "clock.h"
 #include "track.h"
 #include "util.h"
+#include "track-data.h"
 
-extern *track[];
+extern track_node track[];
+
 #define N_SWITCHES 24
 #define KEY_LEFT 37
 #define KEY_RIGHT 39
-
 
 // -------------------------------------------------------
 // WRAPPER Methods
@@ -42,7 +43,7 @@ track_node *user_get_next_sensor(int16_t tid) {
     struct msg_us_server msg, reply;
     msg.type = MSG_US_GET_NEXT_SENSOR;
 
-     
+
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_us_server), (char *)&reply, sizeof(struct msg_us_server));
 
     if (ret < 0 || reply.type == MSG_US_ERROR) {
@@ -67,7 +68,7 @@ void setNextSwitch(int16_t tid, int8_t dir) {
 int8_t get_switch_num(track_node *node) {
     if (node->num <= 18) {
         return node->num;
-    } else { 
+    } else {
         return node->num - 134;
     }
 }
@@ -84,7 +85,7 @@ enum SWITCH_DIR get_switch_dir(enum SWITCH_DIR *switch_pos, track_node *node) {
 
 void save_switch_dir(enum SWITCH_DIR *switch_pos, track_node *node, enum SWITCH_DIR switch_dir) {
     if (node->type != NODE_BRANCH) {
-        return UNKNOWN;
+        return;
     }
     int8_t num = get_switch_num(node);
 
@@ -115,7 +116,7 @@ track_node *next_sensor(track_node *curr) {
     }
 
     track_node *next = curr->edge[DIR_AHEAD].dest;
-    // go through the data and return the next one 
+    // go through the data and return the next one
     while(next->type != NODE_SENSOR) {
         if (next->type == NODE_BRANCH) {
             next = next->edge[DIR_STRAIGHT].dest;
@@ -133,7 +134,7 @@ void replyError(int tid) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
 
-void replySensor(int tid, track_node *node) { 
+void replySensor(int tid, track_node *node) {
     struct msg_us_server msg_reply;
     msg_reply.type = MSG_US_GET_NEXT_SENSOR;
     msg_reply.node = node;
@@ -153,10 +154,10 @@ void replySensor(int tid, track_node *node) {
 *       - display required data
 */
 void user_server_main(void) {
-    // structs for reading & writing 
+    // structs for reading & writing
     int senderTid;
     struct msg_us_server msg_received;
-    
+
     // register and get required tids
     RegisterAs(USER_SERVER_NAME);
     int clockTid = WhoIs(CLOCK_SERVER_NAME);
@@ -168,7 +169,7 @@ void user_server_main(void) {
     // last sensor
     track_node *curr_head_sensor;
     track_node *next_expected_sensor;
-    
+
 
     enum SWITCH_DIR switch_pos[N_SWITCHES];
     memset(&switch_pos, UNKNOWN, N_SWITCHES);
@@ -179,7 +180,7 @@ void user_server_main(void) {
     enum SWITCH_DIR next_sw_di = UNKNOWN;
 
 
-    // init track 
+    // init track
     init_track(marklinTid);
     startup(marklinTid);
 
@@ -190,7 +191,7 @@ void user_server_main(void) {
         switch (msg_received.type) {
             case MSG_US_SENSOR_PUT: {
                 // Head has reached next sensor
-                // -> check state of next switch 
+                // -> check state of next switch
                 // -> is there any ? Has it already been set
                 curr_head_sensor = next_expected_sensor;
 
@@ -219,8 +220,8 @@ void user_server_main(void) {
                 replyError(senderTid);
                 break;
             }
-            
-        
+
+
             default:
                 replyError(senderTid);
                 break;
