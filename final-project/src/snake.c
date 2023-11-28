@@ -11,6 +11,7 @@
 #include "speed.h"
 #include "track-data.h"
 #include "track.h"
+#include "user.h"
 
 extern track_node track[];
 
@@ -44,7 +45,7 @@ static void sensor_discard_all(int marklin) {
     for (int i = 0; i < 10; ++i) Getc(marklin);
 }
 
-#define SNAKE_LEN 3
+#define SNAKE_LEN 2
 
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);
@@ -52,6 +53,7 @@ void snake_server_main(void) {
     int clock = WhoIs(CLOCK_SERVER_NAME);
     int console = WhoIs(CONSOLE_SERVER_NAME);
     int marklin = WhoIs(MARKLIN_SERVER_NAME);
+    int user_server = WhoIs(USER_SERVER_NAME);
 
     uint8_t snake_arr[N_TRNS] = {0};
     uint8_t snake_head = 0;
@@ -74,10 +76,11 @@ void snake_server_main(void) {
             sizeof(snake_msg));
 
         snake_arr[snake_head - i] = msg.trn;
-        train_mod_speed(marklin, &spd_t, msg.trn, SPD_LO);
+        train_mod_speed(marklin, &spd_t, msg.trn, SPD_VLO);
 
         if (i == 0) {
             next = msg.sensor; // for now just assume single start node
+            user_reached_sensor(user_server, next);
         }
 
         if (i != snake_head) {
@@ -91,7 +94,7 @@ void snake_server_main(void) {
     Create(P_SENSOR_WORKER, sensor_worker_main);
 
     for (;;) {
-        Printf(console, "[snake] wait at %s\r\n", next->name);
+        Printf(console, "[snake] waiting at %s\r\n", next->name);
         for (uint8_t i = snake_head; i > 0; --i) {
             sensor_queue_wait(&sensor_queue, next, snake_arr[i]);
         }
@@ -120,6 +123,6 @@ void snake_server_main(void) {
             }
         }
 
-        Delay(clock, 500);
+        next = user_reached_sensor(user_server, next);
     }
 }

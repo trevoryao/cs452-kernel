@@ -23,9 +23,6 @@ typedef struct msg_us_server {
     int8_t switchDir;
 } msg_us_server;
 
-
-
-
 void user_server_main(void);
 
 void user_display_distance(int16_t tid, int32_t um);

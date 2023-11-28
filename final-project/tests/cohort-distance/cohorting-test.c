@@ -15,6 +15,7 @@
 #include "snake.h"
 #include "track.h"
 #include "track-data.h"
+#include "user.h"
 
 speed_data spd_data;
 track_node track[TRACK_MAX];
@@ -53,15 +54,16 @@ void user_main(void) {
     WaitOutputEmpty(marklin_tid);
 
     track_node *test_node = &track[70]; // E7
-    Printf(console_tid, "Testing from %s\r\n", test_node->name);
+
+    Create(P_MED, user_server_main);
 
     // start snake
-    uint16_t snake_tid = Create(P_MED, snake_server_main);
+    uint16_t snake_tid = Create(P_HIGH, snake_server_main);
 
     // pass params
     snake_server_start(snake_tid, 77, test_node);
     snake_server_start(snake_tid, 24, test_node);
-    snake_server_start(snake_tid, 58, test_node);
+    // snake_server_start(snake_tid, 58, test_node);
 
     for (;;); // busy wait
 }

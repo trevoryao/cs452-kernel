@@ -108,6 +108,7 @@ void startup(int marklin) {
     switch_throw(marklin, 11, CRV);
     switch_throw(marklin, 9, STRT);
 
+    WaitOutputEmpty(marklin);
 }
 
 track_node *next_sensor(track_node *curr) {
@@ -179,9 +180,6 @@ void user_server_main(void) {
     enum SWITCH_DIR last_sw_di = UNKNOWN;
     enum SWITCH_DIR next_sw_di = UNKNOWN;
 
-
-    // init track
-    init_track(marklinTid);
     startup(marklinTid);
 
     // infinite Loop
@@ -193,7 +191,7 @@ void user_server_main(void) {
                 // Head has reached next sensor
                 // -> check state of next switch
                 // -> is there any ? Has it already been set
-                curr_head_sensor = next_expected_sensor;
+                curr_head_sensor = msg_received.node;
 
                 // TODO: compute next sensor
                 next_expected_sensor = next_sensor(curr_head_sensor);
