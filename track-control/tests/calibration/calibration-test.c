@@ -80,8 +80,8 @@ void constant_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t
     speed_t speed;
     speed_t_init(&speed);
 
-    int num_newSpeeds = 6;
-    uint8_t newSpeeds[6] = {6,7,8,9,10,11};
+    int num_newSpeeds = 2;
+    uint8_t newSpeeds[2] = {8,10};
 
     uint64_t dist_mm = 0;
     track_node *node = &track[75]; // E12
@@ -153,11 +153,14 @@ void constant_speed_loop(uint16_t clock, uint16_t console, uint16_t marklin, uin
     speed_t speed;
     speed_t_init(&speed);
 
-    int num_newSpeeds = 6;
-    uint8_t newSpeeds[6] = {6,7,8,9,10,11};
+    int num_newSpeeds = 5;
+    uint8_t newSpeeds[5] = {7,8,9,10,11};
 
     uint64_t dist_mm = 0;
     track_node *node = &track[75]; // E12
+    // increment node by one to make sure we actually compute the loop
+    dist_mm += node->edge[DIR_AHEAD].dist;
+    node = node->edge[DIR_AHEAD].dest;
     while (node != &track[75]) { // E12 -> loop
         if (node->type == NODE_BRANCH) {
             dist_mm += node->edge[DIR_STRAIGHT].dist;
@@ -802,8 +805,10 @@ void user_main(void) {
     // acceleration_from_zero(clock, console, marklin, dist_um);
     //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
 
-    short_move_test(clock, console, marklin);
+    //short_move_test(clock, console, marklin);
     //acceleration_from_zero(clock, console, marklin, dist_um, 9);
+
+    constant_speed(clock, console, marklin, dist_um);
 
     WaitOutputEmpty(marklin);
 }
