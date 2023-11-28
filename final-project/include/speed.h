@@ -13,10 +13,12 @@ static const uint32_t SHORT_MOVES_STEPS = 25;
 
 enum SPEEDS {
     SPD_STP = 0,
-    SPD_LO = 7,
+    SPD_VLO = 7,
+    SPD_LO = 8,
     SPD_MED = 9,
-    SPD_HI = 11,
-    N_SPDS = 4
+    SPD_HI = 10,
+    SPD_VHI = 11,
+    N_SPDS = 6
 };
 
 #define ERR_NO_TRN 50 // bad return code for getter f'ns

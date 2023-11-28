@@ -38,6 +38,12 @@ void snake_server_sensor_triggered(int tid, track_node *sensor,
     uassert(Send(tid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
 }
 
+// only for testing
+static void sensor_discard_all(int marklin) {
+    Putc(marklin, S88_BASE + 5);
+    for (int i = 0; i < 10; ++i) Getc(marklin);
+}
+
 #define SNAKE_LEN 3
 
 void snake_server_main(void) {
@@ -75,7 +81,7 @@ void snake_server_main(void) {
         }
 
         if (i != snake_head) {
-            Delay(clock, 200); // 2s
+            Delay(clock, 250); // 2.5s
         }
 
         Reply(rtid, NULL, 0);
@@ -85,7 +91,7 @@ void snake_server_main(void) {
     Create(P_SENSOR_WORKER, sensor_worker_main);
 
     for (;;) {
-        ULOG("[snake] wait at %s\r\n", next->name);
+        Printf(console, "[snake] wait at %s\r\n", next->name);
         for (uint8_t i = snake_head; i > 0; --i) {
             sensor_queue_wait(&sensor_queue, next, snake_arr[i]);
         }
@@ -114,6 +120,6 @@ void snake_server_main(void) {
             }
         }
 
-        Delay(clock, 200);
+        Delay(clock, 500);
     }
 }
