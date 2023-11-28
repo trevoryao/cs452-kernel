@@ -19,18 +19,24 @@ void speed_data_init(speed_data *data) {
 
     // trn 24
     data->velocity_data[0][1] = 162083; // spd 7 (LO)
-    data->velocity_data[0][2] = 279550; // spd 9 (MED)
-    data->velocity_data[0][3] = 407185; // spd 11 (HI)
+    data->velocity_data[0][2] = 217331;
+    data->velocity_data[0][3] = 279550; // spd 9 (MED)
+    data->velocity_data[0][4] = 342350;
+    data->velocity_data[0][5] = 407185; // spd 11 (HI)
 
     // trn 58
     data->velocity_data[1][1] = 144318; // spd 7 (LO)
-    data->velocity_data[1][2] = 247857; // spd 9 (MED)
-    data->velocity_data[1][3] = 366255; // spd 11 (HI)
+    data->velocity_data[1][2] = 188037; 
+    data->velocity_data[1][3] = 247857; // spd 9 (MED)
+    data->velocity_data[1][4] = 304565; 
+    data->velocity_data[1][5] = 366255; // spd 11 (HI)
 
     // trn 77
     data->velocity_data[2][1] = 181496; // spd 7 (LO)
-    data->velocity_data[2][2] = 280784; // spd 9 (MED)
-    data->velocity_data[2][3] = 403022; // spd 11 (HI)
+    data->velocity_data[2][2] = 226754;
+    data->velocity_data[2][3] = 280784; // spd 9 (MED)
+    data->velocity_data[2][4] = 335918;
+    data->velocity_data[2][5] = 403022; // spd 11 (HI)
 
     // acceleration data
     for (int i = 0; i < N_TRNS; ++i)
