@@ -8,12 +8,16 @@
 #include "track.h"
 #include "util.h"
 #include "track-data.h"
+#include "speed-data.h"
+#include "rpi.h"
 
 extern track_node track[];
 
 #define N_SWITCHES 24
 #define KEY_LEFT 37
 #define KEY_RIGHT 39
+
+#define N_SENSOR 8
 
 // -------------------------------------------------------
 // WRAPPER Methods
@@ -63,6 +67,90 @@ void setNextSwitch(int16_t tid, int8_t dir) {
 
 // -------------------------------------------------------
 
+
+// INIT Methods 
+
+track_node *parseAndReply(char data, int no_of_byte) {
+    int sensor_mod = (no_of_byte / 2) + 1;
+    int mod_round = no_of_byte % 2;
+
+    for (uint8_t sen_bit = 1; sen_bit <= N_SENSOR; ++sen_bit) {
+        if (((data & (1 << (N_SENSOR - sen_bit))) >> (N_SENSOR - sen_bit)) == 0x01) { // bit matches?
+            int16_t sensor_no = sen_bit + (mod_round * N_SENSOR);
+
+            // return first sensor activation
+            return &track[TRACK_NUM_FROM_SENSOR(sensor_mod, sensor_no)];
+        }
+    }
+}
+
+track_node *await_sensor_activation(int marklin, int clock, int timeout_clockTicks) {
+    // Get the required tids
+    uint32_t rqst_time = Time(clock);
+    uint32_t end_time = rqst_time + timeout_clockTicks;
+
+    track_node *found = NULL;
+
+    while (rqst_time < end_time) {
+        // Write sensor request
+        Putc(marklin, S88_BASE + N_S88);
+        
+        // Get sensor data
+        for (int i = 0; i < (N_S88 * 2); i++) {
+            char data = Getc(marklin);
+
+            if (data != 0x0 && found == NULL) {
+                //uart_printf(CONSOLE, "received data");
+                found = parseAndReply(data, i);
+            }
+        }
+
+        // only return after read all sensor bytes
+        if (found != NULL) {
+            return found;
+        }
+
+        rqst_time = Time(clock); // estimate
+    }
+
+    return NULL;
+}
+
+static void sensor_discard_all(int marklin) {
+    Putc(marklin, S88_BASE + 5);
+    for (int i = 0; i < 10; ++i) Getc(marklin);
+}
+
+void init_all_trains(track_node *nodes[], int marklin, int clock) {
+    speed_t speed;
+    speed_t_init(&speed);
+
+    int delays[N_TRNS] = {150, 170, 190};
+    for (int i = 0; i < N_TRNS; i++) {
+        uint16_t trainNo = ALL_TRNS[i];
+
+        // discard all sensor data
+        sensor_discard_all(marklin);
+
+        // speed up train
+        train_mod_speed(marklin, &speed, trainNo, 7);
+
+        nodes[i] = await_sensor_activation(marklin, clock, 600);
+
+        train_mod_speed(marklin, &speed, trainNo, 15);
+        Delay(clock, 10);
+
+        if (nodes[i] != NULL) {           
+            train_mod_speed(marklin, &speed, trainNo, 7);
+            Delay(clock, delays[i]);
+        }
+        train_mod_speed(marklin, &speed, trainNo, 15); 
+    }
+}
+
+
+
+// ------
 
 // make sure to only pass a valid switch
 int8_t get_switch_num(track_node *node) {
@@ -180,7 +268,14 @@ void user_server_main(void) {
     enum SWITCH_DIR last_sw_di = UNKNOWN;
     enum SWITCH_DIR next_sw_di = UNKNOWN;
 
+    // Train init
+    track_node *startup_pos[N_TRNS];
+    init_all_trains(startup_pos, marklinTid, clockTid);
+
+    // init all switches to loop
     startup(marklinTid);
+
+
 
     // infinite Loop
     for (;;) {

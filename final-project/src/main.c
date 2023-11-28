@@ -16,6 +16,8 @@
 #include "track.h"
 #include "track-data.h"
 
+#include "user.h"
+
 speed_data spd_data;
 track_node track[TRACK_MAX];
 
@@ -51,8 +53,10 @@ void user_main(void) {
     init_track_data(console_tid);
 
     // initialisation commands
-    init_track(marklin_tid);
+    //init_track(marklin_tid);
     init_monitor(console_tid);
+
+    Create(P_SERVER_HI, user_server_main);
 
     // start all tasks
     Create(P_HIGH, time_task_main);
