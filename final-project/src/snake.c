@@ -251,17 +251,10 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
 
         snake_change_speed_fwd(snake, front_trn_idx, ADJUST_SLOW_DOWN);
         snake_change_speed_behind(snake, front_trn_idx, ADJUST_SPD_UP);
-    } else if (dist_between <= SMALL_FOLLOWING_DIST * MM_TO_UM) {
-        // need to drastically increase where we can
-        if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SPD_UP))
-            return;
-
-        snake_change_speed_fwd(snake, front_trn_idx, ADJUST_SPD_UP);
-        snake_change_speed_behind(snake, front_trn_idx, ADJUST_SLOW_DOWN);
     } else {
         int8_t fwd_adjustment, behind_adjustment;
 
-        if (dist_between > (FOLLOWING_DIST_MM + FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
+        if (dist_between > FOLLOWING_DIST_MM * MM_TO_UM) {
             // need to decrease
             if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
                 return;
@@ -270,7 +263,7 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
             behind_adjustment = ADJUST_SPD_UP;
         } else if (dist_between < (FOLLOWING_DIST_MM - FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
             // must increase
-            if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SPD_UP))
+            if (dist_between > SMALL_FOLLOWING_DIST * MM_TO_UM && snake_check_matching_trend(snake, front_trn_idx, ADJUST_SPD_UP))
                 return;
 
             fwd_adjustment = ADJUST_SPD_UP;
