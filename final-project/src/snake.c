@@ -319,7 +319,7 @@ void snake_timer_notifier(void) {
     }
 }
 
-#define SNAKE_LEN 2 // testing only
+#define SNAKE_LEN 3 // testing only
 
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);
