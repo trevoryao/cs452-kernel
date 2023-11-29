@@ -12,11 +12,18 @@ typedef struct track_node track_node;
 
 static const int FOLLOWING_DIST_MM = 100;
 static const int FOLLOWING_DIST_MARGIN_MM = 25;
-static const int LARGE_FOLLOWING_DIST = 600;
+static const int TREND_MARGIN_UM = 15000; // 15mm
+static const int LARGE_TREND = 100; // mm
+static const int LARGE_FOLLOWING_DIST = 3 * FOLLOWING_DIST_MM;
+static const int SMALL_FOLLOWING_DIST = 10;
 
 typedef struct snake_trn_data {
     uint8_t trn;
     int8_t queued_spd_adjustment;
+    int64_t grace_period;
+
+    int32_t last_dist_between;
+    int32_t curr_dist_between;
 } snake_trn_data;
 
 // structure for holding metadata about the current state of the snake
@@ -28,8 +35,10 @@ typedef struct snake {
     // speed structure (global singleton)
     speed_t spd_t;
 
+    int8_t waiting_timer; // flag if we are currently waiting on a timer
+
     // TIDs (saves param passing)
-    uint16_t clock, console, marklin, user;
+    uint16_t clock, console, marklin, user, timer;
 } snake;
 
 void snake_init(snake *snake);

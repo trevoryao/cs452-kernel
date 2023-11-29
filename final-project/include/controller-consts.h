@@ -37,6 +37,7 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define CUSTOM_WAIT_ARG -1 // for output buffer
 
 #define TIME_NONE -1
+#define DIST_NONE -1
 
 #define TRN_NONE INT8_MAX
 

@@ -80,8 +80,7 @@ void sensor_queue_wait(sensor_queue *sq, track_node *node,
 }
 
 static void
-sensor_queue_pop(sensor_queue *sq, track_node *node, uint32_t activation_time,
-    uint8_t *snake_idx) {
+sensor_queue_pop(sensor_queue *sq, track_node *node, uint32_t activation_time) {
     sensor_queue_entry *head = sq->sensors_front[node->num]; // unchecked
 
     // pop head off and possibly update next value
@@ -94,9 +93,6 @@ sensor_queue_pop(sensor_queue *sq, track_node *node, uint32_t activation_time,
         sq->sensors_front[node->num] = NULL;
         sq->sensors_back[node->num] = NULL;
     }
-
-    // return to caller
-    *snake_idx = head->data.snake_idx;
 
     sensor_queue_free_entry(sq, head);
 }
@@ -111,13 +107,16 @@ int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
         return ERR_SPURIOUS;
     }
 
+    uassert(snake_idx != NULL);
+    // return to caller
+    *snake_idx = head->data.snake_idx;
+
     if (head->data.first_activation == TIME_NONE) {
         if (head->data.single_train) {
-            sensor_queue_pop(sq, node, activation_time, snake_idx);
+            sensor_queue_pop(sq, node, activation_time);
         } else {
             head->data.first_activation = activation_time;
         }
-
         return FIRST_ACTIVATION;
     }
 
@@ -130,8 +129,7 @@ int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
 
     if (time_from_first >= timeout) {
         // timeout -- must be the second train
-        sensor_queue_pop(sq, node, activation_time, snake_idx);
-
+        sensor_queue_pop(sq, node, activation_time);
         return time_from_first;
     } else {
         return SAME_TRAIN; // same train, don't care
