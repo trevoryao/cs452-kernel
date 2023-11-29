@@ -1,6 +1,7 @@
 #ifndef __SPEED_H__
 #define __SPEED_H__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // space saving for the trns buf, ugly ugly ugly
@@ -20,6 +21,8 @@ enum SPEEDS {
     SPD_VHI = 11,
     N_SPDS = 6
 };
+
+bool speed_is_supported(uint8_t spd);
 
 #define ERR_NO_TRN 50 // bad return code for getter f'ns
 

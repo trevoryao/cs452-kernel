@@ -9,6 +9,10 @@ void speed_t_init(speed_t *spd_t) {
     memset(spd_t->trns, 0, N_TRNS * sizeof(uint8_t)); // all trn spds set to 0 at start
 }
 
+bool speed_is_supported(uint8_t spd) {
+    return spd == SPD_STP || (SPD_VLO <= spd && spd <= SPD_VHI);
+}
+
 int8_t trn_hash(uint8_t tr) {
     // fast, ugly (look away)
     switch (tr) {

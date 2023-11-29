@@ -64,8 +64,8 @@ void user_main(void) {
 
     // pass params
     snake_server_start(snake_tid, 77, test_node);
-    snake_server_start(snake_tid, 24, test_node);
-    snake_server_start(snake_tid, 58, test_node);
+    // snake_server_start(snake_tid, 24, test_node);
+    // snake_server_start(snake_tid, 58, test_node);
 
     for (;;) {
         Yield();
