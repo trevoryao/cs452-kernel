@@ -157,8 +157,10 @@ snake_change_speed_fwd(snake *snake, uint8_t front_trn_idx, int8_t adjustment_fa
     while (front_trn_idx <= snake->head) {
         if (speed_is_supported(speed_display_get(&snake->spd_t,
             snake->trns[front_trn_idx].trn) + adjustment_factor)) {
-            snake->trns[front_trn_idx++].queued_spd_adjustment = adjustment_factor;
+            snake->trns[front_trn_idx].queued_spd_adjustment = adjustment_factor;
         }
+
+        ++front_trn_idx;
     }
 }
 
@@ -185,8 +187,10 @@ snake_change_speed_behind(snake *snake, uint8_t front_trn_idx, int8_t adjustment
     while (trn_idx >= 0) {
         if (speed_is_supported(speed_display_get(&snake->spd_t,
             snake->trns[trn_idx].trn) + adjustment_factor)) {
-            snake->trns[trn_idx--].queued_spd_adjustment = adjustment_factor;
+            snake->trns[trn_idx].queued_spd_adjustment = adjustment_factor;
         }
+
+        --trn_idx;
     }
 
     // can do back of the gap immediately
