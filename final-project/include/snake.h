@@ -10,7 +10,7 @@ typedef struct track_node track_node;
 
 #define SNAKE_NAME "snake"
 
-static const int FOLLOWING_DIST_MM = 200;
+static const int FOLLOWING_DIST_MM = 190;
 static const int FOLLOWING_DIST_MARGIN_MM = 70;
 static const int LARGE_TREND = 100; // mm
 static const int LARGE_FOLLOWING_DIST = 4 * FOLLOWING_DIST_MM;
