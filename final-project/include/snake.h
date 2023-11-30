@@ -10,7 +10,7 @@ typedef struct track_node track_node;
 
 #define SNAKE_NAME "snake"
 
-static const int FOLLOWING_DIST_MM = 130;
+static const int FOLLOWING_DIST_MM = 120;
 static const int FOLLOWING_DIST_MARGIN_MM = 40;
 static const int TREND_MARGIN_UM = 17500; // 17.5mm
 static const int LARGE_TREND = 100; // mm
@@ -19,7 +19,8 @@ static const int SMALL_FOLLOWING_DIST = 15;
 
 typedef struct snake_trn_data {
     uint8_t trn;
-    int8_t queued_spd_adjustment;
+    int8_t queued_spd_adjustment; // candidates, become true after back of train has made it's decision
+    int8_t true_spd_adjustment;
     int64_t grace_period;
 
     int32_t last_dist_between;

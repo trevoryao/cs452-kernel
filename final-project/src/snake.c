@@ -58,6 +58,7 @@ void snake_init(snake *snake) {
     for (int i = 0; i < N_TRNS; ++i) {
         snake->trns[i].trn = 0;
         snake->trns[i].queued_spd_adjustment = 0;
+        snake->trns[i].true_spd_adjustment = 0;
         snake->trns[i].grace_period = TIME_NONE;
         snake->trns[i].last_dist_between = DIST_NONE;
         snake->trns[i].curr_dist_between = DIST_NONE;
@@ -78,13 +79,15 @@ void snake_init(snake *snake) {
 }
 
 static int32_t
-calculate_distance_between(speed_t *spd_t, uint8_t front_trn,
+calculate_distance_between(snake *snake, uint8_t snake_idx,
     uint32_t time_between) {
     // assume constant speed over small distances
+    // use train behind since train in front may have accelerated
     // first calculate distance between front of each sensor module
+    uint8_t trn = snake->trns[snake_idx].trn;
     int32_t distance_between_heads =
-        get_distance_from_velocity(&spd_data, front_trn, time_between,
-            speed_display_get(spd_t, front_trn));
+        get_distance_from_velocity(&spd_data, trn, time_between,
+            speed_display_get(&snake->spd_t, trn));
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -124,25 +127,25 @@ static void
 snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx) {
     uint8_t activated_trn = snake->trns[activated_snake_idx].trn;
 
-    if (snake->trns[activated_snake_idx].queued_spd_adjustment != ADJUST_NONE &&
+    if (snake->trns[activated_snake_idx].true_spd_adjustment != ADJUST_NONE &&
         snake->trns[activated_snake_idx].grace_period == TIME_NONE) {
         Printf(snake->console, "grace period passed for %d, making adjustments\r\n", activated_trn);
         // assume already checked to be valid
         uint32_t time = Time(snake->clock);
         train_mod_speed(snake->marklin, &snake->spd_t, activated_trn,
             speed_display_get(&snake->spd_t, activated_trn) +
-            snake->trns[activated_snake_idx].queued_spd_adjustment);
+            snake->trns[activated_snake_idx].true_spd_adjustment);
         update_speed(snake->console, &snake->spd_t, activated_trn);
 
-        // populate grace_period (2 * train length) -> time
-        uint32_t grace_period = get_time_from_velocity(&spd_data, activated_trn, TRN_LEN_MM << 1, speed_display_get(&snake->spd_t, activated_trn));
+        // populate grace_period (train length) -> time
+        uint32_t grace_period = get_time_from_velocity(&spd_data, activated_trn, (TRN_LEN_MM * 3) >> 1, speed_display_get(&snake->spd_t, activated_trn));
 
         Printf(snake->console, "new grace period: %dms\r\n", grace_period * 10);
 
         snake->trns[activated_snake_idx].grace_period = time + grace_period; // absolute time
         // clear adjustment only after
 
-        snake->trns[activated_snake_idx].queued_spd_adjustment = ADJUST_NONE; // clear now
+        snake->trns[activated_snake_idx].true_spd_adjustment = ADJUST_NONE; // clear now
 
         // wait if necessary
         snake_try_wait_timer(snake);
@@ -192,9 +195,6 @@ snake_change_speed_behind(snake *snake, uint8_t front_trn_idx, int8_t adjustment
 
         --trn_idx;
     }
-
-    // can do back of the gap immediately
-    snake_try_make_queued_speed_adjustment(snake, front_trn_idx - 1);
 }
 
 // checks if all trains behind can support the possible action (without changing)
@@ -246,8 +246,6 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
         snake_change_speed_behind(snake, front_trn_idx, ADJUST_SLOW_DOWN);
     } else if (dist_between >= LARGE_FOLLOWING_DIST * MM_TO_UM) {
         // need to drastically decrease where we can
-        if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
-            return;
 
         snake_change_speed_fwd(snake, front_trn_idx, ADJUST_SLOW_DOWN);
         snake_change_speed_behind(snake, front_trn_idx, ADJUST_SPD_UP);
@@ -263,7 +261,7 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
             behind_adjustment = ADJUST_SPD_UP;
         } else if (dist_between < (FOLLOWING_DIST_MM - FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
             // must increase
-            if (dist_between > SMALL_FOLLOWING_DIST * MM_TO_UM && snake_check_matching_trend(snake, front_trn_idx, ADJUST_SPD_UP))
+            if (dist_between >= SMALL_FOLLOWING_DIST * MM_TO_UM && snake_check_matching_trend(snake, front_trn_idx, ADJUST_SPD_UP))
                 return;
 
             fwd_adjustment = ADJUST_SPD_UP;
@@ -284,6 +282,17 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
             // emergency stop and restart front train?
         }
     }
+
+    if (front_trn_idx == 1) {
+        // move queued spd adjustment to true spd adjustment
+        for (uint8_t i = 0; i < N_TRNS; ++i) {
+            snake->trns[i].true_spd_adjustment = snake->trns[i].queued_spd_adjustment;
+            snake->trns[i].queued_spd_adjustment = ADJUST_NONE;
+        }
+    }
+
+    // can do back of the gap immediately
+    snake_try_make_queued_speed_adjustment(snake, front_trn_idx - 1);
 }
 
 static void
@@ -319,7 +328,7 @@ void snake_timer_notifier(void) {
     }
 }
 
-#define SNAKE_LEN 3 // testing only
+#define SNAKE_LEN 2 // testing only
 
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);
@@ -384,7 +393,8 @@ void snake_server_main(void) {
                     // perform any queued speed change
                     snake_try_make_queued_speed_adjustment(&snake, activated_snake_idx);
                 } else if (time_between > 0) {
-                    int32_t dist_between = calculate_distance_between(&snake.spd_t, snake.trns[activated_snake_idx].trn, time_between);
+                    int32_t dist_between = calculate_distance_between(&snake,
+                        activated_snake_idx, time_between);
 
                     // buffer
                     snake.trns[activated_snake_idx].last_dist_between =
