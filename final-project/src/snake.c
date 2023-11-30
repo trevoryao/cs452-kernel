@@ -107,7 +107,9 @@ void snake_server_main(void) {
                         msg.sensor, msg.time);
 
                     if (time_between == FIRST_ACTIVATION) {
-                        next = user_reached_sensor(user_server, next);
+                        uint8_t trainNo;
+                        int32_t distance;
+                        next = user_reached_sensor(user_server, next, &trainNo, &distance);
                         uassert(next);
                         for (uint8_t i = snake_head; i > 0; --i) {
                             sensor_queue_wait(&sensor_queue, next, snake_arr[i]);

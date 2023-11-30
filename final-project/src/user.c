@@ -30,19 +30,19 @@ track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, in
     struct msg_us_server msg, reply;
     msg.type = MSG_US_SENSOR_PUT;
     msg.node = track;
-    msg.distance = dist;
-    msg.trainNo = trn;
     uart_printf(CONSOLE, "sending user_reached \r\n");
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_us_server), (char *)&reply, sizeof(struct msg_us_server));
 
     if (ret < 0 || reply.type == MSG_US_ERROR) {
         return NULL;
     } else {
+        *dist = reply.distance;
+        *trn = reply.trainNo;
         return reply.node;
     }
 }
 
-void user_display_distance(int16_t tid, int32_t *um) {
+void user_display_distance(int16_t tid, int32_t um) {
     struct msg_us_server msg;
     msg.type = MSG_US_DISPLAY_DISTANCE;
     msg.distance = um;
@@ -351,6 +351,50 @@ track_node *get_next_switch(track_node *next) {
     return next;
 }
 
+track_node *get_next_to_set_switch(track_node *next, switch_data *data) {
+    // first iterate to the next switch
+    next = next->edge[DIR_AHEAD].dest;
+
+    while (next->type != NODE_SENSOR) {
+        if (next->type == NODE_BRANCH) {
+            enum SWITCH_DIR dir = get_switch_dir(data, next);
+
+            // unknown switch dir should not happen -> should be set ahead of time
+            uassert(dir != UNKNOWN);
+
+            int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
+            next = next->edge[dirIndex].dest;
+        } else {
+            next = next->edge[DIR_AHEAD].dest;
+        }
+    }
+
+    // iterate from next sensor to next switch
+    while(next->type != NODE_BRANCH) {
+        next = next->edge[DIR_AHEAD].dest;
+    }
+    return next;
+}
+
+void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin) {
+    // first time next is still sensor
+    track_node *curr = next->edge[DIR_AHEAD].dest;
+
+    while (curr->type != NODE_SENSOR) {
+        if (curr->type == NODE_BRANCH) {
+            enum SWITCH_DIR dir = get_switch_dir(data, curr);
+            if (dir == UNKNOWN) {
+                dir = set_switch_dir(data, marklin, curr, true);
+                uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
+            }
+            int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
+            curr = curr->edge[dirIndex].dest;
+        } else {
+            curr = curr->edge[DIR_AHEAD].dest;
+        }
+    }
+}
+
 void replyError(int tid) {
     struct msg_us_server msg_reply;
     msg_reply.type = MSG_US_ERROR;
@@ -358,10 +402,12 @@ void replyError(int tid) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
 
-void replySensor(int tid, track_node *node) {
+void replySensor(int tid, track_node *node, uint8_t trainNo, uint32_t distance) {
     struct msg_us_server msg_reply;
     msg_reply.type = MSG_US_GET_NEXT_SENSOR;
     msg_reply.node = node;
+    msg_reply.distance = distance;
+    msg_reply.trainNo = trainNo;
 
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
@@ -399,6 +445,7 @@ void user_server_main(void) {
     memset(&switches, 0, N_SWITCHES * sizeof(switch_data));
 
     track_node *next_switch = NULL;
+    int32_t distance_to_next_sensor = 0;
 
     // Train init
     track_node *startup_pos[N_TRNS];
@@ -423,24 +470,29 @@ void user_server_main(void) {
                 // -> check state of next switch
                 // -> is there any ? Has it already been set
                 curr_head_sensor = msg_received.node;
-
+                
+                distance_to_next_sensor = 0;
                 // TODO: compute next sensor
-                next_expected_sensor = next_sensor(curr_head_sensor, switches, msg_received.distance);
+                next_expected_sensor = next_sensor(curr_head_sensor, switches, &distance_to_next_sensor);
+
+                sanity_check_switch_ahead(next_expected_sensor, switches, marklinTid);
 
                 // compute next switch
-                next_switch = get_next_switch(next_expected_sensor);
-                uart_printf(CONSOLE, "next sensor %d and next switch %d\r\n", next_expected_sensor->num, next_switch->num);
+                next_switch = get_next_to_set_switch(next_expected_sensor, switches);
+                uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
 
+
+                uint8_t trainNo = 0;
                 // check if next expected sensor is in startup
                 for (int i = 0; i < N_TRNS; i++) {
                     if (startup_pos[i] != NULL && startup_pos[i] == next_expected_sensor) {
                         startup_pos[i] = NULL;
-                        *msg_received.trainNo = ALL_TRNS[i];
+                        trainNo = ALL_TRNS[i];
                         break;
                     }
                 }
 
-                replySensor(senderTid, next_expected_sensor);
+                replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, trainNo);
                 break;
             }
 
@@ -452,7 +504,7 @@ void user_server_main(void) {
 
             case MSG_US_GET_NEXT_SENSOR: {
                 // return the next sensor on the route
-                replySensor(senderTid, next_expected_sensor);
+                replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, 0);
                 break;
             }
 
@@ -462,6 +514,7 @@ void user_server_main(void) {
                 if (next_switch == NULL) {
                     uart_printf(CONSOLE, "no next switch yet\r\n");
                 } else {
+                    uart_printf(CONSOLE, "Setting switch %d\r\n", next_switch->num);
                     set_switch_dir(switches, marklinTid, next_switch, msg_received.switchDir);
                 }
                 replyError(senderTid);
