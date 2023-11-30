@@ -46,33 +46,57 @@ void speed_data_init(speed_data *data) {
     // trn 24
     data->acceleration_data[0][0][1] = 83762;  // 0 -> 7
     data->acceleration_data[0][1][3] = 114075; // 7 -> 9
+    data->acceleration_data[0][1][2] = 114075; // fake
+    data->acceleration_data[0][2][3] = 114075; // fake
     data->acceleration_data[0][3][1] = -49906; // 9 -> 7
+    data->acceleration_data[0][3][2] = -49906; // fake
+    data->acceleration_data[0][2][1] = -49906; // fake
     data->acceleration_data[0][1][5] = 166944; // 7 -> 11
     data->acceleration_data[0][5][1] = -95610; // 11 -> 7
     data->acceleration_data[0][3][5] = 135447; // 9 -> 11
+    data->acceleration_data[0][3][4] = 135447; // fake
+    data->acceleration_data[0][4][5] = 135447; // fake
     data->acceleration_data[0][5][3] = -55904; // 11 -> 9
+    data->acceleration_data[0][5][4] = -55904; // fake
+    data->acceleration_data[0][4][3] = -55904; // fake
     data->acceleration_data[0][0][3] = 99929;  // 0 -> 9
 
 
     // trn 58
     data->acceleration_data[1][0][1] = 82661;  // 0 -> 7
     data->acceleration_data[1][1][3] = 76213;  // 7 -> 9
+    data->acceleration_data[1][1][2] = 76213;  // fake
+    data->acceleration_data[1][2][3] = 76213;  // fake
     data->acceleration_data[1][3][1] = -39682; // 9 -> 7
+    data->acceleration_data[1][3][2] = -39682; // fake
+    data->acceleration_data[1][2][1] = -39682; // fake
     data->acceleration_data[1][1][5] = 115697; // 7 -> 11
     data->acceleration_data[1][5][1] = -80692; // 11 -> 7
     data->acceleration_data[1][3][5] = 107489; // 9 -> 11
+    data->acceleration_data[1][3][4] = 107489; // fake
+    data->acceleration_data[1][4][5] = 107489; // fake
     data->acceleration_data[1][5][3] = -44940; // 11 -> 9
+    data->acceleration_data[1][5][4] = -44940; // fake
+    data->acceleration_data[1][4][3] = -44940; // fake
     data->acceleration_data[1][0][3] = 88112;  // 0 -> 9
 
 
     // trn 77
     data->acceleration_data[2][0][1] = 61097;  // 0 -> 7
     data->acceleration_data[2][1][3] = 55562;  // 7 -> 9
+    data->acceleration_data[2][1][2] = 55562;  // fake
+    data->acceleration_data[2][2][3] = 55562;  // fake
     data->acceleration_data[2][3][1] = -32683; // 9 -> 7
+    data->acceleration_data[2][3][2] = -32683; // fake
+    data->acceleration_data[2][2][1] = -32683; // fake
     data->acceleration_data[2][1][5] = 81505;  // 7 -> 11
     data->acceleration_data[2][5][1] = -69310; // 11 -> 7
     data->acceleration_data[2][3][5] = 71978; // 9 -> 11
+    data->acceleration_data[2][3][4] = 71978; // fake
+    data->acceleration_data[2][4][5] = 71978; // fake
     data->acceleration_data[2][5][3] = -37873; // 11 -> 9
+    data->acceleration_data[2][5][4] = -37873; // fake
+    data->acceleration_data[2][4][3] = -37873; // fake
     data->acceleration_data[2][0][3] = 72385;  // 0 -> 9
 
 
@@ -283,6 +307,8 @@ estimate_initial_distance_acceleration(speed_data *data, uint16_t trn,
     return (part1 + part2) / (100 * 100);
 }
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 // get time travelled during acceleration w/out final velocity over short_distance
 uint32_t
 estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
@@ -301,7 +327,18 @@ estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
 
     int64_t t1 = ((-v1 + sqrt_comp) * 100) / a;
     int64_t t2 = ((-v1 - sqrt_comp) * 100) / a;
-    return (uint32_t)((t2 > 0) ? t2 : t1);
+
+    // take minimum positive value
+    if (t1 > 0 && t2 > 0) {
+        return (uint32_t)MIN(t1, t2);
+    } else if (t1 > 0) {
+        return (uint32_t)t1;
+    } else if (t2 > 0) {
+        return (uint32_t)t2;
+    } else {
+        // fuck really bad
+        return 0;
+    }
 }
 
 // get time travelled during acceleration w/out initial velocity over short_distance
@@ -322,7 +359,17 @@ estimate_final_time_acceleration(speed_data *data, uint16_t trn,
 
     int64_t t1 = ((v2 + sqrt_comp) * 100) / a;
     int64_t t2 = ((v2 - sqrt_comp) * 100) / a;
-    return (uint32_t)((t2 > 0) ? t2 : t1);
+
+    if (t1 > 0 && t2 > 0) {
+        return (uint32_t)MIN(t1, t2);
+    } else if (t1 > 0) {
+        return (uint32_t)t1;
+    } else if (t2 > 0) {
+        return (uint32_t)t2;
+    } else {
+        // fuck really bad
+        return 0;
+    }
 }
 
 int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal) {

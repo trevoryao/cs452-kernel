@@ -85,7 +85,7 @@ calculate_distance_between(snake *snake, uint8_t front_trn_idx,
     // first calculate distance between front of each sensor module
     int32_t distance_between_heads =
         get_distance_from_velocity(&spd_data, trn, time_between,
-            speed_display_get(&snake->spd_t, trn));
+            speed_display_get(&snake->spd_t, trn)) - 30 * MM_TO_UM;
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -130,13 +130,14 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
         Printf(snake->console, "grace period passed for %d, making adjustments\r\n", activated_trn);
         // assume already checked to be valid
         uint32_t time = Time(snake->clock);
-        train_mod_speed(snake->marklin, &snake->spd_t, activated_trn,
-            speed_display_get(&snake->spd_t, activated_trn) +
-            snake->trns[activated_snake_idx].queued_spd_adjustment);
+        int8_t spd_initial = speed_display_get(&snake->spd_t, activated_trn);
+        int8_t spd_desired = spd_initial + snake->trns[activated_snake_idx].queued_spd_adjustment;
+        train_mod_speed(snake->marklin, &snake->spd_t, activated_trn,spd_desired);
         update_speed(snake->console, &snake->spd_t, activated_trn);
 
         // populate grace_period (2 * train length) -> time
-        uint32_t grace_period = get_time_from_velocity(&spd_data, activated_trn, TRN_LEN_MM << 1, speed_display_get(&snake->spd_t, activated_trn));
+        uint32_t grace_period = estimate_initial_time_acceleration(&spd_data,
+            activated_trn, spd_initial, spd_desired, (TRN_LEN_MM << 1) * MM_TO_UM);
 
         Printf(snake->console, "new grace period: %dms\r\n", grace_period * 10);
 
@@ -257,7 +258,8 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
 
         if (dist_between > FOLLOWING_DIST_MM * MM_TO_UM) {
             // need to decrease
-            if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
+            if (dist_between <= (FOLLOWING_DIST_MM + FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM &&
+                snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
                 return;
 
             fwd_adjustment = ADJUST_SLOW_DOWN;
@@ -274,7 +276,7 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
             return;
         }
 
-        // favour behind actions
+        // favour forward actions
         if (snake_check_change_speed_behind(snake, front_trn_idx, behind_adjustment)) {
             snake_change_speed_behind(snake, front_trn_idx, behind_adjustment);
         } else if (snake_check_change_speed_fwd(snake, front_trn_idx, fwd_adjustment)) {
