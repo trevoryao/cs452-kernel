@@ -78,13 +78,14 @@ void snake_init(snake *snake) {
 }
 
 static int32_t
-calculate_distance_between(speed_t *spd_t, uint8_t front_trn,
+calculate_distance_between(snake *snake, uint8_t front_trn_idx,
     uint32_t time_between) {
+    uint8_t trn = snake->trns[front_trn_idx].trn;
     // assume constant speed over small distances
     // first calculate distance between front of each sensor module
     int32_t distance_between_heads =
-        get_distance_from_velocity(&spd_data, front_trn, time_between,
-            speed_display_get(spd_t, front_trn));
+        get_distance_from_velocity(&spd_data, trn, time_between,
+            speed_display_get(&snake->spd_t, trn));
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -384,7 +385,7 @@ void snake_server_main(void) {
                     // perform any queued speed change
                     snake_try_make_queued_speed_adjustment(&snake, activated_snake_idx);
                 } else if (time_between > 0) {
-                    int32_t dist_between = calculate_distance_between(&snake.spd_t, snake.trns[activated_snake_idx].trn, time_between);
+                    int32_t dist_between = calculate_distance_between(&snake, activated_snake_idx, time_between);
 
                     // buffer
                     snake.trns[activated_snake_idx].last_dist_between =
