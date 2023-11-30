@@ -84,7 +84,7 @@ calculate_distance_between(speed_t *spd_t, uint8_t front_trn,
     // first calculate distance between front of each sensor module
     int32_t distance_between_heads =
         get_distance_from_velocity(&spd_data, front_trn, time_between,
-            speed_display_get(spd_t, front_trn));
+            speed_display_get(spd_t, front_trn)) - 35000;
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -319,7 +319,7 @@ void snake_timer_notifier(void) {
     }
 }
 
-#define SNAKE_LEN 2 // testing only
+#define SNAKE_LEN 3 // testing only
 
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);
