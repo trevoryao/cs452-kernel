@@ -22,13 +22,16 @@ extern track_node track[];
 #define KEY_RIGHT 39
 
 #define N_SENSOR 8
+#define THREE_WAY_OFFSET 134
 
 // -------------------------------------------------------
 // WRAPPER Methods
-track_node *user_reached_sensor(int16_t tid, track_node *track) {
+track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist) {
     struct msg_us_server msg, reply;
     msg.type = MSG_US_SENSOR_PUT;
     msg.node = track;
+    msg.distance = dist;
+    msg.trainNo = trn;
     uart_printf(CONSOLE, "sending user_reached \r\n");
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_us_server), (char *)&reply, sizeof(struct msg_us_server));
 
@@ -39,7 +42,7 @@ track_node *user_reached_sensor(int16_t tid, track_node *track) {
     }
 }
 
-void user_display_distance(int16_t tid, int32_t um) {
+void user_display_distance(int16_t tid, int32_t *um) {
     struct msg_us_server msg;
     msg.type = MSG_US_DISPLAY_DISTANCE;
     msg.distance = um;
@@ -159,7 +162,7 @@ int8_t get_switch_num(track_node *node) {
     if (node->num <= 18) {
         return node->num;
     } else {
-        return node->num - 134;
+        return node->num - THREE_WAY_OFFSET;
     }
 }
 
@@ -180,29 +183,29 @@ enum SWITCH_DIR set_switch_dir(switch_data *switches, int marklin, track_node *n
     int8_t num = get_switch_num(node);
 
     // TODO protection if not allowed
+    if (!switches[num].allowedToBeSet) {
+        // just return if not allowed to be set
+        return switches[num].curr_dir;
+    }
 
     // TODO -> special case for 3-way switches
-    if (num > 18) {
-        uart_printf(CONSOLE, "ERROR - 3 way switch not yet implemented\r\n");
-        return UNKNOWN;
+    if (num > 18)  {
+        int index1 = (num <= 20) ? 19 : 21;
+        int index2 = (num <= 20) ? 20 : 22;
+
+        if (left) {
+            switches[index1].curr_dir = STRT;
+            switches[index2].curr_dir = CRV;
+        } else {
+            switches[index1].curr_dir = CRV;
+            switches[index2].curr_dir = STRT;
+        }
+        switch_throw(marklin, index1 + THREE_WAY_OFFSET, switches[index1].curr_dir);
+        switch_throw(marklin, index2 + THREE_WAY_OFFSET, switches[index2].curr_dir);
+        return switches[num].curr_dir;
     }
 
-
-    if (switches[num].left_is_straight) {
-        if (left) {
-            switches[num].curr_dir = STRT;
-            
-        } else {
-            switches[num].curr_dir = CRV;
-        }
-    } else {
-        if (left) {
-            switches[num].curr_dir = CRV;
-            
-        } else {
-            switches[num].curr_dir = STRT;
-        }
-    }
+    switches[num].curr_dir = switches[num].left_is_straight ? (left ? STRT : CRV) : (left ? CRV : STRT);
 
     switch_throw(marklin, num, switches[num].curr_dir);
 
@@ -217,13 +220,6 @@ void startup(int marklin) {
     switch_throw(marklin, 14, STRT);
     switch_throw(marklin, 8, STRT);
 
-    // reverse direction switches
-    switch_throw(marklin, 6, STRT);
-    switch_throw(marklin, 15, STRT);
-    switch_throw(marklin, 11, CRV);
-    switch_throw(marklin, 9, STRT);
-
-
     // set the switches, which are not allowed to be set
     switch_throw(marklin, 1, STRT);
     switch_throw(marklin, 2, STRT);
@@ -236,10 +232,19 @@ void startup(int marklin) {
 
 void init_switch_data(switch_data *data) {
     data[1].allowedToBeSet = false;
+    data[1].curr_dir = STRT;
+
     data[2].allowedToBeSet = false;
+    data[2].curr_dir = STRT;
+
     data[3].allowedToBeSet = false;
+    data[3].curr_dir = CRV;
+
     data[4].allowedToBeSet = false;
+    data[4].curr_dir = STRT;
+
     data[12].allowedToBeSet = false;
+    data[12].curr_dir = CRV;
 
     data[5].allowedToBeSet = true;
     data[5].curr_dir = UNKNOWN;
@@ -250,11 +255,11 @@ void init_switch_data(switch_data *data) {
     data[6].left_is_straight = 1;
 
     data[7].allowedToBeSet = true;
-    data[7].curr_dir = UNKNOWN;
+    data[7].curr_dir = STRT;
     data[7].left_is_straight = 0;
 
     data[8].allowedToBeSet = true;
-    data[8].curr_dir = UNKNOWN;
+    data[8].curr_dir = STRT;
     data[8].left_is_straight = 1;
 
     data[9].allowedToBeSet = true;
@@ -274,7 +279,7 @@ void init_switch_data(switch_data *data) {
     data[13].left_is_straight = 1;
 
     data[14].allowedToBeSet = true;
-    data[14].curr_dir = UNKNOWN;
+    data[14].curr_dir = STRT;
     data[14].left_is_straight = 1;
 
     data[15].allowedToBeSet = true;
@@ -310,17 +315,29 @@ void init_switch_data(switch_data *data) {
     data[22].left_is_straight = 0;
 }
 
-track_node *next_sensor(track_node *curr) {
+track_node *next_sensor(track_node *curr, switch_data *data, int32_t *distance) {
     if (curr->type != NODE_SENSOR) {
         return NULL;
     }
 
+    *distance = 0;
+    
+    *distance += curr->edge[DIR_AHEAD].dist;
     track_node *next = curr->edge[DIR_AHEAD].dest;
     // go through the data and return the next one
     while(next->type != NODE_SENSOR) {
         if (next->type == NODE_BRANCH) {
-            next = next->edge[DIR_STRAIGHT].dest;
+            enum SWITCH_DIR dir = get_switch_dir(data, next);
+
+            // unknown switch dir should not happen -> should be set ahead of time
+            uassert(dir != UNKNOWN);
+
+            int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
+
+            *distance += next->edge[dirIndex].dist;
+            next = next->edge[dirIndex].dest;
         } else {
+            *distance += next->edge[DIR_AHEAD].dist;
             next = next->edge[DIR_AHEAD].dest;
         }
     }
@@ -382,18 +399,15 @@ void user_server_main(void) {
     memset(&switches, 0, N_SWITCHES * sizeof(switch_data));
 
     track_node *next_switch = NULL;
-    enum SWITCH_DIR last_sw_di = UNKNOWN;
-    enum SWITCH_DIR next_sw_di = UNKNOWN;
-
 
     // Train init
     track_node *startup_pos[N_TRNS];
     //init_all_trains(startup_pos, marklinTid, clockTid);
 
     // init all switches to loop
-    startup(marklinTid);
     init_switch_data(switches);
-
+    startup(marklinTid);
+    
     Create(P_HIGH, user_input_notifier);
 
 
@@ -411,11 +425,20 @@ void user_server_main(void) {
                 curr_head_sensor = msg_received.node;
 
                 // TODO: compute next sensor
-                next_expected_sensor = next_sensor(curr_head_sensor);
+                next_expected_sensor = next_sensor(curr_head_sensor, switches, msg_received.distance);
 
                 // compute next switch
                 next_switch = get_next_switch(next_expected_sensor);
                 uart_printf(CONSOLE, "next sensor %d and next switch %d\r\n", next_expected_sensor->num, next_switch->num);
+
+                // check if next expected sensor is in startup
+                for (int i = 0; i < N_TRNS; i++) {
+                    if (startup_pos[i] != NULL && startup_pos[i] == next_expected_sensor) {
+                        startup_pos[i] = NULL;
+                        *msg_received.trainNo = ALL_TRNS[i];
+                        break;
+                    }
+                }
 
                 replySensor(senderTid, next_expected_sensor);
                 break;
@@ -458,13 +481,24 @@ void user_input_notifier(void) {
     int console = WhoIs(CONSOLE_SERVER_NAME);
     int user = WhoIs(USER_SERVER_NAME);
 
+    int i = 0;
+
     for (;;) {
         char c = Getc(console);
-        uart_printf(CONSOLE, "received characater %d\r\n", c);
-        if (c == 'a') {
-            setNextSwitch(user, LEFT);
-        } else if (c == 'd') {
+
+        if (i == 0 && c == 27) {
+            i = 1;
+        } else if (i == 1 && c == 91) {
+            i = 2;
+        } else if (i == 2 && c == 67) {
+            // valid right arrow key
             setNextSwitch(user, RIGHT);
+        } else if (i == 2 && c == 68) {
+            // valid left arrow key
+            setNextSwitch(user, LEFT);
+        } else {
+            // invalid sequence
+            i = 0;
         }
     }
 
