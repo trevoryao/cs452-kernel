@@ -85,7 +85,7 @@ calculate_distance_between(snake *snake, uint8_t front_trn_idx,
     // first calculate distance between front of each sensor module
     int32_t distance_between_heads =
         get_distance_from_velocity(&spd_data, trn, time_between,
-            speed_display_get(&snake->spd_t, trn)) - 30 * MM_TO_UM;
+            speed_display_get(&snake->spd_t, trn));
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -256,10 +256,9 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
     } else {
         int8_t fwd_adjustment, behind_adjustment;
 
-        if (dist_between > FOLLOWING_DIST_MM * MM_TO_UM) {
+        if (dist_between > (FOLLOWING_DIST_MM + FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
             // need to decrease
-            if (dist_between <= (FOLLOWING_DIST_MM + FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM &&
-                snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
+            if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
                 return;
 
             fwd_adjustment = ADJUST_SLOW_DOWN;
