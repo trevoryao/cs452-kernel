@@ -138,6 +138,9 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
         // populate grace_period (2 * train length) -> time
         uint32_t grace_period = estimate_initial_time_acceleration(&spd_data,
             activated_trn, spd_initial, spd_desired, (TRN_LEN_MM << 1) * MM_TO_UM);
+        if (grace_period > MAX_GRACE_PERIOD) {
+            grace_period = MAX_GRACE_PERIOD;
+        }
 
         Printf(snake->console, "new grace period: %dms\r\n", grace_period * 10);
 
