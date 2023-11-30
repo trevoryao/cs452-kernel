@@ -218,14 +218,17 @@ static bool
 snake_check_matching_trend(snake *snake, uint8_t front_trn_idx,
     int8_t adjustment_factor) {
 
-    int32_t diff = snake->trns[front_trn_idx].curr_dist_between -
-        snake->trns[front_trn_idx].last_dist_between;
+    uint8_t trn = snake->trns[front_trn_idx].trn;
+    int32_t trend_margin = get_velocity(&spd_data, trn, speed_display_get(&snake->spd_t, trn)) >> 1;
 
-    if (-TREND_MARGIN_UM <= diff &&
-        diff <= TREND_MARGIN_UM) {
+    int32_t diff = (snake->trns[front_trn_idx].curr_dist_between -
+        snake->trns[front_trn_idx].last_dist_between) * MM_TO_UM;
+
+    if (-trend_margin <= diff &&
+        diff <= trend_margin) {
         // small enough range, do nothing, so say we are matching the trend
         return true;
-    } else if (diff > TREND_MARGIN_UM) {
+    } else if (diff > trend_margin) {
         // upward trend
         return adjustment_factor > ADJUST_NONE; // matching increase trend
     } else {
