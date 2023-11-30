@@ -63,9 +63,9 @@ void user_main(void) {
     uint16_t snake_tid = Create(P_HIGH, snake_server_main);
 
     // pass params
-    snake_server_start(snake_tid, 58, test_node);
     snake_server_start(snake_tid, 24, test_node);
     snake_server_start(snake_tid, 77, test_node);
+    // snake_server_start(snake_tid, 58, test_node);
 
     for (;;) {
         Yield();

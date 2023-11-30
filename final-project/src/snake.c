@@ -254,7 +254,7 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
 
         if (dist_between > FOLLOWING_DIST_MM * MM_TO_UM) {
             // need to decrease
-            if (dist_between <= (FOLLOWING_DIST_MM + FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM && snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
+            if (snake_check_matching_trend(snake, front_trn_idx, ADJUST_SLOW_DOWN))
                 return;
 
             fwd_adjustment = ADJUST_SLOW_DOWN;
@@ -328,7 +328,7 @@ void snake_timer_notifier(void) {
     }
 }
 
-#define SNAKE_LEN 3 // testing only
+#define SNAKE_LEN 2 // testing only
 
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);

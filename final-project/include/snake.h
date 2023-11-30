@@ -15,7 +15,7 @@ static const int FOLLOWING_DIST_MARGIN_MM = 40;
 static const int TREND_MARGIN_UM = 17500; // 17.5mm
 static const int LARGE_TREND = 100; // mm
 static const int LARGE_FOLLOWING_DIST = 3 * FOLLOWING_DIST_MM;
-static const int SMALL_FOLLOWING_DIST = 25;
+static const int SMALL_FOLLOWING_DIST = 15;
 
 typedef struct snake_trn_data {
     uint8_t trn;
