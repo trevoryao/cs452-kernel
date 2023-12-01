@@ -29,7 +29,7 @@ extern track_node track[];
 #define THREE_WAY_OFFSET 134
 
 #define FIRST_TRN 58
-#define SW_DELAY_TICKS 75
+#define SW_DELAY_TICKS 100
 
 // -------------------------------------------------------
 // WRAPPER Methods
@@ -403,7 +403,7 @@ void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin,
             enum SWITCH_DIR dir = get_switch_dir(data, curr);
             if (dir == UNKNOWN) {
                 dir = set_switch_dir(data, marklin, console, curr, true);
-                uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
+                // uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
             }
             int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
             curr = curr->edge[dirIndex].dest;
@@ -414,23 +414,24 @@ void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin,
 }
 
 track_node *throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, int console, uint8_t trn, uint8_t trn_speed) {
-    int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed);
-    
+    int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed) + (TRN_LEN_MM * MM_TO_UM);
+
     int32_t distance = 0;
-    
+
     while (distance < min_dist_before_branch) {
         if (curr->type == NODE_BRANCH) {
             // branch has to be set if not set
             enum SWITCH_DIR dir = get_switch_dir(sw_data, curr);
             if (dir == UNKNOWN) {
                 dir = set_switch_dir(sw_data, marklin, console, curr, true);
-                uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
+                // uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
             }
             int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
+            distance += curr->edge[dirIndex].dist * MM_TO_UM;
             curr = curr->edge[dirIndex].dest;
 
         } else {
-            distance += curr->edge[DIR_AHEAD].dist;
+            distance += curr->edge[DIR_AHEAD].dist * MM_TO_UM;
             curr = curr->edge[DIR_AHEAD].dest;
         }
     }
@@ -443,8 +444,10 @@ track_node *throw_switches_delay(track_node *curr, switch_data *sw_data, int mar
 }
 
 uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *startup_pos[], uint8_t trn, uint8_t trn_speed) {
-    int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed);
-    
+    int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed) + (TRN_LEN_MM * MM_TO_UM);
+    // uart_printf(CONSOLE, "min distance %d um (trn %d @ spd %d)\r\n", min_dist_before_branch,
+    //     trn, trn_speed);
+
     for (int i = 0; i < N_TRNS; i++) {
         if (startup_pos[i] != NULL) {
             int32_t distance = 0;
@@ -452,18 +455,21 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
             track_node *next = curr;
             // loop through track
             while (next != startup_pos[i] && distance < min_dist_before_branch) {
-                if (curr->type == NODE_BRANCH) {
+                if (next->type == NODE_BRANCH) {
                     // branch has to be set if not set
-                    enum SWITCH_DIR dir = get_switch_dir(sw_data, curr);
+                    enum SWITCH_DIR dir = get_switch_dir(sw_data, next);
                     int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
-                    curr = curr->edge[dirIndex].dest;
+                    distance += next->edge[dirIndex].dist * MM_TO_UM;
+                    next = next->edge[dirIndex].dest;
 
                 } else {
-                    distance += curr->edge[DIR_AHEAD].dist;
-                    curr = curr->edge[DIR_AHEAD].dest;
+                    distance += next->edge[DIR_AHEAD].dist * MM_TO_UM;
+                    next = next->edge[DIR_AHEAD].dest;
                 }
             }
-            
+
+            // uart_printf(CONSOLE, "stopping search with distance %d at node %s\r\n", distance, next->name);
+
             if (next == startup_pos[i]) {
                 return ALL_TRNS[i];
             }
@@ -569,11 +575,18 @@ void user_server_main(void) {
 
                 // compute next switch
                 next_switch = throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
-                uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
+                // uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
 
                 // check if next expected sensor is in startup
                 uint8_t trainNo = get_next_train(next_expected_sensor, switches, startup_pos, headNo, headSpeed);
 
+                if (trainNo != 0) {
+                    // redo calculations
+                    next_expected_sensor = startup_pos[trn_hash(trainNo)];
+                    next_switch = throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
+                }
+
+                startup_pos[trn_hash(trainNo)] = NULL;
 
                 replySensor(senderTid, next_expected_sensor, trainNo, distance_to_next_sensor);
                 break;
@@ -603,9 +616,9 @@ void user_server_main(void) {
                 // check if it is allowed to throw next switch
                 // maybe lock it?
                 if (next_switch == NULL) {
-                    uart_printf(CONSOLE, "no next switch yet\r\n");
+                    // uart_printf(CONSOLE, "no next switch yet\r\n");
                 } else {
-                    uart_printf(CONSOLE, "Setting switch %d\r\n", next_switch->num);
+                    // uart_printf(CONSOLE, "Setting switch %d\r\n", next_switch->num);
                     set_switch_dir(switches, marklinTid, consoleTid, next_switch, msg_received.switchDir);
                 }
                 replyError(senderTid);

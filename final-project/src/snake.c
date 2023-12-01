@@ -352,6 +352,7 @@ void snake_server_main(void) {
     // save metadata
     snake.trns[snake.head].trn = msg.trn.num;
     next = msg.sensor;
+    user_updated_head_speed(snake.user, snake.trns[snake.head].trn, SPD_MED);
 
     // start up a sensorWorker
     Create(P_SENSOR_WORKER, sensor_worker_main);
@@ -376,6 +377,9 @@ void snake_server_main(void) {
                     msg.sensor, msg.time, &activated_snake_idx);
 
                 if (time_between == FIRST_ACTIVATION) {
+                    // perform any queued speed change
+                    snake_try_make_queued_speed_adjustment(&snake, activated_snake_idx);
+
                     // prime next
                     uint8_t next_trn;
                     int32_t next_dist;
@@ -397,9 +401,6 @@ void snake_server_main(void) {
                     }
 
                     snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
-
-                    // perform any queued speed change
-                    snake_try_make_queued_speed_adjustment(&snake, activated_snake_idx);
                 } else if (time_between > 0) {
                     int32_t dist_between = calculate_distance_between(&snake, activated_snake_idx, time_between);
 
