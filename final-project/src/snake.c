@@ -327,8 +327,6 @@ void snake_timer_notifier(void) {
     }
 }
 
-#define SNAKE_LEN 3 // testing only
-
 void snake_server_main(void) {
     uassert(RegisterAs(SNAKE_NAME) == 0);
 
@@ -343,32 +341,24 @@ void snake_server_main(void) {
 
     track_node *next = NULL;
 
-    // for now just get two from runner
-    snake.head = SNAKE_LEN - 1; // must do backwards for now
-    for (int i = 0; i < SNAKE_LEN; ++i) {
-        uassert(Receive(&rtid, (char *)&msg, sizeof(snake_msg)) ==
-            sizeof(snake_msg));
+    // wait for user to give us first train
+    uassert(Receive(&rtid, (char *)&msg, sizeof(snake_msg)) ==
+        sizeof(snake_msg));
+    Reply(rtid, NULL, 0);
 
-        snake.trns[snake.head - i].trn = msg.trn.num;
-        train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
-        update_speed(snake.console, &snake.spd_t, msg.trn.num);
-
-        if (i == 0) { // for now just assume single start node
-            next = msg.sensor;
-        }
-
-        if (i != snake.head) {
-            Delay(snake.clock, 75);
-        }
-
-        Reply(rtid, NULL, 0);
-    }
-
-    // wait on start node
-    snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
+    // save metadata
+    snake.trns[snake.head].trn = msg.trn.num;
+    next = msg.sensor;
 
     // start up a sensorWorker
     Create(P_SENSOR_WORKER, sensor_worker_main);
+
+    // start train
+    train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
+    update_speed(snake.console, &snake.spd_t, msg.trn.num);
+
+    // wait on start node
+    snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
 
     for (;;) {
         // get data from sensor worker
@@ -385,8 +375,20 @@ void snake_server_main(void) {
                 if (time_between == FIRST_ACTIVATION) {
                     uassert(activated_snake_idx > 0 && activated_snake_idx <= snake.head);
                     // prime next
-                    next = user_reached_sensor(snake.user, next);
+                    uint8_t next_trn;
+                    int32_t next_dist;
+                    next = user_reached_sensor(snake.user, next,
+                        &next_trn, &next_dist);
                     uassert(next);
+
+                    if (next_trn != 0) {
+                        // new pick up
+                        snake.trns[++snake.head].trn = msg.trn.num;
+                        // start train
+                        train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
+                        update_speed(snake.console, &snake.spd_t, msg.trn.num);
+                    }
+
                     snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
 
                     // perform any queued speed change

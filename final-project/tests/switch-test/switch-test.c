@@ -8,7 +8,6 @@
 #include "uart-server.h"
 #include "uassert.h"
 
-#include "control-msgs.h"
 #include "clock.h"
 #include "monitor.h"
 #include "program-tasks.h"
@@ -54,14 +53,19 @@ void user_main(void) {
     init_track(marklin_tid);
     WaitOutputEmpty(marklin_tid);
 
+    track_node *test_node = &track[70]; // E7
+
+    
     Create(P_MED, user_server_main);
-
-    // start snake
-    Create(P_HIGH, snake_server_main);
-
     BlockUntilReady();
 
-    for (;;) {
-        Yield();
-    }
+    // start snake
+    uint16_t snake_tid = Create(P_HIGH, snake_server_main);
+
+    // pass params
+    snake_server_start(snake_tid, 77, test_node);
+    snake_server_start(snake_tid, 24, test_node);
+    // snake_server_start(snake_tid, 58, test_node);
+
+    for (;;); // busy wait
 }
