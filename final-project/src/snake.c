@@ -151,6 +151,9 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
 
         // wait if necessary
         snake_try_wait_timer(snake);
+
+        if (activated_snake_idx == snake->head)
+            user_updated_head_speed(snake->user, activated_trn, spd_desired);
     }
 }
 
