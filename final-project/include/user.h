@@ -14,6 +14,8 @@ enum US_MSG_TYPE {
     MSG_US_DISPLAY_DISTANCE,
     MSG_US_GET_NEXT_SENSOR,
     MSG_US_SET_SWITCH,
+    MSG_US_UPDATE_SPEED,
+    MSG_US_OK,
     MSG_US_ERROR,
     MSG_US_MAX
 };
@@ -29,8 +31,10 @@ typedef struct switch_data {
 typedef struct msg_us_server {
     enum US_MSG_TYPE type;
     int32_t distance;
+    uint8_t speed;
     track_node *node;
     uint8_t trainNo;
+    uint8_t speed;
     int8_t switchDir;
 } msg_us_server;
 
@@ -40,5 +44,7 @@ void user_input_notifier(void);
 void user_display_distance(int16_t tid, int32_t um);
 track_node *user_get_next_sensor(int16_t tid);
 track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist); // return train to start up, if any
+
+void user_updated_head_speed(int16_t tid, uint8_t trainNo, uint8_t speed);
 
 #endif

@@ -75,6 +75,15 @@ void setNextSwitch(int16_t tid, int8_t dir) {
     Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
 }
 
+void user_updated_head_speed(int16_t tid, uint8_t trainNo, uint8_t speed) {
+    struct msg_us_server msg;
+    msg.type = MSG_US_UPDATE_SPEED;
+    msg.trainNo = trainNo;
+    msg.trainNo = speed;
+
+    Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
+}
+
 // -------------------------------------------------------
 
 
@@ -405,6 +414,13 @@ void replyError(int tid) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
 
+void replyOk(int tid) {
+    struct msg_us_server msg_reply;
+    msg_reply.type = MSG_US_OK;
+
+    Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
+}
+
 void replySensor(int tid, track_node *node, uint8_t trainNo, uint32_t distance) {
     struct msg_us_server msg_reply;
     msg_reply.type = MSG_US_GET_NEXT_SENSOR;
@@ -437,7 +453,9 @@ void user_server_main(void) {
     int marklinTid = WhoIs(MARKLIN_SERVER_NAME);
     int consoleTid = WhoIs(CONSOLE_SERVER_NAME);
 
-    // TODO: Register notifiers
+    // Snake Head Data
+    uint8_t headNo = 0;
+    uint8_t headSpeed = 0;
 
     // last sensor
     track_node *curr_head_sensor = NULL;
@@ -509,6 +527,14 @@ void user_server_main(void) {
             case MSG_US_GET_NEXT_SENSOR: {
                 // return the next sensor on the route
                 replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, 0);
+                break;
+            }
+
+            case MSG_US_UPDATE_SPEED: {
+                headNo = msg_received.trainNo;
+                headSpeed = msg_received.speed;
+
+                replyOk(senderTid);
                 break;
             }
 
