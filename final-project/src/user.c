@@ -11,6 +11,7 @@
 #include "speed-data.h"
 #include "rpi.h"
 #include "task.h"
+#include "speed.h"
 
 #include "control-msgs.h"
 #include "uassert.h"
@@ -33,7 +34,6 @@ track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, in
     struct msg_us_server msg, reply;
     msg.type = MSG_US_SENSOR_PUT;
     msg.node = track;
-    uart_printf(CONSOLE, "sending user_reached \r\n");
     int ret = Send(tid, (char *)&msg, sizeof(struct msg_us_server), (char *)&reply, sizeof(struct msg_us_server));
 
     if (ret < 0 || reply.type == MSG_US_ERROR) {
@@ -153,18 +153,20 @@ void init_all_trains(track_node *nodes[], int marklin, int clock) {
         sensor_discard_all(marklin);
 
         // speed up train
-        train_mod_speed(marklin, &speed, trainNo, 7);
+        train_mod_speed(marklin, &speed, trainNo, SPD_LO);
 
         nodes[i] = await_sensor_activation(marklin, clock, 600);
 
-        train_mod_speed(marklin, &speed, trainNo, 15);
+        train_mod_speed(marklin, &speed, trainNo, SP_REVERSE);
         Delay(clock, 10);
 
         if (nodes[i] != NULL) {
-            train_mod_speed(marklin, &speed, trainNo, 7);
+            train_mod_speed(marklin, &speed, trainNo, SPD_LO);
             Delay(clock, delays[i]);
         }
-        train_mod_speed(marklin, &speed, trainNo, 15);
+
+        train_mod_speed(marklin, &speed, trainNo, SP_REVERSE);
+        Delay(clock, 10);
     }
 }
 // ------
@@ -463,22 +465,27 @@ void user_server_main(void) {
 
 
     switch_data switches[N_SWITCHES];
-    memset(&switches, 0, N_SWITCHES * sizeof(switch_data));
+    memset(switches, 0, N_SWITCHES * sizeof(switch_data));
 
     track_node *next_switch = NULL;
     int32_t distance_to_next_sensor = 0;
 
     // Train init
     track_node *startup_pos[N_TRNS];
+    memset(startup_pos, 0, N_TRNS * sizeof(track_node *));
     init_all_trains(startup_pos, marklinTid, clockTid);
-    snake_server_start(WhoIs(SNAKE_NAME), FIRST_TRN,
-        startup_pos[trn_hash(FIRST_TRN)]);
 
     // init all switches to loop
     init_switch_data(switches);
     startup(marklinTid);
 
     Create(P_HIGH, user_input_notifier);
+
+    WaitOutputEmpty(marklinTid);
+
+    snake_server_start(WhoIs(SNAKE_NAME), FIRST_TRN,
+        startup_pos[trn_hash(FIRST_TRN)]);
+    startup_pos[trn_hash(FIRST_TRN)] = NULL;
 
     SendParentReady();
 
@@ -501,7 +508,7 @@ void user_server_main(void) {
 
                 // compute next switch
                 next_switch = get_next_to_set_switch(next_expected_sensor, switches);
-                uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
+                // uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
 
 
                 uint8_t trainNo = 0;
@@ -514,7 +521,7 @@ void user_server_main(void) {
                     }
                 }
 
-                replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, trainNo);
+                replySensor(senderTid, next_expected_sensor, trainNo, distance_to_next_sensor);
                 break;
             }
 
