@@ -373,7 +373,6 @@ void snake_server_main(void) {
                     msg.sensor, msg.time, &activated_snake_idx);
 
                 if (time_between == FIRST_ACTIVATION) {
-                    uassert(activated_snake_idx > 0 && activated_snake_idx <= snake.head);
                     // prime next
                     uint8_t next_trn;
                     int32_t next_dist;
@@ -383,10 +382,15 @@ void snake_server_main(void) {
 
                     if (next_trn != 0) {
                         // new pick up
-                        snake.trns[++snake.head].trn = msg.trn.num;
+                        snake.trns[++snake.head].trn = next_trn;
+                        Printf(snake.console, "new snake head: %d (", snake.head);
+                        for (int i = snake.head; i >= 0; --i) {
+                            Printf(snake.console, " %d", snake.trns[i].trn);
+                        }
+                        Printf(snake.console, ")\r\n");
                         // start train
-                        train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
-                        update_speed(snake.console, &snake.spd_t, msg.trn.num);
+                        train_mod_speed(snake.marklin, &snake.spd_t, next_trn, SPD_MED);
+                        update_speed(snake.console, &snake.spd_t, next_trn);
                     }
 
                     snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
