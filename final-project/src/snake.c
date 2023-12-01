@@ -352,6 +352,7 @@ void snake_server_main(void) {
     // save metadata
     snake.trns[snake.head].trn = msg.trn.num;
     next = msg.sensor;
+    user_updated_head_speed(snake.user, snake.trns[snake.head].trn, SPD_MED);
 
     // start up a sensorWorker
     Create(P_SENSOR_WORKER, sensor_worker_main);

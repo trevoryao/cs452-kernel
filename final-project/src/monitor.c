@@ -121,7 +121,7 @@ void print_prompt(uint16_t tid) {
 
 void init_monitor(uint16_t tid) {
     #if LOGGING
-    (void)tid;
+    Puts(tid, CLEAR CURS_START);
     #else
     // assume screen cleared by the kernel
     // paint initial structure

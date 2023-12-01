@@ -50,6 +50,7 @@ void user_main(void) {
 
     speed_data_init(&spd_data);
     init_track_data(console_tid);
+    init_monitor(console_tid);
 
     init_track(marklin_tid);
     WaitOutputEmpty(marklin_tid);
