@@ -193,7 +193,7 @@ enum SWITCH_DIR get_switch_dir(switch_data *switches, track_node *node) {
 
 }
 
-enum SWITCH_DIR set_switch_dir(switch_data *switches, int marklin, track_node *node, uint8_t left, int console) {
+enum SWITCH_DIR set_switch_dir(switch_data *switches, int marklin, int console, track_node *node, uint8_t left) {
     if (node->type != NODE_BRANCH) {
         return UNKNOWN;
     }
@@ -394,7 +394,7 @@ track_node *get_next_to_set_switch(track_node *next, switch_data *data) {
     return next;
 }
 
-void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin) {
+void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin, int console) {
     // first time next is still sensor
     track_node *curr = next->edge[DIR_AHEAD].dest;
 
@@ -402,7 +402,7 @@ void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin)
         if (curr->type == NODE_BRANCH) {
             enum SWITCH_DIR dir = get_switch_dir(data, curr);
             if (dir == UNKNOWN) {
-                dir = set_switch_dir(data, marklin, curr, true);
+                dir = set_switch_dir(data, marklin, console, curr, true);
                 uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
             }
             int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
@@ -413,7 +413,7 @@ void sanity_check_switch_ahead(track_node *next, switch_data *data, int marklin)
     }
 }
 
-track_node *throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, uint8_t trn, uint8_t trn_speed) {
+track_node *throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, int console, uint8_t trn, uint8_t trn_speed) {
     int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed);
     
     int32_t distance = 0;
@@ -423,7 +423,7 @@ track_node *throw_switches_delay(track_node *curr, switch_data *sw_data, int mar
             // branch has to be set if not set
             enum SWITCH_DIR dir = get_switch_dir(sw_data, curr);
             if (dir == UNKNOWN) {
-                dir = set_switch_dir(sw_data, marklin, curr, true);
+                dir = set_switch_dir(sw_data, marklin, console, curr, true);
                 uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
             }
             int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
@@ -568,7 +568,7 @@ void user_server_main(void) {
                 next_expected_sensor = next_sensor(curr_head_sensor, switches, &distance_to_next_sensor);
 
                 // compute next switch
-                next_switch = throw_switches_delay(next_expected_sensor, switches, marklinTid, headNo, headSpeed);
+                next_switch = throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
                 uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
 
                 // check if next expected sensor is in startup
@@ -606,7 +606,7 @@ void user_server_main(void) {
                     uart_printf(CONSOLE, "no next switch yet\r\n");
                 } else {
                     uart_printf(CONSOLE, "Setting switch %d\r\n", next_switch->num);
-                    set_switch_dir(switches, marklinTid, next_switch, msg_received.switchDir);
+                    set_switch_dir(switches, marklinTid, consoleTid, next_switch, msg_received.switchDir);
                 }
                 replyError(senderTid);
                 break;

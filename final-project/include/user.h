@@ -31,7 +31,6 @@ typedef struct switch_data {
 typedef struct msg_us_server {
     enum US_MSG_TYPE type;
     int32_t distance;
-    uint8_t speed;
     track_node *node;
     uint8_t trainNo;
     uint8_t speed;
