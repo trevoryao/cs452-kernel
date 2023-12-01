@@ -576,6 +576,7 @@ void user_server_main(void) {
                 // compute next switch
                 next_switch = throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
                 // uart_printf(CONSOLE, "Next switch to be set: %d\r\n", next_switch->num);
+                update_next_input_switch(consoleTid, next_switch->num);
 
                 // check if next expected sensor is in startup
                 uint8_t trainNo = get_next_train(next_expected_sensor, switches, startup_pos, headNo, headSpeed);
