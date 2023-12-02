@@ -219,6 +219,10 @@ enum SWITCH_DIR set_switch_dir(switch_data *switches, int marklin, int console, 
         }
         switch_throw(marklin, index1 + THREE_WAY_OFFSET, switches[index1].curr_dir);
         switch_throw(marklin, index2 + THREE_WAY_OFFSET, switches[index2].curr_dir);
+
+        update_switch(console, index1 + THREE_WAY_OFFSET, switches[index1].curr_dir);
+        update_switch(console, index2 + THREE_WAY_OFFSET, switches[index2].curr_dir);
+
         return switches[num].curr_dir;
     }
 
