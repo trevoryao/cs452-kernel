@@ -410,7 +410,7 @@ track_node *get_next_to_set_switch(track_node *curr, switch_data *sw_data, uint8
     int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed) + (TRN_LEN_MM * MM_TO_UM);
     int32_t max_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_MAX_DELAY_TICKS, trn_speed) + (TRN_LEN_MM * MM_TO_UM);
 
-    
+
     // first iterate to the next switch -> we assume this method is called with curr sensor
     int32_t distance = 0;
 
@@ -464,7 +464,7 @@ void throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, i
                 dir = set_switch_dir(sw_data, marklin, console, curr, true);
                 // uart_printf(CONSOLE, "Emergency setting switch %d\r\n", curr->num);
             }
-            // reset switch as visited 
+            // reset switch as visited
             set_switch_user_set(sw_data, curr, false);
 
             if (curr->num == 18) {
@@ -679,11 +679,11 @@ void user_server_main(void) {
                     // uart_printf(CONSOLE, "Setting switch %d\r\n", next_switch->num);
                     // set curr next_switch
                     set_switch_dir(switches, marklinTid, consoleTid, next_switch, msg_received.switchDir);
-                    
-                    // set it to user set 
+
+                    // set it to user set
                     set_switch_user_set(switches, next_switch, true);
 
-                    // compute next to be set switch 
+                    // compute next to be set switch
                     next_switch = get_next_to_set_switch(next_expected_sensor, switches, headNo, headSpeed);
                     if (next_switch != NULL) {
                         update_next_input_switch(consoleTid, next_switch->num);
@@ -709,7 +709,6 @@ void user_server_main(void) {
     }
 }
 
-
 void user_input_notifier(void) {
     int console = WhoIs(CONSOLE_SERVER_NAME);
     int user = WhoIs(USER_SERVER_NAME);
@@ -724,22 +723,23 @@ void user_input_notifier(void) {
                 ++i;
             } else if (c == 'q') {
                 user_receive_quit(user);
+                return; // EXIT
             } else {
                 i = 0;
             }
         } else if (i == 1 && c == 91) {
             ++i;
-        } else if (i == 2 && c == 67) {
-            // valid right arrow key
-            setNextSwitch(user, RIGHT);
-        } else if (i == 2 && c == 68) {
-            // valid left arrow key
-            setNextSwitch(user, LEFT);
+        } else if (i == 2) {
+            if (c == 67) {
+                setNextSwitch(user, RIGHT);
+            } else if (c == 68) {
+                setNextSwitch(user, LEFT);
+            } else {
+                i = 0; // invalid sequence
+            }
         } else {
             // invalid sequence
             i = 0;
         }
     }
-
 }
-

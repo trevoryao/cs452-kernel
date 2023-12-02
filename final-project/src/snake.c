@@ -22,6 +22,7 @@ extern track_node track[];
 
 enum SNAKE_MSG_TYPE {
     SNAKE_MSG_START,
+    SNAKE_MSG_END,
     SNAKE_MSG_SENSOR,
     SNAKE_MSG_TIMER_START,
     SNAKE_MSG_TIMER_END,
@@ -46,9 +47,14 @@ void snake_server_start(int tid, uint8_t trn, track_node *start) {
     uassert(Send(tid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
 }
 
+void snake_server_end(int tid) {
+    snake_msg msg = {SNAKE_MSG_END, {0}, NULL, 0};
+    uassert(Send(tid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
+}
+
 void snake_server_sensor_triggered(int tid, track_node *sensor,
     uint32_t time) {
-    snake_msg msg = {SNAKE_MSG_SENSOR, {.num = 0}, sensor, time};
+    snake_msg msg = {SNAKE_MSG_SENSOR, {0}, sensor, time};
     uassert(Send(tid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
 }
 
@@ -114,7 +120,13 @@ snake_try_wait_timer(snake *snake) {
 
     snake->waiting_timer = true; // prevent double wait
     snake_msg msg = {SNAKE_MSG_TIMER_START, {.snake_idx = min_idx}, NULL, min_time};
-    Send(snake->timer, (char *)&msg, sizeof(snake_msg), NULL, 0);
+    uassert(Send(snake->timer, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
+}
+
+static void
+snake_quit_timer_notifier(snake *snake) {
+    snake_msg msg = {SNAKE_MSG_END, {0}, NULL, 0};
+    uassert(Send(snake->timer, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
 }
 
 #define ADJUST_SPD_UP 1
@@ -317,13 +329,19 @@ void snake_timer_notifier(void) {
     for (;;) {
         uassert(Receive(&tid, (char *)&msg, sizeof(snake_msg)) == sizeof(snake_msg));
         uassert(tid == ptid);
-        uassert(msg.type == SNAKE_MSG_TIMER_START);
         Reply(ptid, NULL, 0);
 
-        msg.type = SNAKE_MSG_TIMER_END; // do before waiting
-        DelayUntil(clock, msg.time);
-
-        uassert(Send(ptid, (char *)&msg, sizeof(snake_msg), NULL, 0) == 0);
+        switch (msg.type) {
+            case SNAKE_MSG_END: return;
+            case SNAKE_MSG_TIMER_START: {
+                msg.type = SNAKE_MSG_TIMER_END; // do before waiting
+                DelayUntil(clock, msg.time);
+                uassert(Send(ptid, (char *)&msg,
+                    sizeof(snake_msg), NULL, 0) == 0);
+                break;
+            }
+            default: upanic("[snake-notifier] unknown msg type %d", msg.type);
+        }
     }
 }
 
@@ -352,7 +370,7 @@ void snake_server_main(void) {
     user_updated_head_speed(snake.user, snake.trns[snake.head].trn, SPD_MED);
 
     // start up a sensorWorker
-    Create(P_SENSOR_WORKER, sensor_worker_main);
+    int sensor_worker_tid = Create(P_SENSOR_WORKER, sensor_worker_main);
 
     // start train
     train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
@@ -419,6 +437,11 @@ void snake_server_main(void) {
                 // start new one if needed
                 snake_try_wait_timer(&snake);
                 break;
+            }
+            case SNAKE_MSG_END: {
+                snake_quit_timer_notifier(&snake);
+                KillChild(sensor_worker_tid);
+                return; // EXIT
             }
             default: upanic("unknown snake msg type %d", msg.type);
         }

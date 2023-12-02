@@ -159,7 +159,7 @@ void shutdown_monitor(uint16_t tid) {
     #if LOGGING
     (void)tid;
     #else
-    Puts(tid, CLEAR CURS_START);
+    Puts(tid, CLEAR CURS_START CURS_SHOW);
     #endif
 }
 

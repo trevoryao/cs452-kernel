@@ -51,6 +51,7 @@ void snake_init(snake *snake);
 // trn is the first head of the snake, and start is the first sensor
 // it passes
 void snake_server_start(int tid, uint8_t trn, track_node *start);
+void snake_server_end(int tid);
 
 // called by sensor worker whenever new sensor activation is triggered
 void snake_server_sensor_triggered(int tid, track_node *sensor, uint32_t time);
