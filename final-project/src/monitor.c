@@ -362,8 +362,16 @@ void update_next_input_switch(uint16_t tid, uint16_t sw) {
     char *fmt;
 
     if (sw == 0) {
-        fmt = "%s" CURS_MOV DEL_LINE "%s";
-    } else if (SW0_BASE <= sw && sw < SW0_BASE + N_SW0) {
+        #if LOGGING
+        Printf(tid, "[next switch] N/A\r\n");
+        #else
+        Printf(tid, CURS_SAVE CURS_MOV DEL_LINE "N/A" CURS_UNSAVE,
+            NEXT_SW_PROMPT_Y, NEXT_SW_PROMPT_X);
+        #endif
+        return;
+    }
+
+    if (SW0_BASE <= sw && sw < SW0_BASE + N_SW0) {
         #if LOGGING
         fmt = "[next switch] SW%d\r\n";
         #else

@@ -4,6 +4,7 @@
 #include "nameserver.h"
 #include "task.h"
 #include "uart-server.h"
+#include "console-server.h"
 #include "clock.h"
 #include "track.h"
 #include "util.h"
@@ -259,7 +260,7 @@ void startup(int marklin, int console) {
     // AHEAD switches
     switch_throw(marklin, 7, STRT);
     update_switch(console, 7, STRT);
-    
+
     switch_throw(marklin, 14, STRT);
     update_switch(console, 14, STRT);
 
@@ -532,7 +533,7 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
                 *reverse = 1;
                 return ALL_TRNS[i];
             }
-           
+
         }
     }
     return 0;
@@ -736,33 +737,14 @@ void user_input_notifier(void) {
     int console = WhoIs(CONSOLE_SERVER_NAME);
     int user = WhoIs(USER_SERVER_NAME);
 
-    int i = 0;
-
+    char c;
     for (;;) {
-        char c = Getc(console);
-
-        if (i == 0) {
-            if (c == 27) {
-                ++i;
-            } else if (c == 'q') {
-                user_receive_quit(user);
-                return; // EXIT
-            } else {
-                i = 0;
-            }
-        } else if (i == 1 && c == 91) {
-            ++i;
-        } else if (i == 2) {
-            if (c == 67) {
-                setNextSwitch(user, RIGHT);
-            } else if (c == 68) {
-                setNextSwitch(user, LEFT);
-            } else {
-                i = 0; // invalid sequence
-            }
-        } else {
-            // invalid sequence
-            i = 0;
+        c = Getc(console);
+        switch (c) {
+            case ARROW_LEFT: setNextSwitch(user, LEFT); break;
+            case ARROW_RIGHT: setNextSwitch(user, RIGHT); break;
+            case 'q': user_receive_quit(user); return; // EXIT
+            default: break; // invalid, ignore
         }
     }
 }
