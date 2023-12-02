@@ -127,13 +127,13 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
 
     if (snake->trns[activated_snake_idx].queued_spd_adjustment != ADJUST_NONE &&
         snake->trns[activated_snake_idx].grace_period == TIME_NONE) {
-        Printf(snake->console, "grace period passed for %d, making adjustments\r\n", activated_trn);
         // assume already checked to be valid
         uint32_t time = Time(snake->clock);
         int8_t spd_initial = speed_display_get(&snake->spd_t, activated_trn);
         int8_t spd_desired = spd_initial + snake->trns[activated_snake_idx].queued_spd_adjustment;
         train_mod_speed(snake->marklin, &snake->spd_t, activated_trn,spd_desired);
         update_speed(snake->console, &snake->spd_t, activated_trn);
+        update_snake_train(snake->console, snake, activated_snake_idx);
 
         // populate grace_period (2 * train length) -> time
         uint32_t grace_period = estimate_initial_time_acceleration(&spd_data,
@@ -141,8 +141,6 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
         if (grace_period > MAX_GRACE_PERIOD) {
             grace_period = MAX_GRACE_PERIOD;
         }
-
-        Printf(snake->console, "new grace period: %dms\r\n", grace_period * 10);
 
         snake->trns[activated_snake_idx].grace_period = time + grace_period; // absolute time
         // clear adjustment only after
@@ -299,7 +297,6 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
 
 static void
 snake_wait_on_sensor_queue(snake *snake, track_node *next, sensor_queue *sq) {
-    Printf(snake->console, "waiting on %s\r\n", next->name);
     if (snake->head == 0) {
         // single train
         sensor_queue_wait(sq, next, snake->head, true);
@@ -360,6 +357,7 @@ void snake_server_main(void) {
     // start train
     train_mod_speed(snake.marklin, &snake.spd_t, msg.trn.num, SPD_MED);
     update_speed(snake.console, &snake.spd_t, msg.trn.num);
+    init_snake_train(snake.console, &snake, snake.head);
 
     // wait on start node
     snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
@@ -390,14 +388,10 @@ void snake_server_main(void) {
                     if (next_trn != 0) {
                         // new pick up
                         snake.trns[++snake.head].trn = next_trn;
-                        Printf(snake.console, "new snake head: %d (", snake.head);
-                        for (int i = snake.head; i >= 0; --i) {
-                            Printf(snake.console, " %d", snake.trns[i].trn);
-                        }
-                        Printf(snake.console, ")\r\n");
                         // start train
                         train_mod_speed(snake.marklin, &snake.spd_t, next_trn, SPD_MED);
                         update_speed(snake.console, &snake.spd_t, next_trn);
+                        init_snake_train(snake.console, &snake, snake.head);
                     }
 
                     snake_wait_on_sensor_queue(&snake, next, &sensor_queue);
@@ -410,10 +404,7 @@ void snake_server_main(void) {
                     snake.trns[activated_snake_idx].curr_dist_between =
                         dist_between;
 
-                    Printf(snake.console, "distance between trains %d <- %d @ %s: %dmm\r\n",
-                        snake.trns[activated_snake_idx].trn,
-                        snake.trns[activated_snake_idx - 1].trn,
-                        msg.sensor->name, dist_between / MM_TO_UM);
+                    update_snake_distance(snake.console, &snake, msg.sensor->num, activated_snake_idx, dist_between / MM_TO_UM);
 
                     // plan/do any adjustments (now and in the future)
                     snake_adjust_trains(&snake, activated_snake_idx);

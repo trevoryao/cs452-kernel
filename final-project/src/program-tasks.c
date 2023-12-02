@@ -13,7 +13,6 @@
 
 #include "control-msgs.h"
 #include "monitor.h"
-#include "sensors.h"
 #include "speed.h"
 #include "track.h"
 #include "track-data.h"
