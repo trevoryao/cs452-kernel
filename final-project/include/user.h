@@ -37,6 +37,7 @@ typedef struct msg_us_server {
     uint8_t trainNo;
     uint8_t speed;
     int8_t switchDir;
+    uint8_t reverse;
 } msg_us_server;
 
 void user_server_main(void);
@@ -44,7 +45,7 @@ void user_input_notifier(void);
 
 void user_display_distance(int16_t tid, int32_t um);
 track_node *user_get_next_sensor(int16_t tid);
-track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist); // return train to start up, if any
+track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist, uint8_t *reverse); // return train to start up, if any
 
 void user_updated_head_speed(int16_t tid, uint8_t trainNo, uint8_t speed);
 

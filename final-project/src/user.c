@@ -35,7 +35,7 @@ extern track_node track[];
 
 // -------------------------------------------------------
 // WRAPPER Methods
-track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist) {
+track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, int32_t *dist, uint8_t *reverse) {
     struct msg_us_server msg, reply;
     msg.type = MSG_US_SENSOR_PUT;
     msg.node = track;
@@ -46,6 +46,7 @@ track_node *user_reached_sensor(int16_t tid, track_node *track, uint8_t *trn, in
     } else {
         *dist = reply.distance;
         *trn = reply.trainNo;
+        *reverse = reply.reverse;
         return reply.node;
     }
 }
@@ -486,7 +487,7 @@ void throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, i
 }
 
 
-uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *startup_pos[], uint8_t trn, uint8_t trn_speed) {
+uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *startup_pos[], uint8_t trn, uint8_t trn_speed, uint8_t *reverse) {
     int32_t min_dist_before_branch = get_distance_from_velocity(&spd_data, trn, SW_DELAY_TICKS, trn_speed) + (TRN_LEN_MM * MM_TO_UM);
     // uart_printf(CONSOLE, "min distance %d um (trn %d @ spd %d)\r\n", min_dist_before_branch,
     //     trn, trn_speed);
@@ -515,12 +516,20 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
                 }
 
                 if (next == startup_pos[i]) {
+                    *reverse = 0;
+                    return ALL_TRNS[i];
+                } else if (next == startup_pos[i]->reverse) {
+                    *reverse = 1;
                     return ALL_TRNS[i];
                 }
             }
 
             // uart_printf(CONSOLE, "stopping search with distance %d at node %s\r\n", distance, next->name);
             if (next == startup_pos[i]) {
+                *reverse = 0;
+                return ALL_TRNS[i];
+            } else if (next == startup_pos[i]->reverse) {
+                *reverse = 1;
                 return ALL_TRNS[i];
             }
            
@@ -543,12 +552,13 @@ void replyOk(int tid) {
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
 
-void replySensor(int tid, track_node *node, uint8_t trainNo, uint32_t distance) {
+void replySensor(int tid, track_node *node, uint8_t trainNo, uint32_t distance, uint8_t reverse) {
     struct msg_us_server msg_reply;
     msg_reply.type = MSG_US_GET_NEXT_SENSOR;
     msg_reply.node = node;
     msg_reply.distance = distance;
     msg_reply.trainNo = trainNo;
+    msg_reply.reverse = reverse;
 
     Reply(tid, (char *)&msg_reply, sizeof(struct msg_us_server));
 }
@@ -630,12 +640,25 @@ void user_server_main(void) {
                 // compute next switch
                 throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
 
+
+                uint8_t reverse = 0;
                 // check if next expected sensor is in startup
-                uint8_t trainNo = get_next_train(next_expected_sensor, switches, startup_pos, headNo, headSpeed);
+                uint8_t trainNo = get_next_train(next_expected_sensor, switches, startup_pos, headNo, headSpeed, &reverse);
                 if (trainNo != 0) {
                     // redo calculations
-                    next_expected_sensor = startup_pos[trn_hash(trainNo)];
+                    if (reverse == 1) {
+                        // the sensor the trains is positioned at
+                        next_expected_sensor = startup_pos[trn_hash(trainNo)]->reverse;
+                        // all sensors in the current sector
+                        throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
+                        // get actual next expected sensor
+                        next_expected_sensor = next_sensor(next_expected_sensor, switches, &distance_to_next_sensor);
+
+                    } else {
+                        next_expected_sensor = startup_pos[trn_hash(trainNo)];      
+                    }
                     throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
+                    
                 }
 
                 // update printing of switches
@@ -648,7 +671,7 @@ void user_server_main(void) {
 
                 startup_pos[trn_hash(trainNo)] = NULL;
 
-                replySensor(senderTid, next_expected_sensor, trainNo, distance_to_next_sensor);
+                replySensor(senderTid, next_expected_sensor, trainNo, distance_to_next_sensor, reverse);
                 break;
             }
 
@@ -660,7 +683,7 @@ void user_server_main(void) {
 
             case MSG_US_GET_NEXT_SENSOR: {
                 // return the next sensor on the route
-                replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, 0);
+                replySensor(senderTid, next_expected_sensor, distance_to_next_sensor, 0, 0);
                 break;
             }
 

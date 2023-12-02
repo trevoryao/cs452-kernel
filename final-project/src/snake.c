@@ -399,8 +399,9 @@ void snake_server_main(void) {
                     // prime next
                     uint8_t next_trn;
                     int32_t next_dist;
+                    uint8_t reverse;
                     next = user_reached_sensor(snake.user, next,
-                        &next_trn, &next_dist);
+                        &next_trn, &next_dist, &reverse);
                     uassert(next);
 
                     if (next_trn != 0) {
