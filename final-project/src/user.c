@@ -521,7 +521,7 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
 
             // uart_printf(CONSOLE, "stopping search with distance %d at node %s\r\n", distance, next->name);
             if (next == startup_pos[i]) {
-                    return ALL_TRNS[i];
+                return ALL_TRNS[i];
             }
            
         }
