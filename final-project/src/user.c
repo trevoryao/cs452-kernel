@@ -498,7 +498,7 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
             track_node *next = curr;
             bool visited_sensor = false;
             // loop through track
-            while ((next != startup_pos[i] && distance < min_dist_before_branch) || !visited_sensor) {
+            while (distance < min_dist_before_branch || !visited_sensor) {
                 if (next->type == NODE_BRANCH) {
                     // branch has to be set if not set
                     enum SWITCH_DIR dir = get_switch_dir(sw_data, next);
@@ -513,13 +513,17 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
                     distance += next->edge[DIR_AHEAD].dist * MM_TO_UM;
                     next = next->edge[DIR_AHEAD].dest;
                 }
+
+                if (next == startup_pos[i]) {
+                    return ALL_TRNS[i];
+                }
             }
 
             // uart_printf(CONSOLE, "stopping search with distance %d at node %s\r\n", distance, next->name);
-
             if (next == startup_pos[i]) {
                 return ALL_TRNS[i];
             }
+           
         }
     }
     return 0;
