@@ -55,17 +55,20 @@ void user_main(void) {
     init_track(marklin_tid);
     WaitOutputEmpty(marklin_tid);
 
-    Create(P_MED, user_server_main);
     Create(P_HIGH, time_task_main);
     Create(P_LOW, idle_time_task_main);
+    Create(P_MED, user_server_main);
 
     // start snake
-    Create(P_HIGH, snake_server_main);
+    uint16_t snake_tid = Create(P_HIGH, snake_server_main);
 
     BlockUntilReady();
 
     // quitting
     BlockUntilQuit();
+
+    // need to manually shut down snake
+    snake_server_end(snake_tid);
 
     // shutdown all non-server children to exit gracefully
     KillAllChildren();
