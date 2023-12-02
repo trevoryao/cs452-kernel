@@ -64,7 +64,13 @@ void user_main(void) {
 
     BlockUntilReady();
 
-    for (;;) {
-        Yield();
-    }
+    // quitting
+    BlockUntilQuit();
+
+    // shutdown all non-server children to exit gracefully
+    KillAllChildren();
+
+    // send shutdown commands
+    shutdown_monitor(console_tid);
+    shutdown_track(marklin_tid);
 }

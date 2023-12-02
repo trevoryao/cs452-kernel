@@ -20,7 +20,6 @@
 
 // usr
 #include "controller-consts.h"
-#include "sensors.h"
 #include "snake.h"
 #include "speed.h"
 #include "speed-data.h"

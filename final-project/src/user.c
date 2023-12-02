@@ -87,6 +87,13 @@ void user_updated_head_speed(int16_t tid, uint8_t trainNo, uint8_t speed) {
     Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
 }
 
+static void user_receive_quit(int16_t tid) {
+    struct msg_us_server msg;
+    msg.type = MSG_US_QUIT;
+
+    Send(tid, (char *)&msg, sizeof(struct msg_us_server), NULL, 0);
+}
+
 // -------------------------------------------------------
 
 
@@ -626,6 +633,11 @@ void user_server_main(void) {
                 break;
             }
 
+            case MSG_US_QUIT: {
+                replyOk(senderTid);
+                SendParentQuit();
+                return;
+            }
 
             default:
                 replyError(senderTid);
@@ -644,10 +656,16 @@ void user_input_notifier(void) {
     for (;;) {
         char c = Getc(console);
 
-        if (i == 0 && c == 27) {
-            i = 1;
+        if (i == 0) {
+            if (c == 27) {
+                ++i;
+            } else if (c == 'q') {
+                user_receive_quit(user);
+            } else {
+                i = 0;
+            }
         } else if (i == 1 && c == 91) {
-            i = 2;
+            ++i;
         } else if (i == 2 && c == 67) {
             // valid right arrow key
             setNextSwitch(user, RIGHT);

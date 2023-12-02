@@ -17,6 +17,7 @@ enum US_MSG_TYPE {
     MSG_US_UPDATE_SPEED,
     MSG_US_OK,
     MSG_US_ERROR,
+    MSG_US_QUIT,
     MSG_US_MAX
 };
 
