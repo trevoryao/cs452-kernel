@@ -479,8 +479,9 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
             int32_t distance = 0;
 
             track_node *next = curr;
+            bool visited_sensor = false;
             // loop through track
-            while (next != startup_pos[i] && distance < min_dist_before_branch) {
+            while ((next != startup_pos[i] && distance < min_dist_before_branch) || !visited_sensor) {
                 if (next->type == NODE_BRANCH) {
                     // branch has to be set if not set
                     enum SWITCH_DIR dir = get_switch_dir(sw_data, next);
@@ -489,6 +490,9 @@ uint8_t get_next_train(track_node *curr, switch_data *sw_data, track_node *start
                     next = next->edge[dirIndex].dest;
 
                 } else {
+                    if (next != curr && next->type == NODE_SENSOR) {
+                        visited_sensor = true;
+                    }
                     distance += next->edge[DIR_AHEAD].dist * MM_TO_UM;
                     next = next->edge[DIR_AHEAD].dest;
                 }
@@ -573,6 +577,11 @@ void user_server_main(void) {
     // init all switches to loop
     init_switch_data(switches);
     startup(marklinTid);
+
+    // set the switches for startup train
+    headNo = trn_hash(FIRST_TRN);
+    headSpeed = 9;
+    throw_switches_delay(startup_pos[trn_hash(FIRST_TRN)], switches, marklinTid, consoleTid, headNo, headSpeed);
 
     Create(P_VHIGH, user_input_notifier);
 
