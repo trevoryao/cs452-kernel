@@ -257,16 +257,33 @@ void startup(int marklin) {
 
     // AHEAD switches
     switch_throw(marklin, 7, STRT);
+    update_switch(marklin, 7, STRT);
+    
     switch_throw(marklin, 14, STRT);
+    update_switch(marklin, 14, STRT);
+
     switch_throw(marklin, 8, STRT);
+    update_switch(marklin, 8, STRT);
 
     // set the switches, which are not allowed to be set
     switch_throw(marklin, 1, STRT);
+    update_switch(marklin, 1, STRT);
+
     switch_throw(marklin, 2, STRT);
+    update_switch(marklin, 2, STRT);
+
     switch_throw(marklin, 4, STRT);
+    update_switch(marklin, 4, STRT);
+
     switch_throw(marklin, 5, CRV);
+    update_switch(marklin, 5, CRV);
+
     switch_throw(marklin, 3, CRV);
+    update_switch(marklin, 3, CRV);
+
     switch_throw(marklin, 12, CRV);
+    update_switch(marklin, 12, CRV);
+
 
     WaitOutputEmpty(marklin);
 }
