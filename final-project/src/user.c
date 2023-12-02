@@ -656,10 +656,10 @@ void user_server_main(void) {
                         next_expected_sensor = next_sensor(next_expected_sensor, switches, &distance_to_next_sensor);
 
                     } else {
-                        next_expected_sensor = startup_pos[trn_hash(trainNo)];      
+                        next_expected_sensor = startup_pos[trn_hash(trainNo)];
                     }
                     throw_switches_delay(next_expected_sensor, switches, marklinTid, consoleTid, headNo, headSpeed);
-                    
+
                 }
 
                 // update printing of switches

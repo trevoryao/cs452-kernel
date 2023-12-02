@@ -64,6 +64,7 @@ void snake_init(snake *snake) {
     for (int i = 0; i < N_TRNS; ++i) {
         snake->trns[i].trn = 0;
         snake->trns[i].queued_spd_adjustment = 0;
+        snake->trns[i].reverse = (int8_t)false;
         snake->trns[i].grace_period = TIME_NONE;
         snake->trns[i].last_dist_between = DIST_NONE;
         snake->trns[i].curr_dist_between = DIST_NONE;
@@ -86,12 +87,18 @@ void snake_init(snake *snake) {
 static int32_t
 calculate_distance_between(snake *snake, uint8_t front_trn_idx,
     uint32_t time_between) {
-    uint8_t trn = snake->trns[front_trn_idx].trn;
+
+    snake_trn_data *data = &snake->trns[front_trn_idx];
     // assume constant speed over small distances
     // first calculate distance between front of each sensor module
     int32_t distance_between_heads =
-        get_distance_from_velocity(&spd_data, trn, time_between,
-            speed_display_get(&snake->spd_t, trn));
+        get_distance_from_velocity(&spd_data, data->trn, time_between,
+            speed_display_get(&snake->spd_t, data->trn));
+
+    if (data->reverse) {
+        distance_between_heads = (distance_between_heads < (REVERSE_OFFSET * MM_TO_UM)) ?
+            0 : (distance_between_heads - (REVERSE_OFFSET * MM_TO_UM));
+    }
 
     // must adjust to measure distance between trains lengths
     return (distance_between_heads < (TRN_LEN_MM * MM_TO_UM)) ?
@@ -328,7 +335,10 @@ void snake_timer_notifier(void) {
 
     for (;;) {
         uassert(Receive(&tid, (char *)&msg, sizeof(snake_msg)) == sizeof(snake_msg));
-        uassert(tid == ptid);
+        if (tid != ptid) {
+            upanic("[snake-notifier] unexpected msg from tid %d (parent tid %d)", tid, ptid);
+        }
+        
         Reply(ptid, NULL, 0);
 
         switch (msg.type) {
@@ -407,8 +417,17 @@ void snake_server_main(void) {
                     if (next_trn != 0) {
                         // new pick up
                         snake.trns[++snake.head].trn = next_trn;
+                        snake.trns[snake.head].reverse = (int8_t)reverse;
+
                         // start train
                         train_mod_speed(snake.marklin, &snake.spd_t, next_trn, SPD_MED);
+
+                        if (reverse) {
+                            // user reverses on our behalf already (need *a* delay)
+                            train_mod_speed(snake.marklin, &snake.spd_t, next_trn, SP_REVERSE);
+                            train_mod_speed(snake.marklin, &snake.spd_t, next_trn, SPD_MED);
+                        }
+
                         update_speed(snake.console, &snake.spd_t, next_trn);
                         init_snake_train(snake.console, &snake, snake.head);
                     }
