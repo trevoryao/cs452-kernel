@@ -361,7 +361,9 @@ void update_snake_distance(uint16_t tid, snake *snake, int16_t sen_num, uint8_t 
 void update_next_input_switch(uint16_t tid, uint16_t sw) {
     char *fmt;
 
-    if (SW0_BASE <= sw && sw < SW0_BASE + N_SW0) {
+    if (sw == 0) {
+        fmt = "%s" CURS_MOV DEL_LINE "%s";
+    } else if (SW0_BASE <= sw && sw < SW0_BASE + N_SW0) {
         #if LOGGING
         fmt = "[next switch] SW%d\r\n";
         #else

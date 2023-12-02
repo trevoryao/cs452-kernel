@@ -25,6 +25,7 @@ enum US_MSG_TYPE {
 typedef struct switch_data {
     uint8_t left_is_straight;
     uint8_t allowedToBeSet;
+    uint8_t user_set;
     enum SWITCH_DIR curr_dir;
 
 } switch_data;
