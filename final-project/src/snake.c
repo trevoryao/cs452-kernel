@@ -179,13 +179,20 @@ snake_try_make_queued_speed_adjustment(snake *snake, uint8_t activated_snake_idx
 static void
 snake_change_speed_fwd(snake *snake, uint8_t front_trn_idx, int8_t adjustment_factor) {
     // must save for trains in front of us (including front_idx)
-    while (front_trn_idx <= snake->head) {
-        if (speed_is_supported(speed_display_get(&snake->spd_t,
+    for (; front_trn_idx <= snake->head; ++front_trn_idx) {
+        if (!speed_is_supported(speed_display_get(&snake->spd_t,
             snake->trns[front_trn_idx].trn) + adjustment_factor)) {
-            snake->trns[front_trn_idx].queued_spd_adjustment = adjustment_factor;
+            continue;
         }
 
-        ++front_trn_idx;
+        if (adjustment_factor > ADJUST_NONE &&
+            snake->trns[front_trn_idx].curr_dist_between >= (FOLLOWING_DIST_MM +
+            FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
+            // don't carry through acceleration if already too far apart
+            continue;
+        }
+
+        snake->trns[front_trn_idx].queued_spd_adjustment = adjustment_factor;
     }
 }
 
@@ -207,15 +214,22 @@ snake_check_change_speed_fwd(snake *snake, uint8_t front_trn_idx, int8_t adjustm
 static void
 snake_change_speed_behind(snake *snake, uint8_t front_trn_idx, int8_t adjustment_factor) {
     // must save for trains one past us, change back of the gap (one behind) now
-    int8_t trn_idx = front_trn_idx - 1; // start with back of the gap
 
-    while (trn_idx >= 0) {
-        if (speed_is_supported(speed_display_get(&snake->spd_t,
+    // start with back of the gap
+    for (int8_t trn_idx = front_trn_idx - 1; trn_idx >= 0; --trn_idx) {
+        if (!speed_is_supported(speed_display_get(&snake->spd_t,
             snake->trns[trn_idx].trn) + adjustment_factor)) {
-            snake->trns[trn_idx].queued_spd_adjustment = adjustment_factor;
+            continue;
         }
 
-        --trn_idx;
+        if (adjustment_factor > ADJUST_NONE &&
+            snake->trns[trn_idx].curr_dist_between >= (FOLLOWING_DIST_MM +
+            FOLLOWING_DIST_MARGIN_MM) * MM_TO_UM) {
+            // don't carry through acceleration if already too far apart
+            continue;
+        }
+
+        snake->trns[trn_idx].queued_spd_adjustment = adjustment_factor;
     }
 
     // can do back of the gap immediately
@@ -274,8 +288,8 @@ snake_try_adjust_bunched_trains(snake *snake) {
 
     // all bunched up
     // will this work with more than three trains? hard to say
-    snake_change_speed_fwd(snake, snake->head >> 1, ADJUST_SPD_UP);
-    snake_change_speed_behind(snake, snake->head >> 1, ADJUST_SLOW_DOWN);
+    snake_change_speed_fwd(snake, (snake->head >> 1) + 1, ADJUST_SPD_UP);
+    snake_change_speed_behind(snake, (snake->head >> 1) + 1, ADJUST_SLOW_DOWN);
 
     return true;
 }
