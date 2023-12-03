@@ -469,10 +469,6 @@ void throw_switches_delay(track_node *curr, switch_data *sw_data, int marklin, i
             // reset switch as visited
             set_switch_user_set(sw_data, curr, false);
 
-            if (curr->num == 18) {
-                uart_printf(CONSOLE, "setting switch 18\r\n");
-            }
-
             int dirIndex = (dir == STRT) ? DIR_STRAIGHT : DIR_CURVED;
             distance += curr->edge[dirIndex].dist * MM_TO_UM;
             curr = curr->edge[dirIndex].dest;
