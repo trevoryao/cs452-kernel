@@ -88,7 +88,7 @@ void trn_position_reset(trn_position *pos, uint8_t trn);
 
 // Called by TCC when speed change is requested
 void trn_position_update_speed(trn_position *pos, uint8_t trn, uint8_t spd,
-    uint32_t update_spd_time);har
+    uint32_t update_spd_time);
 
 // Called by TCC when sensor is waited on by a train
 // Performs actual prediction calculation

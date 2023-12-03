@@ -115,19 +115,39 @@ void console_read_notifer_main(void) {
 
     for(;;) {
         int c = uart_getc_nb(CONSOLE);
-        if (c == NCH) {
-            if (msg.length > 0) {
-                Send(parent_tid, (char*)&msg, sizeof(struct msg_uartserver), (char*)&reply, sizeof(struct msg_uartserver));
-                msg.length = 0;
+
+        switch (c) {
+            case NCH: {
+                if (msg.length > 0) {
+                    Send(parent_tid, (char*)&msg, sizeof(struct msg_uartserver), (char*)&reply, sizeof(struct msg_uartserver));
+                    msg.length = 0;
+                }
+
+                int result = AwaitEvent(CONSOLE_RX);
+                if (result < 0) {
+                    upanic("[Console Read Notifier] Console Server error - make sure to start a clock server\r\n");
+                }
+
+                break;
             }
 
-            int result = AwaitEvent(CONSOLE_RX);
-            if (result < 0) {
-                upanic("[Console Read Notifier] Console Server error - make sure to start a clock server\r\n");
+            // check arrow keys
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D': {
+                if (msg.length >= 2 && msg.buffer[msg.length - 2] == 033 &&
+                    msg.buffer[msg.length - 1] == '[') {
+                    // arrow key?
+                    msg.length -= 2;
+                    msg.buffer[msg.length++] = ARROW_UP + c - 'A';
+                    break;
+                } __attribute__((fallthrough));
             }
-        } else {
-            msg.buffer[msg.length] = c;
-            msg.length++;
+            default: {
+                msg.buffer[msg.length++] = c;
+                break;
+            }
         }
     }
 }

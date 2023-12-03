@@ -9,7 +9,7 @@
 
 inline static uint8_t spd_hash(enum SPEEDS s) {
     if (s == 0) return 0;
-    return (s - 5) >> 1; // div 2
+    return (s - SPD_VLO + 1);
 }
 
 void speed_data_init(speed_data *data) {
@@ -19,18 +19,24 @@ void speed_data_init(speed_data *data) {
 
     // trn 24
     data->velocity_data[0][1] = 162083; // spd 7 (LO)
-    data->velocity_data[0][2] = 279550; // spd 9 (MED)
-    data->velocity_data[0][3] = 407185; // spd 11 (HI)
+    data->velocity_data[0][2] = 217331;
+    data->velocity_data[0][3] = 279550; // spd 9 (MED)
+    data->velocity_data[0][4] = 342350;
+    data->velocity_data[0][5] = 407185; // spd 11 (HI)
 
     // trn 58
     data->velocity_data[1][1] = 144318; // spd 7 (LO)
-    data->velocity_data[1][2] = 247857; // spd 9 (MED)
-    data->velocity_data[1][3] = 366255; // spd 11 (HI)
+    data->velocity_data[1][2] = 188037;
+    data->velocity_data[1][3] = 247857; // spd 9 (MED)
+    data->velocity_data[1][4] = 304565;
+    data->velocity_data[1][5] = 366255; // spd 11 (HI)
 
     // trn 77
     data->velocity_data[2][1] = 181496; // spd 7 (LO)
-    data->velocity_data[2][2] = 280784; // spd 9 (MED)
-    data->velocity_data[2][3] = 403022; // spd 11 (HI)
+    data->velocity_data[2][2] = 226754;
+    data->velocity_data[2][3] = 280784; // spd 9 (MED)
+    data->velocity_data[2][4] = 335918;
+    data->velocity_data[2][5] = 403022; // spd 11 (HI)
 
     // acceleration data
     for (int i = 0; i < N_TRNS; ++i)
@@ -39,35 +45,59 @@ void speed_data_init(speed_data *data) {
 
     // trn 24
     data->acceleration_data[0][0][1] = 83762;  // 0 -> 7
-    data->acceleration_data[0][1][2] = 114075; // 7 -> 9
-    data->acceleration_data[0][2][1] = -49906; // 9 -> 7
-    data->acceleration_data[0][1][3] = 166944; // 7 -> 11
-    data->acceleration_data[0][3][1] = -95610; // 11 -> 7
-    data->acceleration_data[0][2][3] = 135447; // 9 -> 11
-    data->acceleration_data[0][3][2] = -55904; // 11 -> 9
-    data->acceleration_data[0][0][2] = 99929;  // 0 -> 9
+    data->acceleration_data[0][1][3] = 114075; // 7 -> 9
+    data->acceleration_data[0][1][2] = 114075; // fake
+    data->acceleration_data[0][2][3] = 114075; // fake
+    data->acceleration_data[0][3][1] = -49906; // 9 -> 7
+    data->acceleration_data[0][3][2] = -49906; // fake
+    data->acceleration_data[0][2][1] = -49906; // fake
+    data->acceleration_data[0][1][5] = 166944; // 7 -> 11
+    data->acceleration_data[0][5][1] = -95610; // 11 -> 7
+    data->acceleration_data[0][3][5] = 135447; // 9 -> 11
+    data->acceleration_data[0][3][4] = 135447; // fake
+    data->acceleration_data[0][4][5] = 135447; // fake
+    data->acceleration_data[0][5][3] = -55904; // 11 -> 9
+    data->acceleration_data[0][5][4] = -55904; // fake
+    data->acceleration_data[0][4][3] = -55904; // fake
+    data->acceleration_data[0][0][3] = 99929;  // 0 -> 9
 
 
     // trn 58
     data->acceleration_data[1][0][1] = 82661;  // 0 -> 7
-    data->acceleration_data[1][1][2] = 76213;  // 7 -> 9
-    data->acceleration_data[1][2][1] = -39682; // 9 -> 7
-    data->acceleration_data[1][1][3] = 115697; // 7 -> 11
-    data->acceleration_data[1][3][1] = -80692; // 11 -> 7
-    data->acceleration_data[1][2][3] = 107489; // 9 -> 11
-    data->acceleration_data[1][3][2] = -44940; // 11 -> 9
-    data->acceleration_data[1][0][2] = 88112;  // 0 -> 9
+    data->acceleration_data[1][1][3] = 76213;  // 7 -> 9
+    data->acceleration_data[1][1][2] = 76213;  // fake
+    data->acceleration_data[1][2][3] = 76213;  // fake
+    data->acceleration_data[1][3][1] = -39682; // 9 -> 7
+    data->acceleration_data[1][3][2] = -39682; // fake
+    data->acceleration_data[1][2][1] = -39682; // fake
+    data->acceleration_data[1][1][5] = 115697; // 7 -> 11
+    data->acceleration_data[1][5][1] = -80692; // 11 -> 7
+    data->acceleration_data[1][3][5] = 107489; // 9 -> 11
+    data->acceleration_data[1][3][4] = 107489; // fake
+    data->acceleration_data[1][4][5] = 107489; // fake
+    data->acceleration_data[1][5][3] = -44940; // 11 -> 9
+    data->acceleration_data[1][5][4] = -44940; // fake
+    data->acceleration_data[1][4][3] = -44940; // fake
+    data->acceleration_data[1][0][3] = 88112;  // 0 -> 9
 
 
     // trn 77
     data->acceleration_data[2][0][1] = 61097;  // 0 -> 7
-    data->acceleration_data[2][1][2] = 55562;  // 7 -> 9
-    data->acceleration_data[2][2][1] = -32683; // 9 -> 7
-    data->acceleration_data[2][1][3] = 81505;  // 7 -> 11
-    data->acceleration_data[2][3][1] = -69310; // 11 -> 7
-    data->acceleration_data[2][2][3] = 71978; // 9 -> 11
-    data->acceleration_data[2][3][2] = -37873; // 11 -> 9
-    data->acceleration_data[2][0][2] = 72385;  // 0 -> 9
+    data->acceleration_data[2][1][3] = 55562;  // 7 -> 9
+    data->acceleration_data[2][1][2] = 55562;  // fake
+    data->acceleration_data[2][2][3] = 55562;  // fake
+    data->acceleration_data[2][3][1] = -32683; // 9 -> 7
+    data->acceleration_data[2][3][2] = -32683; // fake
+    data->acceleration_data[2][2][1] = -32683; // fake
+    data->acceleration_data[2][1][5] = 81505;  // 7 -> 11
+    data->acceleration_data[2][5][1] = -69310; // 11 -> 7
+    data->acceleration_data[2][3][5] = 71978; // 9 -> 11
+    data->acceleration_data[2][3][4] = 71978; // fake
+    data->acceleration_data[2][4][5] = 71978; // fake
+    data->acceleration_data[2][5][3] = -37873; // 11 -> 9
+    data->acceleration_data[2][5][4] = -37873; // fake
+    data->acceleration_data[2][4][3] = -37873; // fake
+    data->acceleration_data[2][0][3] = 72385;  // 0 -> 9
 
 
     // stopping data
@@ -77,18 +107,18 @@ void speed_data_init(speed_data *data) {
 
     // tr 24
     data->stopping_data[0][1] = 135168;
-    data->stopping_data[0][2] = 307080;
-    data->stopping_data[0][3] = 583030;
+    data->stopping_data[0][3] = 307080;
+    data->stopping_data[0][5] = 583030;
 
     // tr 58
     data->stopping_data[1][1] = 127966; // 7 -> 0
-    data->stopping_data[1][2] = 279043; // 9 -> 0
-    data->stopping_data[1][3] = 545819; // 11 -> 0
+    data->stopping_data[1][3] = 279043; // 9 -> 0
+    data->stopping_data[1][5] = 545819; // 11 -> 0
 
     // tr 77
     data->stopping_data[2][1] = 241126; // 7 -> 0
-    data->stopping_data[2][2] = 438894; // 9 -> 0
-    data->stopping_data[2][3] = 768428; // 11 -> 0
+    data->stopping_data[2][3] = 438894; // 9 -> 0
+    data->stopping_data[2][5] = 768428; // 11 -> 0
 
 
     // short moves data
@@ -111,7 +141,6 @@ void speed_data_init(speed_data *data) {
     data->short_moves[0][15] = 815000;  // 525
     data->short_moves[0][16] = 855000;  // 550
     data->short_moves[0][16] = 900000;  // 575
-
 
     // tr 58
     data->short_moves[1][0] = 170000;   // 150
@@ -278,6 +307,8 @@ estimate_initial_distance_acceleration(speed_data *data, uint16_t trn,
     return (part1 + part2) / (100 * 100);
 }
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 // get time travelled during acceleration w/out final velocity over short_distance
 uint32_t
 estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
@@ -296,7 +327,18 @@ estimate_initial_time_acceleration(speed_data *data, uint16_t trn,
 
     int64_t t1 = ((-v1 + sqrt_comp) * 100) / a;
     int64_t t2 = ((-v1 - sqrt_comp) * 100) / a;
-    return (uint32_t)((t2 > 0) ? t2 : t1);
+
+    // take minimum positive value
+    if (t1 > 0 && t2 > 0) {
+        return (uint32_t)MIN(t1, t2);
+    } else if (t1 > 0) {
+        return (uint32_t)t1;
+    } else if (t2 > 0) {
+        return (uint32_t)t2;
+    } else {
+        // fuck really bad
+        return 0;
+    }
 }
 
 // get time travelled during acceleration w/out initial velocity over short_distance
@@ -317,7 +359,17 @@ estimate_final_time_acceleration(speed_data *data, uint16_t trn,
 
     int64_t t1 = ((v2 + sqrt_comp) * 100) / a;
     int64_t t2 = ((v2 - sqrt_comp) * 100) / a;
-    return (uint32_t)((t2 > 0) ? t2 : t1);
+
+    if (t1 > 0 && t2 > 0) {
+        return (uint32_t)MIN(t1, t2);
+    } else if (t1 > 0) {
+        return (uint32_t)t1;
+    } else if (t2 > 0) {
+        return (uint32_t)t2;
+    } else {
+        // fuck really bad
+        return 0;
+    }
 }
 
 int32_t get_short_move_delay(speed_data *data, uint16_t trn, uint32_t dist_goal) {
