@@ -40,7 +40,7 @@
 #define SEN_START_Y 6
 
 #define PRMT_START_X 1
-#define PRMT_START_Y 38
+#define PRMT_START_Y 50
 
 #define POS_START_X 1
 #define POS_START_Y 30
@@ -151,6 +151,7 @@ void init_monitor(uint16_t tid) {
     // let snake update itself
 
     // no triggered sensors
+    Printf(tid, CURS_MOV, PRMT_START_Y, PRMT_START_X);
 
     #endif
 }

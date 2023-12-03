@@ -260,6 +260,26 @@ snake_check_matching_trend(snake *snake, uint8_t front_trn_idx,
     }
 }
 
+// true if all bunched and adjusted all the trains, false otherwise
+static bool
+snake_try_adjust_bunched_trains(snake *snake) {
+    // assume at least 3 trains
+    if (snake->head < 2) return false;
+
+    // are we all bunched?
+    for (int i = 1; i <= snake->head; ++i) {
+        if (snake->trns[i].curr_dist_between > (SMALL_FOLLOWING_DIST * MM_TO_UM))
+            return false;
+    }
+
+    // all bunched up
+    // will this work with more than three trains? hard to say
+    snake_change_speed_fwd(snake, snake->head >> 1, ADJUST_SPD_UP);
+    snake_change_speed_behind(snake, snake->head >> 1, ADJUST_SLOW_DOWN);
+
+    return true;
+}
+
 // called as the subsequent train passes the triggered sensor
 static void
 snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
@@ -267,6 +287,10 @@ snake_adjust_trains(snake *snake, uint8_t front_trn_idx) {
     int32_t dist_between = snake->trns[front_trn_idx].curr_dist_between;
     int32_t trend = snake->trns[front_trn_idx].curr_dist_between -
         snake->trns[front_trn_idx].last_dist_between;
+
+    if (snake_try_adjust_bunched_trains(snake)) {
+        return;
+    }
 
     if (trend <= -LARGE_TREND * MM_TO_UM) {
         // closing into each other, same as under small following distance
@@ -338,7 +362,7 @@ void snake_timer_notifier(void) {
         if (tid != ptid) {
             upanic("[snake-notifier] unexpected msg from tid %d (parent tid %d)", tid, ptid);
         }
-        
+
         Reply(ptid, NULL, 0);
 
         switch (msg.type) {
