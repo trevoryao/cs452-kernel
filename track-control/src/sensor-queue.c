@@ -92,8 +92,8 @@ sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
     head->next = sq->freelist;
     sq->freelist = head;
 
-    ULOG("[sensor get] activation: %u expected: %u timeout: %u\r\n",
-        activation_time, data->expected_time, TIMEOUT_TICKS);
+    //uart_printf(CONSOLE, "[sensor get] activation: %u expected: %u timeout: %u\r\n",
+      //  activation_time, data->expected_time, TIMEOUT_TICKS);
 
     if (data->expected_time == TIME_NONE)
         return SENSOR_QUEUE_FOUND;

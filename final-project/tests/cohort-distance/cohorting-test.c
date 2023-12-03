@@ -50,30 +50,24 @@ void user_main(void) {
 
     speed_data_init(&spd_data);
     init_track_data(console_tid);
-    init_monitor(console_tid);
 
     init_track(marklin_tid);
     WaitOutputEmpty(marklin_tid);
 
-    Create(P_HIGH, time_task_main);
-    Create(P_LOW, idle_time_task_main);
+    track_node *test_node = &track[70]; // E7
+
     Create(P_MED, user_server_main);
+    BlockUntilReady();
 
     // start snake
     uint16_t snake_tid = Create(P_HIGH, snake_server_main);
 
-    BlockUntilReady();
+    // pass params
+    snake_server_start(snake_tid, 24, test_node);
+    snake_server_start(snake_tid, 77, test_node);
+    snake_server_start(snake_tid, 58, test_node);
 
-    // quitting
-    BlockUntilQuit();
-
-    // need to manually shut down snake
-    snake_server_end(snake_tid);
-
-    // shutdown all non-server children to exit gracefully
-    KillAllChildren();
-
-    // send shutdown commands
-    shutdown_monitor(console_tid);
-    shutdown_track(marklin_tid);
+    for (;;) {
+        Yield();
+    }
 }

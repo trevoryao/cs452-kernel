@@ -80,6 +80,9 @@ void constant_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t
     speed_t speed;
     speed_t_init(&speed);
 
+    int num_newSpeeds = 2;
+    uint8_t newSpeeds[2] = {8,10};
+
     uint64_t dist_mm = 0;
     track_node *node = &track[75]; // E12
     while (node != &track[47]) { // C16
@@ -100,9 +103,9 @@ void constant_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t
         Getc(console);
         Puts(console, "\r\n");
 
-        for (int k = 0; k < N_SPDS; ++k) {
-            Printf(console, "Speed: %d\r\n", SPEEDS[k]);
-            train_mod_speed(marklin, &speed, ALL_TRNS[i], SPEEDS[k]);
+        for (int k = 0; k < num_newSpeeds; ++k) {
+            Printf(console, "Speed: %d\r\n", newSpeeds[k]);
+            train_mod_speed(marklin, &speed, ALL_TRNS[i], newSpeeds[k]);
             sensor_discard_all(marklin);
 
             uint64_t t[N_TESTS];
@@ -114,6 +117,86 @@ void constant_speed(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t
                 sensor_discard(marklin, 5);
 
                 wait_sensor_activate(marklin, 3, 16);
+                t[j] = get_curr_ticks() - t[j]; // end - start
+                Printf(console, COL_GRN "end sensor triggered (%d)\r\n" COL_RST, j);
+                sensor_discard(marklin, 3);
+            }
+
+            uint64_t v[N_TESTS]; // um/s
+
+            // calculate individual velocities
+            for (int j = 0; j < N_TESTS; ++j) {
+            v[j] = (dist_mm * 1000000000) / t[j];
+            }
+
+            Printf(console, "All recorded time deltas and velocities:\r\n");
+            time_t time_delta;
+            for (int j = 0; j < N_TESTS; ++j) {
+                time_from_sys_ticks(&time_delta, t[j]);
+                Printf(console, "time %d: %u:%u (v: %u um/s) ", j, time_delta.sec, time_delta.tsec, v[j]);
+            }
+            Printf(console, "\r\n");
+
+            // calculate average velocity
+            uint64_t v_avg = 0;
+            for (int j = 0; j < N_TESTS; ++j) v_avg += v[j];
+            v_avg /= N_TESTS;
+
+            Printf(console, "v_avg: %u um/s\r\n", v_avg);
+        }
+
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
+    }
+}
+
+void constant_speed_loop(uint16_t clock, uint16_t console, uint16_t marklin, uint64_t dist_loop_mm) {
+    speed_t speed;
+    speed_t_init(&speed);
+
+    int num_newSpeeds = 5;
+    uint8_t newSpeeds[5] = {7,8,9,10,11};
+
+    uint64_t dist_mm = 0;
+    track_node *node = &track[75]; // E12
+    // increment node by one to make sure we actually compute the loop
+    dist_mm += node->edge[DIR_AHEAD].dist;
+    node = node->edge[DIR_AHEAD].dest;
+    while (node != &track[75]) { // E12 -> loop
+        if (node->type == NODE_BRANCH) {
+            dist_mm += node->edge[DIR_STRAIGHT].dist;
+            node = node->edge[DIR_STRAIGHT].dest;
+        } else {
+            dist_mm += node->edge[DIR_AHEAD].dist;
+            node = node->edge[DIR_AHEAD].dest;
+        }
+    }
+
+    Printf(console, "Measured Distance: %u mm\r\n", dist_mm);
+
+    for (int i = 0; i < N_TRNS; ++i) {
+        train_mod_speed(marklin, &speed, ALL_TRNS[i], 0);
+        Printf(console, "Place Train %d before sensor A7 and press any key: ", ALL_TRNS[i]);
+        Getc(console);
+        Puts(console, "\r\n");
+
+        for (int k = 0; k < num_newSpeeds; ++k) {
+            Printf(console, "Speed: %d\r\n", newSpeeds[k]);
+            train_mod_speed(marklin, &speed, ALL_TRNS[i], newSpeeds[k]);
+            sensor_discard_all(marklin);
+
+            uint64_t t[N_TESTS];
+
+            for (int j = 0; j < N_TESTS; ++j) {
+                wait_sensor_activate(marklin, 5, 12);
+                t[j] = get_curr_ticks(); // start
+                Printf(console, COL_GRN "start sensor triggered (%d)\r\n" COL_RST, j);
+                
+                // Delay for long enough to not have a double delay
+                Delay(clock, 50);
+                sensor_discard(marklin, 5);
+
+                // wait on E12 again
+                wait_sensor_activate(marklin, 5, 12);
                 t[j] = get_curr_ticks() - t[j]; // end - start
                 Printf(console, COL_GRN "end sensor triggered (%d)\r\n" COL_RST, j);
                 sensor_discard(marklin, 3);
@@ -722,8 +805,10 @@ void user_main(void) {
     // acceleration_from_zero(clock, console, marklin, dist_um);
     //acceleration_speed_adaptive(clock, console, marklin, dist_um, 9, 11);
 
-    short_move_test(clock, console, marklin);
+    //short_move_test(clock, console, marklin);
     //acceleration_from_zero(clock, console, marklin, dist_um, 9);
+
+    constant_speed(clock, console, marklin, dist_um);
 
     WaitOutputEmpty(marklin);
 }

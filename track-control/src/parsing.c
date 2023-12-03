@@ -158,8 +158,8 @@ static int parse_path_node(deque *in, track_node **out) {
 
             int mod_no = parse_num(in);
             if (mod_no < 0) return -1;
-            else if (1 <= mod_no && mod_no <= NUM_MOD_PER_SEN) {
-                *out = &track[SENS_NODE_BASE + (mod * NUM_MOD_PER_SEN) + (mod_no - 1)];
+            else if (1 <= mod_no && mod_no <= N_SEN_PER_MOD) {
+                *out = &track[SENS_NODE_BASE + (mod * N_SEN_PER_MOD) + (mod_no - 1)];
             } else {
                 return -1;
             }
