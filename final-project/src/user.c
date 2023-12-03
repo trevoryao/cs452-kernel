@@ -261,11 +261,17 @@ void startup(int marklin, int console) {
     switch_throw(marklin, 7, STRT);
     update_switch(console, 7, STRT);
 
-    switch_throw(marklin, 14, STRT);
-    update_switch(console, 14, STRT);
+    switch_throw(marklin, 14, CRV);
+    update_switch(console, 14, CRV);
 
-    switch_throw(marklin, 8, STRT);
-    update_switch(console, 8, STRT);
+    switch_throw(marklin, 8, CRV);
+    update_switch(console, 8, CRV);
+
+    switch_throw(marklin, 17, STRT);
+    update_switch(console, 17, STRT);
+
+    switch_throw(marklin, 13, STRT);
+    update_switch(console, 13, STRT);
 
     // set the switches, which are not allowed to be set
     switch_throw(marklin, 1, STRT);
@@ -323,7 +329,7 @@ void init_switch_data(switch_data *data) {
     data[7].left_is_straight = 0;
 
     data[8].allowedToBeSet = true;
-    data[8].curr_dir = STRT;
+    data[8].curr_dir = CRV;
     data[8].left_is_straight = 1;
 
     data[9].allowedToBeSet = true;
@@ -339,11 +345,11 @@ void init_switch_data(switch_data *data) {
     data[11].left_is_straight = 0;
 
     data[13].allowedToBeSet = true;
-    data[13].curr_dir = UNKNOWN;
+    data[13].curr_dir = STRT;
     data[13].left_is_straight = 1;
 
     data[14].allowedToBeSet = true;
-    data[14].curr_dir = STRT;
+    data[14].curr_dir = CRV;
     data[14].left_is_straight = 1;
 
     data[15].allowedToBeSet = true;
@@ -355,7 +361,7 @@ void init_switch_data(switch_data *data) {
     data[16].left_is_straight = 0;
 
     data[17].allowedToBeSet = true;
-    data[17].curr_dir = UNKNOWN;
+    data[17].curr_dir = STRT;
     data[17].left_is_straight = 1;
 
     data[18].allowedToBeSet = true;
