@@ -21,6 +21,7 @@ typedef struct snake_trn_data {
     uint8_t trn;
     int8_t queued_spd_adjustment;
     int64_t grace_period;
+    int8_t reverse; // flag if train is reversed
 
     int32_t last_dist_between;
     int32_t curr_dist_between;
