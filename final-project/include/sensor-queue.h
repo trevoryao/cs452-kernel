@@ -4,16 +4,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define N_SENSOR_MODULES 5
-#define N_SENSORS 16
-#define MAX_WAITING_PROCESSES 8
+#include "controller-consts.h"
+
+#define MAX_WAITING_PROCESSES 16
+
+typedef struct snake snake;
+typedef struct track_node track_node;
 
 typedef struct sensor_data {
-    uint16_t tid;
-    uint8_t trn;
-    int64_t expected_time; // ordering in the queue
-    bool pos_rqst;
+    uint8_t snake_idx; // train at the front
+
+    // information for determining when to return to caller
+    int64_t first_activation;
+    int8_t single_train;
 } sensor_data;
+
+void sensor_data_init(sensor_data *data, uint8_t snake_idx, bool single_train);
 
 typedef struct sensor_queue_entry sensor_queue_entry;
 
@@ -22,32 +28,39 @@ struct sensor_queue_entry {
     sensor_queue_entry *next;
 };
 
+/*
+ * sensor queue does not block the snake
+ */
+
 typedef struct sensor_queue {
     sensor_queue_entry storage[MAX_WAITING_PROCESSES];
     sensor_queue_entry *freelist;
 
-    sensor_queue_entry *sensors[N_SENSOR_MODULES][N_SENSORS];
+    sensor_queue_entry *sensors_front[NUM_SEN_PER_MOD * NUM_MOD];
+    sensor_queue_entry *sensors_back[NUM_SEN_PER_MOD * NUM_MOD];
+
+    snake *snake; // reference to the parent snake
 } sensor_queue;
 
-void sensor_queue_init(sensor_queue *sq);
+void sensor_queue_init(sensor_queue *sq, snake *snake);
 
-// add a process to the waiting list
-void sensor_queue_add_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, sensor_data *data);
+bool sensor_queue_is_waiting(sensor_queue *sq, track_node *node);
 
-// returns first waiting process via sensor
-// see below for return codes
-#define SENSOR_QUEUE_DONE 0
-#define SENSOR_QUEUE_TIMEOUT -1
-#define SENSOR_QUEUE_FOUND 1
-#define SENSOR_QUEUE_EARLY 2
+// must be called to set variables
+void sensor_queue_wait(sensor_queue *sq, track_node *node,
+    uint8_t snake_idx, bool single_train);
 
-int sensor_queue_get_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, uint32_t activation_time, sensor_data *data);
-
-void sensor_queue_adjust_waiting_tid(sensor_queue *sq, uint16_t sensor_mod,
-    uint16_t sensor_no, uint16_t tid, int64_t expected_time);
-
-void sensor_queue_free_train(sensor_queue *sq, uint16_t trn);
+// if the update was from the second train, it is popped off the queue,
+// and the next one is updated with this information
+// returns the time offset between the two trains, or -1 if
+// (likely) from the same train
+// returns train which passed first and the train at the sensor
+// via trn and next_trn respectively
+// if no next_trn (i.e. end_of_snake set to true), set to TRN_NONE
+#define FIRST_ACTIVATION 0
+#define SAME_TRAIN -1
+#define ERR_SPURIOUS -2
+int64_t sensor_queue_update(sensor_queue *sq, track_node *node,
+    uint32_t activation_time, uint8_t *snake_idx);
 
 #endif

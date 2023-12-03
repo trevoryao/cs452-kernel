@@ -37,12 +37,19 @@ static const uint16_t SW1_PAIRS[4] = {SW1_BASE + 1, SW1_BASE, SW1_BASE + 3, SW1_
 #define CUSTOM_WAIT_ARG -1 // for output buffer
 
 #define TIME_NONE -1
+#define DIST_NONE -1
+
+#define TRN_NONE INT8_MAX
 
 // time consts
 #define RV_WAIT_TIME    320 // 3.2s
 #define REFRESH_TIME    9   // refresh clock every 90ms
 #define IDLE_REFRESH_TIME 500 // 5s
 
-#define NUM_MOD_PER_SEN 16
+#define NUM_SEN_PER_MOD 16
+#define NUM_MOD 5
+
+#define TRN_LEN_MM 229
+static const int32_t TRN_TIMEOUT_DIST = TRN_LEN_MM >> 1; // div 2
 
 #endif

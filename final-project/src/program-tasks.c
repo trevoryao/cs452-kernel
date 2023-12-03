@@ -13,16 +13,9 @@
 
 #include "control-msgs.h"
 #include "monitor.h"
-#include "parsing.h"
-#include "preset-program.h"
-#include "sensors.h"
 #include "speed.h"
 #include "track.h"
-#include "track-control.h"
-#include "track-control-coordinator.h"
 #include "track-data.h"
-#include "track-segment-locking.h"
-#include "train.h"
 
 extern track_node track[];
 

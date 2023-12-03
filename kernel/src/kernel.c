@@ -56,7 +56,7 @@ static void kernel_init(kernel_state *kernel_task, task_t *curr_user_task,
     task_queue_add(tqueue, ns);
 
     // initialise first user task
-    task_init(curr_user_task, user_main, NULL, P_MED, salloc);
+    task_init(curr_user_task, user_main, NULL, P_LOW, salloc);
     task_queue_add(tqueue, curr_user_task);
 
     // initialise idle task

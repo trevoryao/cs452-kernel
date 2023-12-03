@@ -50,30 +50,26 @@ void user_main(void) {
 
     speed_data_init(&spd_data);
     init_track_data(console_tid);
+
     init_monitor(console_tid);
-
     init_track(marklin_tid);
-    WaitOutputEmpty(marklin_tid);
+    // WaitOutputEmpty(marklin_tid);
 
-    Create(P_HIGH, time_task_main);
-    Create(P_LOW, idle_time_task_main);
-    Create(P_MED, user_server_main);
+    // fake snake
+    snake snake;
+    snake_init(&snake);
+    snake.head = 2;
+    snake.trns[0].trn = 24;
+    snake.trns[1].trn = 77;
+    snake.trns[2].trn = 58;
 
-    // start snake
-    uint16_t snake_tid = Create(P_HIGH, snake_server_main);
+    update_snake(console_tid, &snake);
+    update_snake_distance(console_tid, &snake, 23, 1, 239);
+    update_snake_distance(console_tid, &snake, 23, 1, 10);
 
-    BlockUntilReady();
+    update_next_input_switch(console_tid, 155);
 
-    // quitting
-    BlockUntilQuit();
-
-    // need to manually shut down snake
-    snake_server_end(snake_tid);
-
-    // shutdown all non-server children to exit gracefully
-    KillAllChildren();
-
-    // send shutdown commands
-    shutdown_monitor(console_tid);
-    shutdown_track(marklin_tid);
+    for (;;) {
+        Yield();
+    }
 }

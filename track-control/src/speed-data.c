@@ -91,7 +91,7 @@ void speed_data_init(speed_data *data) {
     data->stopping_data[2][3] = 768428; // 11 -> 0
 
 
-    // short moves data 
+    // short moves data
     // tr 24
     data->short_moves[0][0] = 195000;   // 150
     data->short_moves[0][1] = 245000;   // 175
@@ -112,7 +112,7 @@ void speed_data_init(speed_data *data) {
     data->short_moves[0][16] = 855000;  // 550
     data->short_moves[0][16] = 900000;  // 575
 
-        
+
     // tr 58
     data->short_moves[1][0] = 170000;   // 150
     data->short_moves[1][1] = 210000;   // 175
